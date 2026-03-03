@@ -33,7 +33,41 @@
         }
 
         #app-container { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:20px; display:flex; flex-direction:column; min-height:100vh; }
+// ══════════════════════════════════════════════════════════
+// 五境界图鉴 - 境界角色展示补丁
+// 使用说明：将此段替换原文件中的 renderStatesInfo() 函数
+// 并在文件顶部添加 STATES_CHARACTER_ARTS 常量
+// ══════════════════════════════════════════════════════════
 
+// ── 步骤 1：在 PLAYER_ARTS 常量附近添加此常量 ──
+// 格式：每个境界对应一张男性立绘 URL 和一张女性立绘 URL
+const STATES_CHARACTER_ARTS = [
+    // 境界 0：虚影之民 (Lv.1–24)
+    {
+        male:   "assets/characters/player_art_1-24.png",
+        female: "在此填入 虚影之民·女 立绘 URL"
+    },
+    // 境界 1：刻印使徒 (Lv.25–49)
+    {
+        male:   "在此填入 刻印使徒·男 立绘 URL",
+        female: "在此填入 刻印使徒·女 立绘 URL"
+    },
+    // 境界 2：破晓贤者 (Lv.50–74)
+    {
+        male:   "在此填入 破晓贤者·男 立绘 URL",
+        female: "在此填入 破晓贤者·女 立绘 URL"
+    },
+    // 境界 3：圣域领主 (Lv.75–99)
+    {
+        male:   "在此填入 圣域领主·男 立绘 URL",
+        female: "在此填入 圣域领主·女 立绘 URL"
+    },
+    // 境界 4：终焉神谕 (Lv.100+)
+    {
+        male:   "在此填入 终焉神谕·男 立绘 URL",
+        female: "在此填入 终焉神谕·女 立绘 URL"
+    }
+];
         /* ── HEADER ── */
         header { position:relative; padding:24px 30px 20px; margin-bottom:20px; background:var(--panel); border:1px solid var(--border); border-top:2px solid var(--gold-dim); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; overflow:hidden; }
         header::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(30,40,80,0.25) 0%,transparent 100%); pointer-events:none; }
@@ -2034,9 +2068,183 @@ function openLeaderboard(){
     document.getElementById('leaderboard-modal').style.display='flex';
 }
 function openStatesInfo(){playSfx(sfxClick);document.getElementById('states-modal').style.display='flex';}
-function renderStatesInfo(){
-    const c=document.getElementById('states-grid-container');c.innerHTML='';
-    STATES.forEach(state=>{const card=document.createElement('div');card.style.cssText=`border:1px solid ${state.color};padding:18px 14px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;position:relative;overflow:hidden;`;card.innerHTML=`<div style="font-size:2.2rem;text-shadow:0 0 12px ${state.color};">${state.icon}</div><div style="font-family:'Cinzel Decorative',serif;font-size:1.05rem;letter-spacing:0.06em;color:${state.color};text-shadow:0 0 8px ${state.color};">${state.name}</div><div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.78rem;color:var(--text-dim);">${state.latin}</div><div style="font-family:'Cinzel Decorative',serif;font-size:0.72rem;color:${state.color};background:rgba(0,0,0,0.3);padding:3px 10px;border:1px solid ${state.color};">Lv.${state.minLevel}${state.maxLevel===Infinity?'+':` – ${state.maxLevel}`}</div><p style="font-size:0.75rem;color:var(--text-secondary);font-family:'IM Fell English',serif;font-style:italic;">${state.desc}</p><div style="font-size:0.7rem;font-family:'IM Fell English',serif;font-style:italic;opacity:0.6;border-top:1px solid ${state.color};padding-top:6px;width:100%;text-align:center;color:${state.color};">"${state.flavor}"</div>`;c.appendChild(card);});
+function renderStatesInfo() {
+    const c = document.getElementById('states-grid-container');
+    c.innerHTML = '';
+
+    // 外层容器改为单列，每个境界一个完整宽度的面板
+    c.style.display = 'flex';
+    c.style.flexDirection = 'column';
+    c.style.gap = '20px';
+
+    STATES.forEach((state, idx) => {
+        const arts = STATES_CHARACTER_ARTS[idx] || { male: '', female: '' };
+
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            border: 1px solid ${state.color};
+            background: rgba(6,8,22,0.85);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        `;
+
+        // 顶部标题栏
+        const titleBar = document.createElement('div');
+        titleBar.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px 12px;
+            border-bottom: 1px solid ${state.color}44;
+            background: linear-gradient(90deg, ${state.color}18 0%, transparent 100%);
+            flex-wrap: wrap;
+        `;
+        titleBar.innerHTML = `
+            <span style="font-size:2rem;text-shadow:0 0 14px ${state.color};">${state.icon}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+                <div style="font-family:'Cinzel Decorative',serif;font-size:1.15rem;color:${state.color};text-shadow:0 0 10px ${state.color};letter-spacing:0.06em;">
+                    ${state.name}
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <span style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.78rem;color:var(--text-dim);">${state.latin}</span>
+                    <span style="font-family:'Cinzel Decorative',serif;font-size:0.72rem;color:${state.color};background:rgba(0,0,0,0.4);padding:2px 10px;border:1px solid ${state.color}66;">
+                        Lv.${state.minLevel}${state.maxLevel === Infinity ? '+' : ` – ${state.maxLevel}`}
+                    </span>
+                </div>
+            </div>
+            <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.8rem;color:var(--text-secondary);max-width:280px;text-align:right;">
+                ${state.desc}
+            </div>
+        `;
+        panel.appendChild(titleBar);
+
+        // 角色展示区（男 + 女）
+        const charsRow = document.createElement('div');
+        charsRow.style.cssText = `
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        `;
+
+        ['male', 'female'].forEach((gender, gi) => {
+            const imgUrl = arts[gender];
+            const genderLabel = gender === 'male' ? '男弟子' : '女弟子';
+            const genderIcon  = gender === 'male' ? '♂' : '♀';
+            const genderColor = gender === 'male' ? '#6090d8' : '#d870a0';
+
+            const cell = document.createElement('div');
+            cell.style.cssText = `
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                padding: 0 0 12px;
+                min-height: 240px;
+                overflow: hidden;
+                border-right: ${gi === 0 ? `1px solid ${state.color}33` : 'none'};
+                background: radial-gradient(ellipse at 50% 90%, ${state.color}18 0%, transparent 65%);
+            `;
+
+            // 背景装饰纹
+            const bgDeco = document.createElement('div');
+            bgDeco.style.cssText = `
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 8rem;
+                color: ${state.color}0a;
+                pointer-events: none;
+                user-select: none;
+                overflow: hidden;
+            `;
+            bgDeco.innerText = state.icon;
+            cell.appendChild(bgDeco);
+
+            // 角色图片
+            const img = document.createElement('img');
+            img.style.cssText = `
+                position: relative;
+                z-index: 2;
+                height: 185px;
+                width: auto;
+                object-fit: contain;
+                image-rendering: pixelated;
+                filter: drop-shadow(0 0 12px ${state.color}55) drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+                animation: breathe 4s ease-in-out infinite;
+                animation-delay: ${gi * 0.8}s;
+            `;
+            img.src = imgUrl;
+            img.alt = `${state.name} ${genderLabel}`;
+            img.onerror = function() {
+                // 图片加载失败时显示占位符
+                this.style.display = 'none';
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = `
+                    width: 100px; height: 140px; margin-bottom: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    border: 2px dashed ${state.color}44;
+                    color: ${state.color}66;
+                    font-size: 0.7rem;
+                    font-family: 'Cinzel', serif;
+                    letter-spacing: 0.08em;
+                    text-align: center;
+                    position: relative; z-index: 2;
+                `;
+                placeholder.innerText = `${state.icon}\n待填入\n图片URL`;
+                placeholder.style.whiteSpace = 'pre-line';
+                cell.insertBefore(placeholder, label);
+            };
+            cell.appendChild(img);
+
+            // 性别标签
+            const label = document.createElement('div');
+            label.style.cssText = `
+                position: relative;
+                z-index: 3;
+                margin-top: 6px;
+                font-family: 'Cinzel', serif;
+                font-size: 0.7rem;
+                letter-spacing: 0.15em;
+                color: ${genderColor};
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                border: 1px solid ${genderColor}55;
+                padding: 2px 10px;
+                background: rgba(0,0,0,0.45);
+            `;
+            label.innerHTML = `<span style="font-size:0.9rem;">${genderIcon}</span>${genderLabel}`;
+            cell.appendChild(label);
+
+            charsRow.appendChild(cell);
+        });
+
+        panel.appendChild(charsRow);
+
+        // 底部格言
+        const footer = document.createElement('div');
+        footer.style.cssText = `
+            text-align: center;
+            font-family: 'IM Fell English', serif;
+            font-style: italic;
+            font-size: 0.75rem;
+            color: ${state.color};
+            opacity: 0.75;
+            padding: 8px 20px;
+            border-top: 1px solid ${state.color}33;
+            letter-spacing: 0.05em;
+        `;
+        footer.innerText = `"${state.flavor}"`;
+        panel.appendChild(footer);
+
+        c.appendChild(panel);
+    });
+
 }
 function openShopDirect(){if(!students.length){showNotify("先收录弟子再来万宝阁！");return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
 function openShopForCurrent(){if(currentInvStudentIndex===-1){showNotify("请先开启某位弟子的行囊");return;}document.getElementById('inventory-modal').style.display='none';openShopModal();}
