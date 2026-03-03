@@ -454,6 +454,118 @@
         .music-on-off-btn:last-child { border-right:none; }
         .music-on-off-btn.on-active  { background:rgba(8,22,14,0.9);  color:#60d090; }
         .music-on-off-btn.off-active { background:rgba(30,8,12,0.9);  color:#e08090; }
+        /* ══════════════════════════════
+           TIMER MODAL
+        ══════════════════════════════ */
+        #timer-modal .modal-panel {
+            width: 420px; max-width: 96vw;
+            display: flex; flex-direction: column; gap: 0;
+            padding: 0; overflow: hidden;
+        }
+        .timer-mode-bar {
+            display: flex; border-bottom: 1px solid var(--border);
+        }
+        .timer-mode-tab {
+            flex: 1; font-family: 'Cinzel', serif; font-size: 0.78rem;
+            letter-spacing: 0.1em; padding: 12px 10px; cursor: pointer;
+            border: none; background: rgba(10,14,30,0.9); color: var(--text-secondary);
+            border-right: 1px solid var(--border); transition: all 0.2s;
+        }
+        .timer-mode-tab:last-child { border-right: none; }
+        .timer-mode-tab.active { background: rgba(26,96,112,0.3); color: var(--teal-glow); border-bottom: 2px solid var(--teal-glow); }
+        .timer-mode-tab:hover:not(.active) { background: rgba(30,40,80,0.5); color: var(--silver); }
+
+        .timer-body { padding: 24px 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+        /* Big clock display */
+        .timer-display-wrap {
+            position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .timer-ring-svg { width: 200px; height: 200px; }
+        .timer-ring-bg { fill: none; stroke: rgba(40,55,100,0.4); stroke-width: 6; }
+        .timer-ring-prog {
+            fill: none; stroke: var(--teal-glow); stroke-width: 6;
+            stroke-linecap: square; stroke-dasharray: 565.5;
+            stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
+            transform: rotate(-90deg); transform-origin: 50% 50%;
+        }
+        .timer-ring-prog.warning { stroke: var(--gold); }
+        .timer-ring-prog.danger  { stroke: var(--crimson-glow); animation: dangerPulse 0.8s ease-in-out infinite; }
+        @keyframes dangerPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        .timer-time-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            pointer-events: none;
+        }
+        .timer-digits {
+            font-family: 'Cinzel Decorative', serif; font-size: 2.6rem; font-weight: 900;
+            color: var(--gold-bright); text-shadow: 0 0 20px rgba(200,168,75,0.5), 0 0 4px rgba(0,0,0,0.9);
+            letter-spacing: 0.04em; line-height: 1;
+        }
+        .timer-digits.running { color: var(--teal-glow); text-shadow: 0 0 20px rgba(40,152,180,0.6); }
+        .timer-digits.warning-color { color: var(--gold); text-shadow: 0 0 20px rgba(200,160,40,0.7); }
+        .timer-digits.danger-color  { color: #ff6070; text-shadow: 0 0 20px rgba(255,80,100,0.8); }
+        .timer-ms {
+            font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--text-secondary); letter-spacing: 0.1em;
+        }
+        .timer-label-text {
+            font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.25em;
+            color: var(--text-dim); text-transform: uppercase; margin-top: 2px;
+        }
+
+        /* Lap / countdown laps */
+        .timer-laps {
+            width: 100%; max-height: 100px; overflow-y: auto;
+            border: 1px solid var(--border); background: rgba(6,8,20,0.6);
+        }
+        .timer-lap-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 12px; border-bottom: 1px solid rgba(40,55,100,0.3);
+            font-family: 'Cinzel', serif; font-size: 0.7rem; color: var(--text-secondary);
+            animation: lapAppear 0.25s ease;
+        }
+        @keyframes lapAppear { from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:translateY(0)} }
+        .timer-lap-row:last-child { border-bottom: none; }
+        .timer-lap-num  { color: var(--text-dim); }
+        .timer-lap-time { color: var(--gold); font-family: 'Cinzel Decorative', serif; }
+        .timer-lap-split { color: var(--teal-glow); }
+
+        /* Countdown input row */
+        .timer-cd-inputs {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+        }
+        .timer-cd-field { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .timer-cd-field label { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.2em; color: var(--text-dim); }
+        .timer-cd-field input {
+            width: 58px; text-align: center; font-family: 'Cinzel Decorative', serif;
+            font-size: 1.1rem; padding: 7px 4px;
+        }
+        .timer-cd-sep { font-family: 'Cinzel Decorative', serif; font-size: 1.4rem; color: var(--gold-dim); margin-top: 14px; }
+
+        /* Quick preset pills for countdown */
+        .timer-presets { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .timer-preset-pill {
+            font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.06em;
+            padding: 4px 10px; border: 1px solid var(--border-glow);
+            background: rgba(10,14,30,0.8); color: var(--text-secondary);
+            cursor: pointer; transition: all 0.18s;
+            clip-path: polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
+        }
+        .timer-preset-pill:hover { border-color: var(--teal); color: var(--teal-glow); }
+
+        /* Control buttons */
+        .timer-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+        /* Alarm flash overlay */
+        #timer-alarm-overlay {
+            position: fixed; inset: 0; z-index: 9995;
+            display: none; pointer-events: none;
+            background: radial-gradient(ellipse at 50% 50%, rgba(200,32,64,0.25) 0%, transparent 70%);
+            animation: alarmFlash 0.6s ease-in-out infinite;
+        }
+        @keyframes alarmFlash { 0%,100%{opacity:0} 50%{opacity:1} }
+
         ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:rgba(8,12,26,0.5); } ::-webkit-scrollbar-thumb { background:var(--border-glow); } ::-webkit-scrollbar-thumb:hover { background:var(--gold-dim); }
     </style>
 </head>
@@ -474,6 +586,7 @@
         </div>
         <div class="controls">
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
+            <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
             <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 万宝阁</button>
             <button class="sacred-btn gold-tier" onclick="openLeaderboard()">⬖ 圣律榜</button>
@@ -825,6 +938,80 @@
 </div>
 
 <div id="level-up-overlay"><img id="level-up-img" src="" alt="Level Up"></div>
+<!-- ── TIMER MODAL ── -->
+<div id="timer-modal" class="modal-overlay">
+    <div class="modal-panel">
+        <!-- Mode tabs -->
+        <div class="timer-mode-bar">
+            <button class="timer-mode-tab active" id="timerTabSW" onclick="switchTimerMode('stopwatch')">⏱ 正计时</button>
+            <button class="timer-mode-tab" id="timerTabCD" onclick="switchTimerMode('countdown')">⏳ 倒计时</button>
+        </div>
+
+        <div class="timer-body">
+
+            <!-- Ring + digits -->
+            <div class="timer-display-wrap">
+                <svg class="timer-ring-svg" viewBox="0 0 200 200">
+                    <circle class="timer-ring-bg"   cx="100" cy="100" r="90"/>
+                    <circle class="timer-ring-prog" id="timerRing" cx="100" cy="100" r="90"/>
+                </svg>
+                <div class="timer-time-overlay">
+                    <div class="timer-digits" id="timerDigits">00:00</div>
+                    <div class="timer-ms" id="timerMs">.00</div>
+                    <div class="timer-label-text" id="timerLabel">待命</div>
+                </div>
+            </div>
+
+            <!-- STOPWATCH: lap list -->
+            <div id="sw-laps-wrap" style="width:100%;display:none;">
+                <div class="timer-laps" id="sw-laps"></div>
+            </div>
+
+            <!-- COUNTDOWN: preset + inputs -->
+            <div id="cd-setup-wrap" style="width:100%;">
+                <div class="timer-cd-inputs" id="cd-inputs-row">
+                    <div class="timer-cd-field">
+                        <label>时</label>
+                        <input type="number" id="cd-h" min="0" max="23" value="0">
+                    </div>
+                    <div class="timer-cd-sep">:</div>
+                    <div class="timer-cd-field">
+                        <label>分</label>
+                        <input type="number" id="cd-m" min="0" max="59" value="5">
+                    </div>
+                    <div class="timer-cd-sep">:</div>
+                    <div class="timer-cd-field">
+                        <label>秒</label>
+                        <input type="number" id="cd-s" min="0" max="59" value="0">
+                    </div>
+                </div>
+                <div class="timer-presets" style="margin-top:10px;">
+                    <span class="timer-preset-pill" onclick="setCDPreset(1,0)">1分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(3,0)">3分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(5,0)">5分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(10,0)">10分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(15,0)">15分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(20,0)">20分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(30,0)">30分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(45,0)">45分</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(0,30)">30秒</span>
+                    <span class="timer-preset-pill" onclick="setCDPreset(0,45)">45秒</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-controls" id="timer-controls">
+                <!-- filled by JS -->
+            </div>
+
+            <button class="sacred-btn sm" onclick="closeTimerModal()" style="margin-top:2px;">离开</button>
+        </div>
+    </div>
+</div>
+
+<!-- Alarm flash overlay -->
+<div id="timer-alarm-overlay"></div>
+
 <!-- ── MUSIC PANEL ── -->
 <div id="music-panel">
     <div class="music-panel-title">
@@ -1145,7 +1332,7 @@ function getStudentInfo(s){
 const PLAYER_ARTS=["assets/characters/player_art_1-24.png",BASE_URL+"images/characters/player/full/player_art_11-20.png",BASE_URL+"images/characters/player/full/player_art_21-30.png",BASE_URL+"images/characters/player/full/player_art_31-40.png"];
 const PLAYER_BATTLE_ARTS=[BASE_URL+"images/characters/player/battle/player_battle_1-10.png",BASE_URL+"images/characters/player/battle/player_battle_11-20.png",BASE_URL+"images/characters/player/battle/player_battle_21-30.png",BASE_URL+"images/characters/player/battle/player_battle_31-40.png"];
 const BATTLE_BG=[BASE_URL+"images/backgrounds/battle_pixel_background.jpg",BASE_URL+"images/backgrounds/battle_forest_pixel.jpg",BASE_URL+"images/backgrounds/battle_cave_pixel.jpg",BASE_URL+"images/backgrounds/battle_volcano_pixel.jpg",BASE_URL+"images/backgrounds/battle_ruins_pixel.jpg",BASE_URL+"images/backgrounds/battle_frozen_peak_pixel.jpg"];
-const MONSTERS=[{id:'wolf',name:"律破幼狼",src:BASE_URL+"images/monsters/wolf_cub.gif",icon:BASE_URL+"images/monsters/wolf_cub.gif",cp:100},{id:'wolf_elite',name:"精英律狼",src:BASE_URL+"images/monsters/wolf_cub_elite.gif",icon:BASE_URL+"images/monsters/wolf_cub_elite.gif",cp:200},{id:'snake',name:"邪道幼蛇",src:BASE_URL+"images/monsters/snakelet_bamboo.gif",icon:BASE_URL+"images/monsters/snakelet_bamboo.gif",cp:120},{id:'boar',name:"悖律野猪",src:BASE_URL+"images/monsters/boar_angry.gif",icon:BASE_URL+"images/monsters/boar_angry.gif",cp:300},{id:'golem',name:"石契傀儡",src:BASE_URL+"images/monsters/stone_golem.gif",icon:BASE_URL+"images/monsters/stone_golem.gif",cp:400},{id:'imp',name:"虚妄幻魔",src:BASE_URL+"images/monsters/shadow_imp.gif",icon:BASE_URL+"images/monsters/shadow_imp.gif",cp:350},{id:'eye',name:"审判魔眼",src:BASE_URL+"images/monsters/flying_eye.gif",icon:BASE_URL+"images/monsters/flying_eye.gif",cp:450}];
+const MONSTERS=[{id:'wolf',name:"律破幼狼",src:"assets/monsters/wolf_cub.gif",icon:"assets/monsters/wolf_cub.gif",cp:100},{id:'wolf_elite',name:"精英律狼",src:"assets/monsters/wolf_cub_elite.gif",icon:"assets/monsters/wolf_cub_elite.gif",cp:200},{id:'snake',name:"邪道幼蛇",src:"assets/monsters/snakelet_bamboo.gif",icon:"assets/monsters/snakelet_bamboo.gif",cp:120},{id:'boar',name:"悖律野猪",src:"assets/monsters/boar_angry.gif",icon:"assets/monsters/boar_angry.gif",cp:300},{id:'boar',name:"精英律猪",src:"assets/monsters/boar_angry_elite.gif",icon:"assets/monsters/boar_angry_elite.gif",cp:320},{id:'golem',name:"石契傀儡",src:"assets/monsters/stone_golem.gif",icon:"assets/monsters/stone_golem.gif",cp:400},{id:'imp',name:"虚妄幻魔",src:"assets/monsters/shadow_imp.gif",icon:"assets/monsters/shadow_imp.gif",cp:350},{id:'eye',name:"审判魔眼",src:"assets/monsters/flying_eye.gif",icon:"assets/monsters/flying_eye.gif",cp:450}];
 const ITEMS={sword_fire:{id:'sword_fire',name:"炎律神剑",type:'sword',src:"assets/swords/sword_fire_sprite.png",icon:"assets/swords/sword_fire_icon.png",cp:320,price:380,desc:"燃焰律纹，灼破邪道。"},sword_wood:{id:'sword_wood',name:"苍木律刃",type:'sword',src:"assets/swords/sword_wood_sprite.png",icon:"assets/swords/sword_wood_icon.png",cp:240,price:260,desc:"木德归真，稳固圣律。"},sword_gold:{id:'sword_gold',name:"金铭断契",type:'sword',src:"assets/swords/sword_gold_sprite.png",icon:"assets/swords/sword_gold_icon.png",cp:300,price:320,desc:"破誓之刃，暴击加成。"},sword_ice:{id:'sword_ice',name:"冰封誓约",type:'sword',src:"assets/swords/sword_ice_sprite.png",icon:"assets/swords/sword_ice_icon.png",cp:260,price:300,desc:"寒霜律法，冰封妄念。"},sword_light:{id:'sword_light',name:"圣光律典",type:'sword',src:"assets/swords/sword_light_sprite.png",icon:"assets/swords/sword_light_icon.png",cp:380,price:420,desc:"真理之光，超高爆击。"},pet_kunpeng:{id:'pet_kunpeng',name:"圣兽鲲鹏",type:'pet',src:BASE_URL+"images/pets/kunpeng_sprite.gif",icon:BASE_URL+"images/pets/kunpeng_icon.png",cp:2500,price:3000,desc:"振翅九天，律法威仪兼备。"},pet_zhuque:{id:'pet_zhuque',name:"圣兽朱雀",type:'pet',src:BASE_URL+"images/pets/zhuque_sprite.gif",icon:BASE_URL+"images/pets/zhuque_icon.png",cp:2500,price:3000,desc:"炎羽护主，强化律击。"},pet_qinglong:{id:'pet_qinglong',name:"圣兽青龙",type:'pet',src:BASE_URL+"images/pets/qinglong_sprite.gif",icon:BASE_URL+"images/pets/qinglong_icon.png",cp:2500,price:3000,desc:"龙威加持，圣律全面提升。"},pet_whelp:{id:'pet_whelp',name:"幽冥律龙",type:'pet',src:BASE_URL+"images/pets/pet_nether_whelp_sprite.gif",icon:BASE_URL+"images/pets/pet_nether_whelp_icon.png",cp:3000,price:3600,desc:"冥焰缠绕，属性全面提升。"}};
 const REAL_REWARDS=[
   /* ── 作业减免 ── */
@@ -1185,6 +1372,278 @@ const REAL_REWARDS=[
   {id:'r29',name:'课室布置令',type:'consumable',icon:BASE_URL+'images/ui/icon_reward_pixel.png',price:2000,desc:"协助设计一次班级板报或节日装饰"},
   {id:'r30',name:'万能心愿令',type:'consumable',icon:BASE_URL+'images/ui/icon_save_pixel.png',price:5000,desc:"向导师提出一个合理小心愿，导师尽力实现"}
 ];
+
+// ══════════════════════════════
+// TIMER SYSTEM
+// ══════════════════════════════
+const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.49
+
+let timerMode = 'stopwatch'; // 'stopwatch' | 'countdown'
+let timerState = 'idle';     // 'idle' | 'running' | 'paused' | 'done'
+let timerInterval = null;
+let swElapsed = 0;           // ms elapsed for stopwatch
+let swLapStart = 0;          // ms at last lap mark
+let swLaps = [];             // [{lap, split, total}]
+let cdTotal = 0;             // total ms for countdown
+let cdRemaining = 0;         // ms remaining
+let timerLastTick = 0;       // performance.now() at last tick
+let alarmTimeout = null;
+
+function openTimerModal(){
+    playSfx(sfxClick);
+    document.getElementById('timer-modal').style.display = 'flex';
+    renderTimerControls();
+    renderTimerDisplay();
+}
+function closeTimerModal(){
+    document.getElementById('timer-modal').style.display = 'none';
+    stopAlarm();
+}
+
+function switchTimerMode(mode){
+    if(timerState === 'running') pauseTimer();
+    resetTimer();
+    timerMode = mode;
+    document.getElementById('timerTabSW').classList.toggle('active', mode==='stopwatch');
+    document.getElementById('timerTabCD').classList.toggle('active', mode==='countdown');
+    document.getElementById('sw-laps-wrap').style.display  = mode==='stopwatch' ? 'block' : 'none';
+    document.getElementById('cd-setup-wrap').style.display = mode==='countdown' ? 'block' : 'none';
+    renderTimerControls();
+    renderTimerDisplay();
+}
+
+function renderTimerControls(){
+    const wrap = document.getElementById('timer-controls');
+    wrap.innerHTML = '';
+
+    if(timerMode === 'stopwatch'){
+        if(timerState === 'idle' || timerState === 'done'){
+            wrap.innerHTML = `
+                <button class="sacred-btn success-tier" onclick="startTimer()">▶ 开始</button>
+                <button class="sacred-btn sm" onclick="resetTimer()" ${timerState==='idle'?'disabled':''}>↺ 重置</button>`;
+        } else if(timerState === 'running'){
+            wrap.innerHTML = `
+                <button class="sacred-btn gold-tier" onclick="pauseTimer()">⏸ 暂停</button>
+                <button class="sacred-btn teal-tier" onclick="lapTimer()">◈ 计次</button>`;
+        } else if(timerState === 'paused'){
+            wrap.innerHTML = `
+                <button class="sacred-btn success-tier" onclick="resumeTimer()">▶ 继续</button>
+                <button class="sacred-btn teal-tier" onclick="lapTimer()">◈ 计次</button>
+                <button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;
+        }
+    } else {
+        // countdown
+        if(timerState === 'idle'){
+            wrap.innerHTML = `<button class="sacred-btn success-tier" onclick="startCountdown()">▶ 开始</button>`;
+        } else if(timerState === 'running'){
+            wrap.innerHTML = `<button class="sacred-btn gold-tier" onclick="pauseTimer()">⏸ 暂停</button>
+                              <button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;
+        } else if(timerState === 'paused'){
+            wrap.innerHTML = `<button class="sacred-btn success-tier" onclick="resumeTimer()">▶ 继续</button>
+                              <button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;
+        } else if(timerState === 'done'){
+            wrap.innerHTML = `<button class="sacred-btn gold-tier" onclick="stopAlarm();resetTimer()">✕ 关闭警报</button>`;
+        }
+    }
+
+    // toggle inputs visibility for countdown
+    const cdRow = document.getElementById('cd-setup-wrap');
+    if(timerMode === 'countdown'){
+        cdRow.style.display = (timerState==='idle') ? 'block' : 'none';
+    }
+}
+
+function renderTimerDisplay(){
+    const digits = document.getElementById('timerDigits');
+    const ms     = document.getElementById('timerMs');
+    const label  = document.getElementById('timerLabel');
+    const ring   = document.getElementById('timerRing');
+
+    if(timerMode === 'stopwatch'){
+        const t = swElapsed;
+        digits.textContent = formatTimerHMS(t);
+        ms.textContent = '.' + String(Math.floor((t % 1000)/10)).padStart(2,'0');
+        label.textContent = timerState==='running' ? '计时中' : timerState==='paused' ? '已暂停' : '待命';
+        digits.className = 'timer-digits' + (timerState==='running' ? ' running' : '');
+        // Ring: spin indefinitely while running; show elapsed rings per minute
+        const fraction = timerState==='idle' ? 0 : ((t/1000) % 60) / 60;
+        setRing(ring, fraction, 'normal');
+        ms.style.display = 'block';
+    } else {
+        const t = cdRemaining;
+        const total = cdTotal || 1;
+        const fraction = t / total;
+        digits.textContent = formatTimerHMS(t);
+        ms.textContent = '.' + String(Math.floor((t % 1000)/10)).padStart(2,'0');
+
+        const pct = t / total;
+        if(timerState === 'done'){
+            label.textContent = '⚠ 时间到！';
+            digits.className = 'timer-digits danger-color';
+            setRing(ring, 0, 'danger');
+            ms.style.display = 'none';
+        } else if(pct <= 0.1 && timerState !== 'idle'){
+            label.textContent = '即将结束！';
+            digits.className = 'timer-digits danger-color';
+            setRing(ring, fraction, 'danger');
+            ms.style.display = 'block';
+        } else if(pct <= 0.25 && timerState !== 'idle'){
+            label.textContent = '注意时间';
+            digits.className = 'timer-digits warning-color';
+            setRing(ring, fraction, 'warning');
+            ms.style.display = 'block';
+        } else {
+            label.textContent = timerState==='running' ? '倒计中' : timerState==='paused' ? '已暂停' : '待命';
+            digits.className = 'timer-digits' + (timerState==='running' ? ' running' : '');
+            setRing(ring, fraction, 'normal');
+            ms.style.display = timerState==='idle' ? 'none' : 'block';
+        }
+    }
+}
+
+function setRing(ring, fraction, state){
+    // fraction 0–1: 1 = full circle
+    const offset = CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, fraction)));
+    ring.style.strokeDashoffset = offset;
+    ring.className = 'timer-ring-prog' + (state==='warning' ? ' warning' : state==='danger' ? ' danger' : '');
+}
+
+function formatTimerHMS(ms){
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if(h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function timerTick(){
+    const now = performance.now();
+    const delta = now - timerLastTick;
+    timerLastTick = now;
+
+    if(timerMode === 'stopwatch'){
+        swElapsed += delta;
+    } else {
+        cdRemaining = Math.max(0, cdRemaining - delta);
+        if(cdRemaining <= 0){
+            cdRemaining = 0;
+            timerState = 'done';
+            clearInterval(timerInterval); timerInterval = null;
+            triggerAlarm();
+            renderTimerControls();
+        }
+    }
+    renderTimerDisplay();
+}
+
+function startTimer(){
+    if(timerMode === 'stopwatch'){
+        swElapsed = 0; swLapStart = 0; swLaps = [];
+        renderLaps();
+        document.getElementById('sw-laps-wrap').style.display = 'none';
+        timerState = 'running';
+        timerLastTick = performance.now();
+        timerInterval = setInterval(timerTick, 33);
+    }
+    renderTimerControls();
+    playSfx(sfxClick);
+}
+
+function startCountdown(){
+    const h = parseInt(document.getElementById('cd-h').value)||0;
+    const m = parseInt(document.getElementById('cd-m').value)||0;
+    const s = parseInt(document.getElementById('cd-s').value)||0;
+    const total = (h*3600 + m*60 + s) * 1000;
+    if(total <= 0){ showNotify('请先设定倒计时时间！'); return; }
+    cdTotal = total; cdRemaining = total;
+    timerState = 'running';
+    timerLastTick = performance.now();
+    timerInterval = setInterval(timerTick, 33);
+    renderTimerControls();
+    renderTimerDisplay();
+    playSfx(sfxClick);
+}
+
+function pauseTimer(){
+    if(timerState !== 'running') return;
+    clearInterval(timerInterval); timerInterval = null;
+    timerState = 'paused';
+    renderTimerControls();
+    renderTimerDisplay();
+    playSfx(sfxClick);
+}
+
+function resumeTimer(){
+    if(timerState !== 'paused') return;
+    timerState = 'running';
+    timerLastTick = performance.now();
+    timerInterval = setInterval(timerTick, 33);
+    renderTimerControls();
+    playSfx(sfxClick);
+}
+
+function resetTimer(){
+    clearInterval(timerInterval); timerInterval = null;
+    stopAlarm();
+    swElapsed = 0; swLapStart = 0; swLaps = [];
+    cdRemaining = cdTotal > 0 ? cdTotal : 0;
+    timerState = 'idle';
+    renderLaps();
+    if(timerMode==='stopwatch') document.getElementById('sw-laps-wrap').style.display = 'none';
+    // Restore countdown inputs
+    if(timerMode==='countdown') document.getElementById('cd-setup-wrap').style.display = 'block';
+    renderTimerControls();
+    renderTimerDisplay();
+}
+
+function lapTimer(){
+    if(timerState !== 'running' && timerState !== 'paused') return;
+    const lapTime = swElapsed - swLapStart;
+    swLaps.unshift({ num: swLaps.length + 1, split: lapTime, total: swElapsed });
+    swLapStart = swElapsed;
+    renderLaps();
+    document.getElementById('sw-laps-wrap').style.display = 'block';
+    playSfx(sfxClick);
+}
+
+function renderLaps(){
+    const container = document.getElementById('sw-laps');
+    container.innerHTML = '';
+    swLaps.forEach(l => {
+        const row = document.createElement('div');
+        row.className = 'timer-lap-row';
+        row.innerHTML = `<span class="timer-lap-num">计次 ${l.num}</span>
+            <span class="timer-lap-split">+${formatTimerHMS(l.split)}.${String(Math.floor((l.split%1000)/10)).padStart(2,'0')}</span>
+            <span class="timer-lap-time">${formatTimerHMS(l.total)}</span>`;
+        container.appendChild(row);
+    });
+}
+
+function setCDPreset(min, sec){
+    document.getElementById('cd-h').value = 0;
+    document.getElementById('cd-m').value = min;
+    document.getElementById('cd-s').value = sec;
+}
+
+// Alarm: visual + audio
+let alarmAudioInterval = null;
+function triggerAlarm(){
+    const overlay = document.getElementById('timer-alarm-overlay');
+    overlay.style.display = 'block';
+    // Play sfxLevelUp repeatedly as alarm
+    if(alarmAudioInterval) clearInterval(alarmAudioInterval);
+    playSfx(sfxLevelUp);
+    alarmAudioInterval = setInterval(()=>playSfx(sfxLevelUp), 1200);
+    // Auto-stop alarm after 10s
+    alarmTimeout = setTimeout(stopAlarm, 10000);
+}
+function stopAlarm(){
+    const overlay = document.getElementById('timer-alarm-overlay');
+    overlay.style.display = 'none';
+    if(alarmAudioInterval){ clearInterval(alarmAudioInterval); alarmAudioInterval = null; }
+    if(alarmTimeout){ clearTimeout(alarmTimeout); alarmTimeout = null; }
+}
 
 function showCustomModal({title,msg,hasInput=false,isPassword=false,showCancel=false,onConfirm}){
     const modal=document.getElementById('system-modal');
