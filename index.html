@@ -272,6 +272,71 @@
             animation:dotFade 0.5s ease forwards;
         }
 
+        /* ── REWARD/PENALTY PANEL ── */
+        #rp-panel { position:fixed; top:0; right:0; bottom:0; z-index:3500; width:340px; background:rgba(6,8,22,0.98); border-left:1px solid var(--gold-dim); display:flex; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,0.8); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); transform:translateX(110%); backdrop-filter:blur(12px); pointer-events:none; }
+        #rp-panel.open { transform:translateX(0); pointer-events:all; }
+        .rp-header { padding:18px 18px 14px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,rgba(30,22,8,0.5) 0%,transparent 100%); flex-shrink:0; }
+        .rp-title { font-family:'Cinzel Decorative',serif; font-size:1rem; color:var(--gold); letter-spacing:0.08em; display:flex; align-items:center; justify-content:space-between; }
+        .rp-close { background:none; border:1px solid var(--border); color:var(--text-dim); font-size:1rem; cursor:pointer; padding:3px 8px; transition:all 0.2s; }
+        .rp-close:hover { border-color:var(--crimson); color:#e08090; }
+        .rp-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; }
+        .rp-tab { flex:1; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.1em; padding:10px 8px; background:rgba(8,12,28,0.8); color:var(--text-dim); cursor:pointer; border:none; border-right:1px solid var(--border); transition:all 0.2s; text-align:center; }
+        .rp-tab:last-child { border-right:none; }
+        .rp-tab.active { background:rgba(30,22,8,0.9); color:var(--gold); border-bottom:2px solid var(--gold); }
+        .rp-body { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+
+        /* ── PRESET CARDS ── */
+        .preset-card { background:rgba(8,12,28,0.8); border:1px solid var(--border); border-left:3px solid; padding:10px 12px; display:flex; align-items:center; gap:8px; transition:all 0.2s; position:relative; }
+        .preset-card:hover { background:rgba(16,22,48,0.9); }
+        .preset-card.type-reward { border-left-color:#40c090; }
+        .preset-card.type-penalty { border-left-color:var(--crimson-glow); }
+        .preset-card.type-coins-reward { border-left-color:var(--gold); }
+        .preset-card.type-coins-penalty { border-left-color:#c06020; }
+        .preset-card.type-mixed { border-left-color:var(--state-runic); }
+        .preset-icon { font-size:1.3rem; flex-shrink:0; width:28px; text-align:center; }
+        .preset-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+        .preset-name { font-family:'Cinzel',serif; font-size:0.82rem; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .preset-vals { display:flex; gap:6px; flex-wrap:wrap; }
+        .preset-val { font-family:'Cinzel Decorative',serif; font-size:0.7rem; padding:1px 6px; border:1px solid; }
+        .preset-val.exp-pos { color:#60d090; border-color:#306040; background:rgba(8,24,16,0.6); }
+        .preset-val.exp-neg { color:#e08090; border-color:var(--crimson); background:rgba(24,6,10,0.6); }
+        .preset-val.coin-pos { color:var(--gold); border-color:var(--gold-dim); background:rgba(24,16,4,0.6); }
+        .preset-val.coin-neg { color:#e0a060; border-color:#804020; background:rgba(24,12,4,0.6); }
+        .preset-actions { display:flex; gap:4px; flex-shrink:0; }
+        .preset-apply-btn { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.06em; padding:4px 8px; border:1px solid var(--border-glow); background:rgba(10,14,30,0.9); color:var(--text-secondary); cursor:pointer; transition:all 0.18s; clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); white-space:nowrap; }
+        .preset-apply-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+        .preset-edit-btn { background:none; border:1px solid transparent; color:var(--text-dim); font-size:0.8rem; cursor:pointer; padding:3px 5px; transition:all 0.18s; }
+        .preset-edit-btn:hover { color:var(--gold); border-color:var(--gold-dim); }
+        .preset-del-btn { background:none; border:1px solid transparent; color:var(--text-dim); font-size:0.8rem; cursor:pointer; padding:3px 5px; transition:all 0.18s; }
+        .preset-del-btn:hover { color:#e08090; border-color:var(--crimson); }
+
+        /* ── BULK PANEL ── */
+        .bulk-section { background:rgba(8,12,28,0.7); border:1px solid var(--border); border-top:2px solid var(--gold-dim); padding:12px; display:flex; flex-direction:column; gap:8px; }
+        .bulk-section-title { font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.15em; color:var(--text-dim); display:flex; align-items:center; gap:6px; }
+        .target-selector { display:flex; gap:4px; flex-wrap:wrap; }
+        .target-chip { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.06em; padding:4px 10px; border:1px solid var(--border); background:rgba(8,12,28,0.8); color:var(--text-dim); cursor:pointer; transition:all 0.18s; clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%); }
+        .target-chip.selected { border-color:var(--gold-dim); color:var(--gold); background:rgba(30,22,8,0.7); }
+        .target-chip:hover:not(.selected) { border-color:var(--border-glow); color:var(--silver); }
+
+        /* ── PRESET EDITOR MODAL ── */
+        #preset-edit-modal .modal-panel { width:360px; display:flex; flex-direction:column; gap:14px; }
+        .pe-field { display:flex; flex-direction:column; gap:5px; }
+        .pe-label { font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.12em; color:var(--text-dim); }
+        .pe-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .pe-type-btn { font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.06em; padding:7px 8px; border:1px solid var(--border); background:rgba(8,12,28,0.8); color:var(--text-secondary); cursor:pointer; transition:all 0.18s; text-align:center; }
+        .pe-type-btn.selected { border-color:var(--gold-dim); color:var(--gold); background:rgba(30,22,8,0.7); }
+        .pe-row { display:flex; gap:8px; align-items:center; }
+        .pe-input-wrap { display:flex; flex-direction:column; gap:3px; flex:1; }
+        .pe-sublabel { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.1em; color:var(--text-dim); }
+
+        /* ── CONFIRM APPLY MODAL ── */
+        #apply-confirm-modal .modal-panel { width:420px; display:flex; flex-direction:column; gap:12px; }
+        .apply-preview { background:rgba(4,6,18,0.8); border:1px solid var(--border-glow); padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
+        .apply-preview-row { display:flex; justify-content:space-between; align-items:center; font-family:'Cinzel',serif; font-size:0.72rem; }
+        .apply-students-list { max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; }
+        .apply-student-chip { display:flex; align-items:center; gap:6px; padding:4px 8px; background:rgba(8,12,28,0.6); border:1px solid var(--border); font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text-secondary); }
+        .apply-student-chip img { width:22px; height:22px; image-rendering:pixelated; }
+
         /* ── MODALS ── */
         .modal-overlay { display:none; position:fixed; inset:0; background:rgba(2,4,14,0.9); z-index:1000; justify-content:center; align-items:center; flex-direction:column; backdrop-filter:blur(4px); }
         #system-modal,#edit-student-modal,#batch-modal,#leaderboard-modal,#shop-modal,#group-modal,#group-edit-modal { z-index:2000; }
@@ -477,6 +542,7 @@
                 </div>
                 <button class="sacred-btn success-tier" onclick="addStudent()">收录</button>
                 <button class="sacred-btn teal-tier" onclick="openBatchModal()">批量</button>
+                <button class="sacred-btn gold-tier" onclick="openRPPanel()">⚖ 赏罚台</button>
                 <button class="sacred-btn" onclick="saveData()">封印</button>
                 <button class="sacred-btn crimson-tier" onclick="resetAll()">湮灭</button>
             </div>
@@ -1413,7 +1479,7 @@ function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-c
 function openEditModal(id){const s=students.find(st=>st.id===id);if(!s)return;document.getElementById('edit-id').value=id;document.getElementById('edit-name').value=s.name;const gr=document.getElementsByName('editGender');for(let r of gr)r.checked=(r.value===(s.gender||'male'));document.getElementById('edit-student-modal').style.display='flex';}
 function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子卷册已修订！");}}
 function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
-function renderGrid(){const grid=document.getElementById('studentGrid');grid.innerHTML='';students.forEach((s,index)=>{const info=getStudentInfo(s),state=info.state;let companions='';const ep=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const es=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);ep.slice(0,3).forEach((pid,i)=>{const d=getItemData(pid);if(d)companions+=`<img src="${d.src||d.icon}" class="companion-img companion-pet-${i}" onerror="this.style.display='none'">`;});es.slice(0,3).forEach((sid,i)=>{const d=getItemData(sid);if(d)companions+=`<img src="${d.src}" class="companion-img companion-sword-${i}" onerror="this.style.display='none'">`;});const card=document.createElement('div');card.className=`student-card ${state.cardClass}`;card.id=`card-${index}`;card.innerHTML=`<button class="card-edit-btn teacher-only" onclick="openEditModal(${s.id})">⚙</button><div class="card-header"><div class="student-name-wrap"><div class="student-name">${s.name}</div><span class="state-badge ${state.cssClass}"><span class="state-dot"></span>${state.icon} ${state.name}</span></div><div class="level-badge">Lv.${info.level}</div></div><div class="state-desc-row">${state.flavor}</div><div class="avatar-area ${state.bgClass}"><img src="${info.avatar}" class="avatar-img" onerror="this.src='${PLAYER_ARTS[0]}'"> ${companions}</div><div class="stat-section"><div class="stat-row"><span class="stat-label">律典</span><div class="bar-container"><div class="bar-fill ${state.barClass}" style="width:${info.pct}%"></div></div><span class="stat-value">${info.expText}</span></div><div class="stat-row"><span class="stat-label">灵石</span><div class="coin-display"><span>◈</span>${s.coins||0}</div></div></div><div class="common-actions"><button class="sacred-btn teal-tier sm" onclick="openInventory(${index})">⬡ 行囊</button></div><div class="card-actions teacher-only"><button class="sacred-btn sm" onclick="updateExp(${index},30)">+30 表现</button><button class="sacred-btn gold-tier sm" onclick="updateExp(${index},100)">+100 优秀</button><button class="sacred-btn crimson-tier sm" onclick="updateExp(${index},-30)">-30 律罚</button><button class="sacred-btn success-tier sm" onclick="updateExp(${index},300)">+300 奇遇</button></div>`;grid.appendChild(card);});updateTeacherUI();}
+function renderGrid(){const grid=document.getElementById('studentGrid');grid.innerHTML='';students.forEach((s,index)=>{const info=getStudentInfo(s),state=info.state;let companions='';const ep=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const es=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);ep.slice(0,3).forEach((pid,i)=>{const d=getItemData(pid);if(d)companions+=`<img src="${d.src||d.icon}" class="companion-img companion-pet-${i}" onerror="this.style.display='none'">`;});es.slice(0,3).forEach((sid,i)=>{const d=getItemData(sid);if(d)companions+=`<img src="${d.src}" class="companion-img companion-sword-${i}" onerror="this.style.display='none'">`;});const card=document.createElement('div');card.className=`student-card ${state.cardClass}`;card.id=`card-${index}`;card.innerHTML=`<button class="card-edit-btn teacher-only" onclick="openEditModal(${s.id})">⚙</button><div class="card-header"><div class="student-name-wrap"><div class="student-name">${s.name}</div><span class="state-badge ${state.cssClass}"><span class="state-dot"></span>${state.icon} ${state.name}</span></div><div class="level-badge">Lv.${info.level}</div></div><div class="state-desc-row">${state.flavor}</div><div class="avatar-area ${state.bgClass}"><img src="${info.avatar}" class="avatar-img" onerror="this.src='${PLAYER_ARTS[0]}'"> ${companions}</div><div class="stat-section"><div class="stat-row"><span class="stat-label">律典</span><div class="bar-container"><div class="bar-fill ${state.barClass}" style="width:${info.pct}%"></div></div><span class="stat-value">${info.expText}</span></div><div class="stat-row"><span class="stat-label">灵石</span><div class="coin-display"><span>◈</span>${s.coins||0}</div></div></div><div class="common-actions"><button class="sacred-btn teal-tier sm" onclick="openInventory(${index})">⬡ 行囊</button></div>`;card.appendChild(renderCardActions(s,index));grid.appendChild(card);});updateTeacherUI();}
 
 // ── BATTLE ──
 function openBattleModal(){
@@ -1455,6 +1521,613 @@ function showLevelUpEffect(){const o=document.getElementById('level-up-overlay')
 function saveData(){localStorage.setItem('wuxia_class_data',JSON.stringify(students));showNotify("真理编年史已封印保存");}
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();showNotify("圣律归虚，真理湮灭...");}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     ── 赏罚台侧边面板 ──
+     ══════════════════════════════════════════════════════ -->
+<div id="rp-panel">
+    <div class="rp-header">
+        <div class="rp-title">
+            <span>⚖ 圣律赏罚台</span>
+            <button class="rp-close" onclick="closeRPPanel()">✕</button>
+        </div>
+        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.72rem;color:var(--text-dim);margin-top:5px;">导师专属 · 赏善罚恶，圣律不欺</div>
+    </div>
+    <div class="rp-tabs">
+        <button class="rp-tab active" id="rpTabPresets" onclick="switchRPTab('presets')">◈ 快速赏罚</button>
+        <button class="rp-tab" id="rpTabBulk" onclick="switchRPTab('bulk')">⬡ 全体赏罚</button>
+        <button class="rp-tab" id="rpTabManage" onclick="switchRPTab('manage')">✦ 管理预设</button>
+    </div>
+    <div class="rp-body" id="rp-body"></div>
+</div>
+<!-- Overlay to close RP panel -->
+<div id="rp-overlay" onclick="closeRPPanel()" style="display:none;position:fixed;inset:0;z-index:3400;background:rgba(0,0,0,0.3);backdrop-filter:blur(2px);"></div>
+
+<!-- ── PRESET EDIT MODAL ── -->
+<div id="preset-edit-modal" class="modal-overlay" style="z-index:4000;">
+    <div class="modal-panel" style="width:360px;display:flex;flex-direction:column;gap:14px;">
+        <div class="modal-title" id="pe-modal-title">新增赏罚预设</div>
+        <input type="hidden" id="pe-id">
+        <div class="pe-field">
+            <div class="pe-label">预设名称</div>
+            <input type="text" id="pe-name" placeholder="如：课堂表现优秀" style="width:100%;">
+        </div>
+        <div class="pe-field">
+            <div class="pe-label">图示 Emoji</div>
+            <input type="text" id="pe-icon" placeholder="✦" style="width:70px;text-align:center;font-size:1.2rem;">
+        </div>
+        <div class="pe-field">
+            <div class="pe-label">律典变动（正数奖励 / 负数惩罚）</div>
+            <div class="pe-row">
+                <div class="pe-input-wrap">
+                    <div class="pe-sublabel">律典 EXP</div>
+                    <input type="number" id="pe-exp" value="0" style="width:100%;text-align:center;">
+                </div>
+                <div class="pe-input-wrap">
+                    <div class="pe-sublabel">灵石 Coins</div>
+                    <input type="number" id="pe-coins" value="0" style="width:100%;text-align:center;">
+                </div>
+            </div>
+        </div>
+        <div class="pe-field">
+            <div class="pe-label">快速预设金额</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span onclick="setPresetVals(30,0)" style="cursor:pointer;padding:3px 8px;border:1px solid #306040;color:#60d090;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(8,20,12,0.6);">+30 EXP</span>
+                <span onclick="setPresetVals(100,0)" style="cursor:pointer;padding:3px 8px;border:1px solid #406020;color:#a0d050;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(12,20,6,0.6);">+100 EXP</span>
+                <span onclick="setPresetVals(300,0)" style="cursor:pointer;padding:3px 8px;border:1px solid #606010;color:#d0c030;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(20,18,4,0.6);">+300 EXP</span>
+                <span onclick="setPresetVals(-30,0)" style="cursor:pointer;padding:3px 8px;border:1px solid var(--crimson);color:#e08090;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(20,6,8,0.6);">-30 EXP</span>
+                <span onclick="setPresetVals(0,50)" style="cursor:pointer;padding:3px 8px;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(20,14,4,0.6);">+50 石</span>
+                <span onclick="setPresetVals(0,-50)" style="cursor:pointer;padding:3px 8px;border:1px solid #804020;color:#d08040;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(20,10,4,0.6);">-50 石</span>
+                <span onclick="setPresetVals(100,50)" style="cursor:pointer;padding:3px 8px;border:1px solid #7060c8;color:#a080e8;font-family:'Cinzel',serif;font-size:0.65rem;background:rgba(12,8,24,0.6);">双奖</span>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <button class="sacred-btn" onclick="document.getElementById('preset-edit-modal').style.display='none'">取消</button>
+            <button class="sacred-btn success-tier" onclick="savePreset()">确立预设</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── APPLY CONFIRM MODAL ── -->
+<div id="apply-confirm-modal" class="modal-overlay" style="z-index:4000;">
+    <div class="modal-panel" style="width:440px;display:flex;flex-direction:column;gap:12px;">
+        <div class="modal-title" id="ac-title">确认赏罚</div>
+        <div class="apply-preview" id="ac-preview"></div>
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);">◈ 受影响弟子</div>
+        <div class="apply-students-list" id="ac-students-list"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;gap:10px;">
+            <button class="sacred-btn" onclick="document.getElementById('apply-confirm-modal').style.display='none'">取消</button>
+            <button class="sacred-btn success-tier" style="flex:1;max-width:200px;" id="ac-confirm-btn">⚖ 执行赏罚</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// ── 赏罚台系统 (Reward / Penalty System) ──
+// 功能：
+//   1. 自定义赏罚预设（名称、图示、EXP±、灵石±）
+//   2. 个人快速赏罚：点击预设，选择目标弟子后执行
+//   3. 全体赏罚：一键对所有/指定小队/多选弟子应用预设
+//   4. 管理预设：增删改预设列表
+// ══════════════════════════════════════════════════════════════
+
+// ── Default presets ──
+const DEFAULT_PRESETS = [
+    { id:'p_default_1', name:'课堂表现',  icon:'✦', exp:30,   coins:0,   note:'' },
+    { id:'p_default_2', name:'优秀表现',  icon:'◈', exp:100,  coins:50,  note:'' },
+    { id:'p_default_3', name:'奇遇奖励',  icon:'⚝', exp:300,  coins:100, note:'' },
+    { id:'p_default_4', name:'违反律法',  icon:'❖', exp:-30,  coins:0,   note:'' },
+    { id:'p_default_5', name:'严重违纪',  icon:'⬡', exp:-100, coins:-50, note:'' },
+    { id:'p_default_6', name:'灵石奖励',  icon:'◌', exp:0,    coins:100, note:'' },
+    { id:'p_default_7', name:'双重奖励',  icon:'✦', exp:200,  coins:100, note:'' },
+    { id:'p_default_8', name:'迟交作业',  icon:'☽', exp:-50,  coins:0,   note:'' },
+];
+
+let rpPresets = JSON.parse(localStorage.getItem('wuxia_rp_presets') || 'null') || [...DEFAULT_PRESETS];
+let rpTab = 'presets';
+let rpPanelOpen = false;
+
+// Pending apply state
+let pendingPreset = null;
+let pendingTargetIds = [];
+
+function saveRPPresets() { localStorage.setItem('wuxia_rp_presets', JSON.stringify(rpPresets)); }
+
+// ── Panel open/close ──
+function openRPPanel() {
+    if (!isTeacherMode) { showNotify('请先以导师身份登入！'); return; }
+    rpPanelOpen = true;
+    const panel = document.getElementById('rp-panel');
+    const overlay = document.getElementById('rp-overlay');
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => panel.classList.add('open'));
+    renderRPBody();
+    playSfx(sfxClick);
+}
+function closeRPPanel() {
+    rpPanelOpen = false;
+    const panel = document.getElementById('rp-panel');
+    const overlay = document.getElementById('rp-overlay');
+    panel.classList.remove('open');
+    overlay.style.display = 'none';
+}
+function switchRPTab(tab) {
+    rpTab = tab;
+    ['presets','bulk','manage'].forEach(t => {
+        document.getElementById('rpTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+    });
+    renderRPBody();
+    playSfx(sfxClick);
+}
+
+// ── Main renderer ──
+function renderRPBody() {
+    const body = document.getElementById('rp-body');
+    body.innerHTML = '';
+    if (rpTab === 'presets') renderPresetsTab(body);
+    else if (rpTab === 'bulk') renderBulkTab(body);
+    else renderManageTab(body);
+}
+
+// ── PRESETS TAB: quick apply to individual student ──
+function renderPresetsTab(body) {
+    // Student selector
+    const sel = document.createElement('div');
+    sel.innerHTML = `
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);margin-bottom:6px;">◈ 选择对象弟子</div>
+        <select id="rp-student-sel" style="width:100%;background:rgba(8,10,22,0.85);border:1px solid var(--border-glow);color:var(--text-primary);padding:8px 10px;font-family:'Noto Serif SC',serif;">
+            ${students.map((s,i) => `<option value="${i}">${s.name}（Lv.${calculateLevel(s.exp)} · ${s.coins||0} 石）</option>`).join('')}
+        </select>`;
+    body.appendChild(sel);
+
+    const divider = document.createElement('div');
+    divider.style.cssText = 'height:1px;background:linear-gradient(90deg,transparent,var(--border-glow),transparent);margin:4px 0;opacity:0.5;';
+    body.appendChild(divider);
+
+    const label = document.createElement('div');
+    label.style.cssText = 'font-family:\'Cinzel\',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);margin-bottom:6px;';
+    label.textContent = '✦ 点击预设立即执行';
+    body.appendChild(label);
+
+    if (!rpPresets.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'IM Fell English\',serif;font-style:italic;padding:20px;border:1px dashed var(--border);';
+        empty.textContent = '暂无预设，请前往「管理预设」新增';
+        body.appendChild(empty);
+        return;
+    }
+
+    rpPresets.forEach(preset => {
+        const card = buildPresetCard(preset, (p) => {
+            const si = parseInt(document.getElementById('rp-student-sel').value);
+            if (isNaN(si) || !students[si]) { showNotify('请先选择弟子！'); return; }
+            applyPresetToStudents(p, [students[si].id], false);
+        });
+        body.appendChild(card);
+    });
+}
+
+// ── BULK TAB: apply to all / group / multi-select ──
+function renderBulkTab(body) {
+    // Target selector
+    const targetSec = document.createElement('div');
+    targetSec.className = 'bulk-section';
+    targetSec.innerHTML = `
+        <div class="bulk-section-title">◈ 赏罚对象</div>
+        <div class="target-selector" id="bulk-target-row">
+            <span class="target-chip selected" data-target="all" onclick="toggleBulkTarget(this)">◈ 全体弟子</span>
+            ${groups.map(g => {
+                const cnt = g.memberIds.filter(id => students.find(s => s.id === id)).length;
+                if (!cnt) return '';
+                return `<span class="target-chip" data-target="group_${g.id}" onclick="toggleBulkTarget(this)">${g.emblem||'⬡'} ${g.name}(${cnt})</span>`;
+            }).join('')}
+        </div>
+        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.7rem;color:var(--text-dim);" id="bulk-count-label">全体 ${students.length} 位弟子</div>`;
+    body.appendChild(targetSec);
+
+    const divider = document.createElement('div');
+    divider.style.cssText = 'height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);opacity:0.4;';
+    body.appendChild(divider);
+
+    const label = document.createElement('div');
+    label.style.cssText = 'font-family:\'Cinzel\',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);margin-bottom:6px;';
+    label.textContent = '✦ 选择预设执行全体赏罚';
+    body.appendChild(label);
+
+    if (!rpPresets.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'IM Fell English\',serif;font-style:italic;padding:20px;border:1px dashed var(--border);';
+        empty.textContent = '暂无预设，请前往「管理预设」新增';
+        body.appendChild(empty);
+        return;
+    }
+
+    rpPresets.forEach(preset => {
+        const card = buildPresetCard(preset, (p) => {
+            const targets = getBulkTargetIds();
+            if (!targets.length) { showNotify('未选择任何弟子！'); return; }
+            applyPresetToStudents(p, targets, true);
+        });
+        body.appendChild(card);
+    });
+
+    // Custom quick input
+    const quickSec = document.createElement('div');
+    quickSec.className = 'bulk-section';
+    quickSec.style.marginTop = '8px';
+    quickSec.innerHTML = `
+        <div class="bulk-section-title">⬡ 快速自定义执行</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <input type="number" id="bulk-quick-exp" placeholder="律典±" style="width:80px;text-align:center;padding:6px;" value="0">
+            <input type="number" id="bulk-quick-coins" placeholder="灵石±" style="width:80px;text-align:center;padding:6px;" value="0">
+            <button class="sacred-btn success-tier sm" onclick="executeBulkQuick()">执行</button>
+        </div>
+        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.68rem;color:var(--text-dim);">正数=奖励，负数=惩罚，0=不变</div>`;
+    body.appendChild(quickSec);
+}
+
+function toggleBulkTarget(el) {
+    const isAll = el.dataset.target === 'all';
+    const row = document.getElementById('bulk-target-row');
+    if (!row) return;
+    const chips = row.querySelectorAll('.target-chip');
+
+    if (isAll) {
+        chips.forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    } else {
+        const allChip = row.querySelector('[data-target="all"]');
+        if (allChip) allChip.classList.remove('selected');
+        el.classList.toggle('selected');
+        // If none selected, re-select all
+        if (!row.querySelector('.target-chip.selected')) el.classList.add('selected');
+    }
+    updateBulkCountLabel();
+}
+
+function getBulkTargetIds() {
+    const row = document.getElementById('bulk-target-row');
+    if (!row) return students.map(s => s.id);
+    const chips = row.querySelectorAll('.target-chip.selected');
+    if (!chips.length) return students.map(s => s.id);
+    let ids = new Set();
+    chips.forEach(chip => {
+        const t = chip.dataset.target;
+        if (t === 'all') {
+            students.forEach(s => ids.add(s.id));
+        } else if (t.startsWith('group_')) {
+            const gid = t.replace('group_', '');
+            const g = groups.find(x => x.id === gid);
+            if (g) g.memberIds.forEach(id => { if (students.find(s => s.id === id)) ids.add(id); });
+        }
+    });
+    return [...ids];
+}
+
+function updateBulkCountLabel() {
+    const el = document.getElementById('bulk-count-label');
+    if (!el) return;
+    const ids = getBulkTargetIds();
+    el.textContent = `已选 ${ids.length} 位弟子`;
+}
+
+function executeBulkQuick() {
+    const exp = parseInt(document.getElementById('bulk-quick-exp').value) || 0;
+    const coins = parseInt(document.getElementById('bulk-quick-coins').value) || 0;
+    if (exp === 0 && coins === 0) { showNotify('请输入非零数值！'); return; }
+    const quickPreset = { id: '_quick', name: '快速执行', icon: exp >= 0 && coins >= 0 ? '✦' : '❖', exp, coins };
+    const targets = getBulkTargetIds();
+    if (!targets.length) { showNotify('未选择任何弟子！'); return; }
+    applyPresetToStudents(quickPreset, targets, true);
+}
+
+// ── MANAGE TAB: add / edit / delete presets ──
+function renderManageTab(body) {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'sacred-btn success-tier';
+    addBtn.style.width = '100%';
+    addBtn.innerHTML = '✦ 新增赏罚预设';
+    addBtn.onclick = () => openPresetEditor(null);
+    body.appendChild(addBtn);
+
+    if (!rpPresets.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'IM Fell English\',serif;font-style:italic;padding:20px;border:1px dashed var(--border);margin-top:8px;';
+        empty.textContent = '暂无预设，点击上方新增';
+        body.appendChild(empty);
+    } else {
+        const label = document.createElement('div');
+        label.style.cssText = 'font-family:\'Cinzel\',serif;font-size:0.68rem;letter-spacing:0.12em;color:var(--text-dim);margin:8px 0 4px;';
+        label.textContent = `共 ${rpPresets.length} 个预设 · 点击编辑 / ✕ 删除`;
+        body.appendChild(label);
+
+        rpPresets.forEach(preset => {
+            const card = buildPresetCard(preset, null, true);
+            body.appendChild(card);
+        });
+    }
+
+    // Reset to defaults button
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'sacred-btn crimson-tier sm';
+    resetBtn.style.marginTop = '10px';
+    resetBtn.innerHTML = '↺ 恢复默认预设';
+    resetBtn.onclick = () => {
+        showCustomModal({ title:'恢复默认预设', msg:'将清除所有自定义预设，恢复为默认8项。', showCancel:true, onConfirm:() => {
+            rpPresets = [...DEFAULT_PRESETS];
+            saveRPPresets();
+            renderRPBody();
+            showNotify('已恢复默认预设！');
+        }});
+    };
+    body.appendChild(resetBtn);
+}
+
+// ── Build preset card DOM element ──
+function buildPresetCard(preset, onApply, showManage = false) {
+    const exp = preset.exp || 0, coins = preset.coins || 0;
+    // Determine border color class
+    let typeClass = 'type-mixed';
+    if (exp > 0 && coins >= 0) typeClass = 'type-reward';
+    else if (exp < 0 && coins <= 0) typeClass = 'type-penalty';
+    else if (exp === 0 && coins > 0) typeClass = 'type-coins-reward';
+    else if (exp === 0 && coins < 0) typeClass = 'type-coins-penalty';
+
+    const card = document.createElement('div');
+    card.className = `preset-card ${typeClass}`;
+
+    const icon = document.createElement('div');
+    icon.className = 'preset-icon';
+    icon.textContent = preset.icon || '◈';
+    card.appendChild(icon);
+
+    const info = document.createElement('div');
+    info.className = 'preset-info';
+    const name = document.createElement('div');
+    name.className = 'preset-name';
+    name.textContent = preset.name;
+    info.appendChild(name);
+
+    const vals = document.createElement('div');
+    vals.className = 'preset-vals';
+    if (exp !== 0) {
+        const v = document.createElement('span');
+        v.className = 'preset-val ' + (exp > 0 ? 'exp-pos' : 'exp-neg');
+        v.textContent = (exp > 0 ? '+' : '') + exp + ' 律典';
+        vals.appendChild(v);
+    }
+    if (coins !== 0) {
+        const v = document.createElement('span');
+        v.className = 'preset-val ' + (coins > 0 ? 'coin-pos' : 'coin-neg');
+        v.textContent = (coins > 0 ? '+' : '') + coins + ' 石';
+        vals.appendChild(v);
+    }
+    info.appendChild(vals);
+    card.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'preset-actions';
+
+    if (showManage) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'preset-edit-btn';
+        editBtn.innerHTML = '✏';
+        editBtn.title = '编辑预设';
+        editBtn.onclick = () => openPresetEditor(preset.id);
+        actions.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'preset-del-btn';
+        delBtn.innerHTML = '✕';
+        delBtn.title = '删除预设';
+        delBtn.onclick = () => {
+            rpPresets = rpPresets.filter(p => p.id !== preset.id);
+            saveRPPresets();
+            renderRPBody();
+            showNotify('预设已删除');
+        };
+        actions.appendChild(delBtn);
+    } else if (onApply) {
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'preset-apply-btn';
+        applyBtn.textContent = '执行';
+        applyBtn.onclick = () => { playSfx(sfxClick); onApply(preset); };
+        actions.appendChild(applyBtn);
+    }
+
+    card.appendChild(actions);
+    return card;
+}
+
+// ── Apply preset with confirm dialog ──
+function applyPresetToStudents(preset, targetIds, isBulk) {
+    playSfx(sfxClick);
+    pendingPreset = preset;
+    pendingTargetIds = targetIds;
+
+    // Build confirm modal
+    const exp = preset.exp || 0, coins = preset.coins || 0;
+    const modal = document.getElementById('apply-confirm-modal');
+    document.getElementById('ac-title').textContent = `${preset.icon || '◈'} ${preset.name}`;
+
+    const preview = document.getElementById('ac-preview');
+    preview.innerHTML = `
+        <div class="apply-preview-row">
+            <span style="color:var(--text-dim);">影响人数</span>
+            <span style="font-family:'Cinzel Decorative',serif;color:var(--gold);">${targetIds.length} 位弟子</span>
+        </div>
+        ${exp !== 0 ? `<div class="apply-preview-row">
+            <span style="color:var(--text-dim);">律典变动</span>
+            <span style="font-family:'Cinzel Decorative',serif;color:${exp > 0 ? '#60d090' : '#e08090'};">${exp > 0 ? '+' : ''}${exp} 律典</span>
+        </div>` : ''}
+        ${coins !== 0 ? `<div class="apply-preview-row">
+            <span style="color:var(--text-dim);">灵石变动</span>
+            <span style="font-family:'Cinzel Decorative',serif;color:${coins > 0 ? 'var(--gold)' : '#e0a060'};">${coins > 0 ? '+' : ''}${coins} 灵石</span>
+        </div>` : ''}
+        ${isBulk && targetIds.length > 1 ? `<div class="apply-preview-row" style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px;">
+            <span style="color:var(--text-dim);">总计律典</span>
+            <span style="font-family:'Cinzel Decorative',serif;color:#a0c0e0;">${exp > 0 ? '+' : ''}${exp * targetIds.length}</span>
+        </div>` : ''}`;
+
+    const list = document.getElementById('ac-students-list');
+    list.innerHTML = '';
+    const showMax = Math.min(targetIds.length, 12);
+    targetIds.slice(0, showMax).forEach(id => {
+        const s = students.find(x => x.id === id);
+        if (!s) return;
+        const info = getStudentInfo(s);
+        const chip = document.createElement('div');
+        chip.className = 'apply-student-chip';
+        chip.innerHTML = `<img src="${info.avatar}" onerror="this.src='${PLAYER_ARTS[0]}'"><span>${s.name}</span><span style="margin-left:auto;font-family:'Cinzel Decorative',serif;font-size:0.65rem;color:var(--text-dim);">Lv.${info.level}</span>`;
+        list.appendChild(chip);
+    });
+    if (targetIds.length > showMax) {
+        const more = document.createElement('div');
+        more.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'Cinzel\',serif;font-size:0.68rem;padding:6px;';
+        more.textContent = `…另有 ${targetIds.length - showMax} 位弟子`;
+        list.appendChild(more);
+    }
+
+    const confirmBtn = document.getElementById('ac-confirm-btn');
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    newBtn.onclick = () => {
+        document.getElementById('apply-confirm-modal').style.display = 'none';
+        executeApply(pendingPreset, pendingTargetIds);
+    };
+
+    modal.style.display = 'flex';
+}
+
+// ── Actually apply the preset ──
+function executeApply(preset, targetIds) {
+    const exp = preset.exp || 0, coins = preset.coins || 0;
+    let levelUps = 0, stateUnlocks = [];
+
+    targetIds.forEach((id, i) => {
+        setTimeout(() => {
+            const idx = students.findIndex(s => s.id === id);
+            if (idx === -1) return;
+            const s = students[idx];
+            const ol = calculateLevel(s.exp), os = getState(ol);
+
+            if (exp !== 0) {
+                s.exp = Math.max(0, s.exp + exp);
+                showFloatText(exp > 0 ? `+${exp} 律典` : `${exp}`, idx);
+            }
+            if (coins !== 0) {
+                s.coins = Math.max(0, (s.coins || 0) + coins);
+            }
+
+            const nl = calculateLevel(s.exp), ns = getState(nl);
+            if (nl > ol) {
+                levelUps++;
+                playSfx(sfxLevelUp);
+                if (levelUps === 1) showLevelUpEffect();
+                if (ns.id !== os.id) stateUnlocks.push({ student: s, state: ns });
+            }
+
+            if (i === targetIds.length - 1) {
+                saveData();
+                renderGrid();
+                if (currentView === 'group') renderGroupView();
+                const msg = targetIds.length > 1
+                    ? `已对 ${targetIds.length} 位弟子执行「${preset.name}」！`
+                    : `已对 ${students.find(s => s.id === id)?.name || '弟子'} 执行「${preset.name}」！`;
+                showNotify(msg);
+                if (stateUnlocks.length > 0) setTimeout(() => showStateUnlock(stateUnlocks[0].state), 800);
+            }
+        }, i * 80);
+    });
+    playSfx(sfxWin);
+}
+
+// ── Preset editor ──
+function openPresetEditor(presetId) {
+    const modal = document.getElementById('preset-edit-modal');
+    document.getElementById('pe-id').value = presetId || '';
+    if (presetId) {
+        const p = rpPresets.find(x => x.id === presetId);
+        if (!p) return;
+        document.getElementById('pe-modal-title').textContent = '编辑赏罚预设';
+        document.getElementById('pe-name').value = p.name;
+        document.getElementById('pe-icon').value = p.icon || '◈';
+        document.getElementById('pe-exp').value = p.exp || 0;
+        document.getElementById('pe-coins').value = p.coins || 0;
+    } else {
+        document.getElementById('pe-modal-title').textContent = '新增赏罚预设';
+        document.getElementById('pe-name').value = '';
+        document.getElementById('pe-icon').value = '✦';
+        document.getElementById('pe-exp').value = 0;
+        document.getElementById('pe-coins').value = 0;
+    }
+    modal.style.display = 'flex';
+}
+
+function setPresetVals(exp, coins) {
+    document.getElementById('pe-exp').value = exp;
+    document.getElementById('pe-coins').value = coins;
+}
+
+function savePreset() {
+    const id = document.getElementById('pe-id').value;
+    const name = document.getElementById('pe-name').value.trim();
+    const icon = document.getElementById('pe-icon').value.trim() || '◈';
+    const exp = parseInt(document.getElementById('pe-exp').value) || 0;
+    const coins = parseInt(document.getElementById('pe-coins').value) || 0;
+    if (!name) { showNotify('请填写预设名称！'); return; }
+    if (exp === 0 && coins === 0) { showNotify('请至少设定一项非零数值！'); return; }
+
+    if (id) {
+        const idx = rpPresets.findIndex(p => p.id === id);
+        if (idx > -1) rpPresets[idx] = { ...rpPresets[idx], name, icon, exp, coins };
+    } else {
+        rpPresets.push({ id: 'p_' + Date.now(), name, icon, exp, coins });
+    }
+    saveRPPresets();
+    document.getElementById('preset-edit-modal').style.display = 'none';
+    renderRPBody();
+    showNotify(id ? '预设已更新！' : '新预设已创建！');
+}
+
+// ── Also add quick preset buttons back onto each card (updated renderGrid) ──
+// Override the card-actions buttons to use preset system
+function renderCardActions(s, index) {
+    const div = document.createElement('div');
+    div.className = 'card-actions teacher-only';
+
+    // Show first 4 presets as quick buttons on card
+    const quickPresets = rpPresets.slice(0, 4);
+    quickPresets.forEach(p => {
+        const exp = p.exp || 0, coins = p.coins || 0;
+        let tierClass = exp > 0 || coins > 0 ? (exp >= 200 || coins >= 100 ? 'success-tier' : exp > 0 ? '' : 'gold-tier') : 'crimson-tier';
+        const btn = document.createElement('button');
+        btn.className = `sacred-btn ${tierClass} sm`;
+        const valStr = [exp ? (exp > 0 ? `+${exp}律` : `${exp}律`) : '', coins ? (coins > 0 ? `+${coins}石` : `${coins}石`) : ''].filter(Boolean).join(' ');
+        btn.textContent = `${p.icon} ${valStr}`;
+        btn.title = p.name;
+        btn.onclick = () => applyPresetToStudents(p, [s.id], false);
+        div.appendChild(btn);
+    });
+
+    // RP panel button
+    const rpBtn = document.createElement('button');
+    rpBtn.className = 'sacred-btn purple-tier sm';
+    rpBtn.textContent = '⚖ 更多';
+    rpBtn.onclick = () => {
+        openRPPanel();
+        // Pre-select this student
+        setTimeout(() => {
+            const sel = document.getElementById('rp-student-sel');
+            if (sel) sel.value = index;
+        }, 100);
+    };
+    div.appendChild(rpBtn);
+
+    return div;
+}
 </script>
 </body>
 </html>
