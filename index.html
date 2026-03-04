@@ -228,6 +228,50 @@
         .team-member-chip.chip-lose { border-color:var(--crimson); color:#e08090; background:rgba(30,8,12,0.8); opacity:0.7; }
         .team-reward-info { text-align:center; font-family:'IM Fell English',serif; font-style:italic; font-size:0.78rem; color:var(--text-dim); margin-top:8px; }
 
+        /* ── POOL COUNTER ── */
+        .pool-counter {
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            margin-top:10px; padding:8px 20px;
+            background:rgba(4,6,18,0.85);
+            border:1px solid var(--border-glow);
+            border-top:1px solid var(--gold-dim);
+            font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.12em;
+            color:var(--text-dim); flex-wrap:wrap;
+        }
+        .pool-counter .pc-label { opacity:0.7; }
+        .pool-counter .pc-remaining {
+            font-family:'Cinzel Decorative',serif; font-size:1.05rem;
+            color:var(--gold); text-shadow:0 0 8px rgba(200,168,75,0.4);
+        }
+        .pool-counter .pc-sep { opacity:0.4; }
+        .pool-counter .pc-total {
+            font-family:'Cinzel Decorative',serif; font-size:1.05rem;
+            color:var(--teal-glow); text-shadow:0 0 8px rgba(40,152,180,0.4);
+        }
+        .pool-counter .pc-reset-note {
+            font-family:'IM Fell English',serif; font-style:italic;
+            font-size:0.7rem; color:var(--gold); letter-spacing:0.04em;
+        }
+        .pool-counter .pc-used-dots {
+            display:flex; gap:3px; flex-wrap:wrap; max-width:240px; justify-content:center;
+        }
+        .pool-counter .pc-dot {
+            width:7px; height:7px; border-radius:50%;
+            transition:all 0.4s ease;
+        }
+        .pool-counter .pc-dot.used {
+            background:var(--border-glow); opacity:0.35;
+        }
+        .pool-counter .pc-dot.pending {
+            background:var(--gold); box-shadow:0 0 4px rgba(200,168,75,0.5);
+            opacity:0.9;
+        }
+        @keyframes dotFade { from{transform:scale(1.4);opacity:1;} to{transform:scale(1);opacity:0.35;} }
+        .pool-counter .pc-dot.just-used {
+            background:var(--gold-dim);
+            animation:dotFade 0.5s ease forwards;
+        }
+
         /* ── MODALS ── */
         .modal-overlay { display:none; position:fixed; inset:0; background:rgba(2,4,14,0.9); z-index:1000; justify-content:center; align-items:center; flex-direction:column; backdrop-filter:blur(4px); }
         #system-modal,#edit-student-modal,#batch-modal,#leaderboard-modal,#shop-modal,#group-modal,#group-edit-modal { z-index:2000; }
@@ -519,6 +563,26 @@
             <div class="battle-controls" id="battle-controls-start">
                 <button class="sacred-btn gold-tier" style="font-size:1rem;padding:12px 28px;" id="battle-pick-btn" onclick="handleBattlePick()">◈ 天命点选</button>
                 <button class="sacred-btn" onclick="closeBattleModal()">退隐</button>
+            </div>
+            <!-- ── SOLO POOL COUNTER ── -->
+            <div class="pool-counter" id="solo-pool-counter" style="display:none;">
+                <span class="pc-label">◈ 待历练</span>
+                <span class="pc-remaining" id="solo-pc-remaining">0</span>
+                <span class="pc-sep">/</span>
+                <span class="pc-total" id="solo-pc-total">0</span>
+                <span class="pc-label">弟子</span>
+                <span style="color:var(--border-glow);opacity:0.5;margin:0 4px;">·</span>
+                <div class="pc-used-dots" id="solo-pc-dots"></div>
+            </div>
+            <!-- ── TEAM POOL COUNTER ── -->
+            <div class="pool-counter" id="team-pool-counter" style="display:none;">
+                <span class="pc-label">⬡ 待出阵</span>
+                <span class="pc-remaining" id="team-pc-remaining">0</span>
+                <span class="pc-sep">/</span>
+                <span class="pc-total" id="team-pc-total">0</span>
+                <span class="pc-label">支小队</span>
+                <span style="color:var(--border-glow);opacity:0.5;margin:0 4px;">·</span>
+                <div class="pc-used-dots" id="team-pc-dots"></div>
             </div>
             <div class="battle-controls" id="battle-controls-judge" style="display:none;">
                 <button class="sacred-btn success-tier" onclick="resolveBattle(true)">✦ 洞彻真理 (斩获)</button>
@@ -842,40 +906,12 @@ const BASE_URL = "https://html-classic.itch.zone/html/16280602/%E6%AD%A6%E4%BF%A
 document.body.style.backgroundImage = `url('assets/backgrounds/main_background.png')`;
 document.getElementById('level-up-img').src = BASE_URL + "images/effects/effect_levelup_animation.gif";
 
-// ══════════════════════════════════════════════════════════
-// 五境界角色立绘常量
-// ── 修复说明 ──────────────────────────────────────────────
-// 原文件中此常量被误注释（// const ...），导致 renderStatesInfo()
-// 调用时报 ReferenceError，图鉴无法显示任何角色形象。
-// 现已正确定义为真实 const，5 个元素对应 STATES 数组的 5 个境界。
-// 女性路径遵循 getAvatarPath() 的 _girl 替换规则（可按需修改）。
-// ══════════════════════════════════════════════════════════
 const STATES_CHARACTER_ARTS = [
-    // 境界 0：虚影之民 (Lv.1–24)
-    {
-        male:   "assets/characters/player_art_1-24.png",
-        female: "assets/characters/player_art_1-24_girl.png"
-    },
-    // 境界 1：刻印使徒 (Lv.25–49)
-    {
-        male:   "assets/characters/player_art_25-49.png",
-        female: "assets/characters/player_art_25-49_girl.png"
-    },
-    // 境界 2：破晓贤者 (Lv.50–74)
-    {
-        male:   "assets/characters/player_art_50-74.png",
-        female: "assets/characters/player_art_50-74_girl.png"
-    },
-    // 境界 3：圣域领主 (Lv.75–99)
-    {
-        male:   "assets/characters/player_art_75-100.png",
-        female: "assets/characters/player_art_75-100_girl.png"
-    },
-    // 境界 4：终焉神谕 (Lv.100+)
-    {
-        male:   "assets/characters/player_art_100+.png",
-        female: "assets/characters/player_art_100+_girl.png"
-    }
+    { male:"assets/characters/player_art_1-24.png",    female:"assets/characters/player_art_1-24_girl.png" },
+    { male:"assets/characters/player_art_25-49.png",   female:"assets/characters/player_art_25-49_girl.png" },
+    { male:"assets/characters/player_art_50-74.png",   female:"assets/characters/player_art_50-74_girl.png" },
+    { male:"assets/characters/player_art_75-100.png",  female:"assets/characters/player_art_75-100_girl.png" },
+    { male:"assets/characters/player_art_100+.png",    female:"assets/characters/player_art_100+_girl.png" }
 ];
 
 // ── Audio ──
@@ -946,6 +982,15 @@ let dragSrcStudentId=null,dragSrcGroupId=null;
 let battleMode='solo';
 let currentBattleTeamId=null;
 let currentBattleTeamMembers=[];
+
+// ══════════════════════════════════════════════════════
+// ── POOL TRACKING (新增历练轮次池) ──
+// soloUsedIds: 本轮已被点中的弟子 ID 集合
+// teamUsedIds: 本轮已被点中的小队 ID 集合
+// 每次所有成员/队伍都被抽中后自动重置
+// ══════════════════════════════════════════════════════
+let soloUsedIds = new Set();
+let teamUsedIds = new Set();
 
 const PLAYER_ARTS=[
     "assets/characters/player_art_1-24.png",
@@ -1040,10 +1085,229 @@ function showCustomModal({title,msg,hasInput=false,isPassword=false,showCancel=f
 function switchView(v){ currentView=v; document.getElementById('individual-view').style.display=v==='individual'?'block':'none'; document.getElementById('group-view').style.display=v==='group'?'block':'none'; document.getElementById('toggleIndividual').classList.toggle('active',v==='individual'); document.getElementById('toggleGroup').classList.toggle('active',v==='group'); document.getElementById('group-view-controls').style.display=v==='group'?'flex':'none'; if(v==='group')renderGroupView(); playSfx(sfxClick); }
 
 // ── BATTLE MODE ──
-function selectBattleMode(mode){ battleMode=mode; document.getElementById('modeBtnSolo').classList.toggle('active',mode==='solo'); document.getElementById('modeBtnTeam').classList.toggle('active',mode==='team'); const ts=document.getElementById('team-selector-row'),sa=document.getElementById('solo-fighters-area'),ta=document.getElementById('team-fighters-area'),td=document.getElementById('team-battle-display'),pb=document.getElementById('battle-pick-btn'); document.getElementById('battle-controls-judge').style.display='none'; document.getElementById('battle-controls-start').style.display='flex'; document.getElementById('fighter-student').style.opacity='0'; if(mode==='solo'){ts.style.display='none';sa.style.display='flex';ta.style.display='none';td.style.display='none';pb.innerText='◈ 天命点选';document.getElementById('battle-msg').innerText='道途险阻，试炼降临。';resetMonsterDisplay('solo');}else{if(!groups.length){showNotify("尚无小队编制，请先前往宗门小队视图编制队伍！");battleMode='solo';document.getElementById('modeBtnSolo').classList.add('active');document.getElementById('modeBtnTeam').classList.remove('active');return;} ts.style.display='flex';const vg=groups.filter(g=>g.memberIds.some(id=>students.find(s=>s.id===id)));document.getElementById('battle-team-count').innerText=`共 ${vg.length} 支小队待命`;sa.style.display='none';ta.style.display='flex';td.style.display='block';pb.innerText='⬡ 天命点选小队';document.getElementById('battle-msg').innerText='小队历练：天命将召唤一支小队出阵！';document.getElementById('team-fighters-left').innerHTML='';document.getElementById('team-members-chips').innerHTML='';document.getElementById('team-battle-name-label').innerText='等待天命召唤...';document.getElementById('team-reward-info').innerText='';resetMonsterDisplay('team');} currentBattleStudentIndex=-1;currentBattleTeamMembers=[]; }
+function selectBattleMode(mode){
+    battleMode=mode;
+    document.getElementById('modeBtnSolo').classList.toggle('active',mode==='solo');
+    document.getElementById('modeBtnTeam').classList.toggle('active',mode==='team');
+    const ts=document.getElementById('team-selector-row'),
+          sa=document.getElementById('solo-fighters-area'),
+          ta=document.getElementById('team-fighters-area'),
+          td=document.getElementById('team-battle-display'),
+          pb=document.getElementById('battle-pick-btn');
+    document.getElementById('battle-controls-judge').style.display='none';
+    document.getElementById('battle-controls-start').style.display='flex';
+    document.getElementById('fighter-student').style.opacity='0';
+    // Show/hide counters
+    document.getElementById('solo-pool-counter').style.display = mode==='solo' ? 'flex' : 'none';
+    document.getElementById('team-pool-counter').style.display = mode==='team' ? 'flex' : 'none';
+    if(mode==='solo'){
+        ts.style.display='none'; sa.style.display='flex'; ta.style.display='none'; td.style.display='none';
+        pb.innerText='◈ 天命点选';
+        document.getElementById('battle-msg').innerText='道途险阻，试炼降临。';
+        resetMonsterDisplay('solo');
+        updateSoloPoolCounter();
+    } else {
+        if(!groups.length){ showNotify("尚无小队编制，请先前往宗门小队视图编制队伍！"); battleMode='solo'; document.getElementById('modeBtnSolo').classList.add('active'); document.getElementById('modeBtnTeam').classList.remove('active'); return; }
+        ts.style.display='flex'; sa.style.display='none'; ta.style.display='flex'; td.style.display='block';
+        pb.innerText='⬡ 天命点选小队';
+        const vg=groups.filter(g=>g.memberIds.some(id=>students.find(s=>s.id===id)));
+        document.getElementById('battle-team-count').innerText=`共 ${vg.length} 支小队待命`;
+        document.getElementById('battle-msg').innerText='小队历练：天命将召唤一支小队出阵！';
+        document.getElementById('team-fighters-left').innerHTML='';
+        document.getElementById('team-members-chips').innerHTML='';
+        document.getElementById('team-battle-name-label').innerText='等待天命召唤...';
+        document.getElementById('team-reward-info').innerText='';
+        resetMonsterDisplay('team');
+        updateTeamPoolCounter();
+    }
+    currentBattleStudentIndex=-1; currentBattleTeamMembers=[];
+}
+
 function resetMonsterDisplay(mode){ const monster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];currentMonster=monster;isTreasureEncounter=false; if(mode==='solo'){const img=document.getElementById('battle-monster-img');img.src=monster.src;img.className='';img.style.opacity='1';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('battle-monster-name').innerText=monster.name;}else{const img=document.getElementById('team-battle-monster-img');img.src=monster.src;img.className='';img.style.opacity='1';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('team-battle-monster-name').innerText=monster.name;} }
 function handleBattlePick(){ if(battleMode==='solo')pickRandomStudent(); else pickRandomTeam(); }
-function pickRandomTeam(){ const vg=groups.filter(g=>g.memberIds.some(id=>students.find(s=>s.id===id)));if(!vg.length){showNotify("尚无有效小队可出阵！");return;} playSfx(sfxClick);document.getElementById('battle-controls-start').style.display='none';document.getElementById('battle-msg').innerText="圣律轮盘运转，召唤天命小队..."; let speed=60,total=0;const max=2600;let lastIdx=-1; (function roll(){const ri=Math.floor(Math.random()*vg.length),group=vg[ri];lastIdx=ri;const members=group.memberIds.map(id=>students.find(s=>s.id===id)).filter(Boolean);const la=document.getElementById('team-fighters-left');la.innerHTML='';members.slice(0,5).forEach(s=>{const info=getStudentInfo(s);const div=document.createElement('div');div.className='team-fighter-mini';div.innerHTML=`<div class="fighter-name" style="font-size:0.62rem;padding:2px 6px;">${s.name}</div><img src="${info.battleAvatar}" onerror="this.src='${PLAYER_BATTLE_ARTS[0]}'">`;la.appendChild(div);});if(members.length>5){const more=document.createElement('div');more.className='team-fighter-mini';more.innerHTML=`<div style="font-family:'Cinzel Decorative',serif;font-size:1.8rem;color:var(--gold-dim);padding:20px 10px 0;opacity:0.7;">+${members.length-5}</div>`;la.appendChild(more);}document.getElementById('team-battle-name-label').innerText=`${group.emblem||'⬡'} ${group.name}`;total+=speed;if(total<max){speed+=12;setTimeout(roll,speed);}else finalizeTeamPick(vg[lastIdx]);})(); }
+
+// ══════════════════════════════════════════════════════════════
+// ── POOL COUNTER RENDERERS ──
+// 显示当前轮次中还剩多少弟子/小队待被点中
+// ══════════════════════════════════════════════════════════════
+function updateSoloPoolCounter() {
+    const total = students.length;
+    if (total === 0) return;
+    const used = soloUsedIds.size;
+    const remaining = total - used;
+
+    document.getElementById('solo-pc-remaining').textContent = remaining;
+    document.getElementById('solo-pc-total').textContent = total;
+
+    // Render dot indicators (max 40 dots for performance)
+    const dotsEl = document.getElementById('solo-pc-dots');
+    if (total <= 40) {
+        dotsEl.innerHTML = '';
+        students.forEach(s => {
+            const dot = document.createElement('span');
+            dot.className = 'pc-dot ' + (soloUsedIds.has(s.id) ? 'used' : 'pending');
+            dot.title = s.name;
+            dotsEl.appendChild(dot);
+        });
+    } else {
+        dotsEl.innerHTML = '';
+    }
+
+    document.getElementById('solo-pool-counter').style.display = 'flex';
+}
+
+function updateTeamPoolCounter() {
+    const vg = groups.filter(g => g.memberIds.some(id => students.find(s => s.id === id)));
+    const total = vg.length;
+    if (total === 0) return;
+    const used = teamUsedIds.size;
+    const remaining = total - used;
+
+    document.getElementById('team-pc-remaining').textContent = remaining;
+    document.getElementById('team-pc-total').textContent = total;
+
+    // Render dot indicators
+    const dotsEl = document.getElementById('team-pc-dots');
+    if (total <= 40) {
+        dotsEl.innerHTML = '';
+        vg.forEach(g => {
+            const dot = document.createElement('span');
+            dot.className = 'pc-dot ' + (teamUsedIds.has(g.id) ? 'used' : 'pending');
+            dot.title = g.name;
+            dotsEl.appendChild(dot);
+        });
+    } else {
+        dotsEl.innerHTML = '';
+    }
+
+    document.getElementById('team-pool-counter').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── PICK RANDOM STUDENT (with pool exclusion) ──
+// 已被点中的弟子暂时移出候选池，待全员历练完毕后自动重置
+// ══════════════════════════════════════════════════════════════
+function pickRandomStudent() {
+    playSfx(sfxClick);
+    document.getElementById('battle-controls-start').style.display = 'none';
+    document.getElementById('battle-msg').innerText = "圣律轮盘运转中...";
+
+    // Build available pool (exclude already-used)
+    let pool = students.filter(s => !soloUsedIds.has(s.id));
+
+    // If everyone has been picked, reset for a new round
+    if (pool.length === 0) {
+        soloUsedIds.clear();
+        pool = [...students];
+        showNotify("☆ 所有弟子均已历练！天命轮回，新一轮开始。");
+    }
+
+    let speed = 50, total = 0;
+    const max = 2500;
+    let finalStudent = null;
+
+    (function roll() {
+        const ri = Math.floor(Math.random() * pool.length);
+        const s = pool[ri];
+        const realIndex = students.indexOf(s);
+        const info = getStudentInfo(s);
+        currentBattleStudentIndex = realIndex;
+        document.getElementById('battle-student-name').innerText = s.name;
+        document.getElementById('battle-student-img').src = info.battleAvatar;
+        document.getElementById('fighter-student').style.opacity = '1';
+        finalStudent = s;
+        total += speed;
+        if (total < max) {
+            speed += 10;
+            setTimeout(roll, speed);
+        } else {
+            // Mark this student as used
+            soloUsedIds.add(finalStudent.id);
+            // Animate the dot that just got used
+            animateDotUsed('solo', finalStudent.id);
+            updateSoloPoolCounter();
+            finalizePick(finalStudent);
+        }
+    })();
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── PICK RANDOM TEAM (with pool exclusion) ──
+// ══════════════════════════════════════════════════════════════
+function pickRandomTeam() {
+    const vg = groups.filter(g => g.memberIds.some(id => students.find(s => s.id === id)));
+    if (!vg.length) { showNotify("尚无有效小队可出阵！"); return; }
+
+    playSfx(sfxClick);
+    document.getElementById('battle-controls-start').style.display = 'none';
+    document.getElementById('battle-msg').innerText = "圣律轮盘运转，召唤天命小队...";
+
+    // Build available pool
+    let pool = vg.filter(g => !teamUsedIds.has(g.id));
+
+    // If all teams have been picked, reset
+    if (pool.length === 0) {
+        teamUsedIds.clear();
+        pool = [...vg];
+        showNotify("☆ 所有小队均已历练！天命轮回，新一轮开始。");
+    }
+
+    let speed = 60, total = 0;
+    const max = 2600;
+    let lastGroup = null;
+
+    (function roll() {
+        const ri = Math.floor(Math.random() * pool.length);
+        const group = pool[ri];
+        lastGroup = group;
+        const members = group.memberIds.map(id => students.find(s => s.id === id)).filter(Boolean);
+        const la = document.getElementById('team-fighters-left');
+        la.innerHTML = '';
+        members.slice(0, 5).forEach(s => {
+            const info = getStudentInfo(s);
+            const div = document.createElement('div');
+            div.className = 'team-fighter-mini';
+            div.innerHTML = `<div class="fighter-name" style="font-size:0.62rem;padding:2px 6px;">${s.name}</div><img src="${info.battleAvatar}" onerror="this.src='${PLAYER_BATTLE_ARTS[0]}'">`;
+            la.appendChild(div);
+        });
+        if (members.length > 5) {
+            const more = document.createElement('div');
+            more.className = 'team-fighter-mini';
+            more.innerHTML = `<div style="font-family:'Cinzel Decorative',serif;font-size:1.8rem;color:var(--gold-dim);padding:20px 10px 0;opacity:0.7;">+${members.length - 5}</div>`;
+            la.appendChild(more);
+        }
+        document.getElementById('team-battle-name-label').innerText = `${group.emblem || '⬡'} ${group.name}`;
+        total += speed;
+        if (total < max) {
+            speed += 12;
+            setTimeout(roll, speed);
+        } else {
+            teamUsedIds.add(lastGroup.id);
+            animateDotUsed('team', lastGroup.id);
+            updateTeamPoolCounter();
+            finalizeTeamPick(lastGroup);
+        }
+    })();
+}
+
+// ── Animate a dot transitioning to "used" state ──
+function animateDotUsed(mode, id) {
+    const dotsEl = document.getElementById(mode + '-pc-dots');
+    if (!dotsEl) return;
+    const dots = dotsEl.querySelectorAll('.pc-dot');
+    let idx = -1;
+    if (mode === 'solo') {
+        idx = students.findIndex(s => s.id === id);
+    } else {
+        const vg = groups.filter(g => g.memberIds.some(mid => students.find(s => s.id === mid)));
+        idx = vg.findIndex(g => g.id === id);
+    }
+    if (idx >= 0 && dots[idx]) {
+        dots[idx].className = 'pc-dot just-used';
+        setTimeout(() => { if (dots[idx]) dots[idx].className = 'pc-dot used'; }, 600);
+    }
+}
+
 function finalizeTeamPick(group){ const members=group.memberIds.map(id=>students.find(s=>s.id===id)).filter(Boolean);if(!members.length){showNotify("此小队无弟子！");return;}currentBattleTeamMembers=members;currentBattleTeamId=group.id;const fl=document.getElementById('battle-flash');fl.style.animation='flash 0.5s';setTimeout(()=>fl.style.animation='',500);isTreasureEncounter=Math.random()<0.2;if(isTreasureEncounter){const img=document.getElementById('team-battle-monster-img');img.src=BASE_URL+"images/ui/icon_shop_pixel.png";img.className='treasure-chest';document.getElementById('team-battle-monster-name').innerText="封印宝契";document.getElementById('battle-msg').innerText=`${group.name} 发现封印宝契！合力可将其开启！`;}else{const monster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];currentMonster=monster;const img=document.getElementById('team-battle-monster-img');img.src=monster.src;img.className='';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('team-battle-monster-name').innerText=monster.name;document.getElementById('battle-msg').innerText=`${group.name} 挺身迎接试炼！`;}document.getElementById('team-battle-name-label').innerText=`${group.name} · ${members.length}名弟子出阵`;const chips=document.getElementById('team-members-chips');chips.innerHTML='';members.forEach(s=>{const info=getStudentInfo(s);const chip=document.createElement('div');chip.className='team-member-chip';chip.dataset.studentId=s.id;chip.innerHTML=`<img src="${info.avatar}" onerror="this.src='${PLAYER_ARTS[0]}'"><span>${s.name}</span>`;chips.appendChild(chip);});const te=isTreasureEncounter?300:150,tc=isTreasureEncounter?400:150,ep=Math.floor(te/members.length),cp=Math.floor(tc/members.length);document.getElementById('team-reward-info').innerText=`胜利奖励：${te} 律典 · ${tc} 灵石，${members.length} 人平分 → 每人 ${ep} 律典 / ${cp} 灵石`;document.getElementById('battle-controls-judge').style.display='flex';playSfx(sfxLevelUp); }
 
 // ── GROUP SYSTEM ──
@@ -1055,9 +1319,12 @@ function selectNaming(n){groupNaming=n;document.getElementById('namingAuto').sty
 function buildCustomNamesUI(){const count=parseInt(document.getElementById('group-count-input').value)||4;const w=document.getElementById('custom-names-container');w.innerHTML='';for(let i=0;i<count;i++){const inp=document.createElement('input');inp.type='text';inp.placeholder=`第${i+1}队名称`;inp.value=GROUP_AUTO_NAMES[i]||`第${i+1}队`;inp.className='group-custom-name';inp.style.width='100%';w.appendChild(inp);}}
 function buildColorPresets(cid){const row=document.getElementById(cid);if(!row)return;row.innerHTML='';GROUP_COLORS.forEach((c,i)=>{const dot=document.createElement('span');dot.className='group-color-dot';dot.style.background=c.value;dot.title=c.name;dot.dataset.idx=i;dot.onclick=()=>{row.querySelectorAll('.group-color-dot').forEach(d=>d.classList.remove('selected'));dot.classList.add('selected');};if(i===0)dot.classList.add('selected');row.appendChild(dot);});}
 function updateGroupPreview(){const count=parseInt(document.getElementById('group-count-input').value)||4;const pp=Math.ceil(students.length/count);document.getElementById('group-preview-text').innerText=students.length>0?`(约 ${pp} 人/队，共 ${students.length} 位弟子)`:'';if(groupNaming==='custom')buildCustomNamesUI();}
-function confirmGroupSetup(){const count=parseInt(document.getElementById('group-count-input').value)||4;if(count<2||count>20){showNotify("队伍数量须在 2–20 之间");return;}if(students.length===0){showNotify("尚无弟子可编制");return;}let names=[];if(groupNaming==='custom'){const inputs=document.querySelectorAll('.group-custom-name');names=Array.from(inputs).map((i,idx)=>i.value.trim()||GROUP_AUTO_NAMES[idx]||`第${idx+1}队`);}else{names=GROUP_AUTO_NAMES.slice(0,count);}const ca=GROUP_COLORS;const ng=[];for(let i=0;i<count;i++){ng.push({id:generateGroupId(),name:names[i]||`第${i+1}队`,emblem:GROUP_EMBLEMS[i%GROUP_EMBLEMS.length],color:ca[i%ca.length],memberIds:[]});}if(groupMode==='auto'){let sorted=[...students];if(groupStrategy==='random'){sorted.sort(()=>Math.random()-0.5);}else if(groupStrategy==='balance'){sorted.sort((a,b)=>calculateCP(b)-calculateCP(a));}else if(groupStrategy==='state'){sorted.sort((a,b)=>STATES.indexOf(getState(calculateLevel(b.exp)))-STATES.indexOf(getState(calculateLevel(a.exp))));}else if(groupStrategy==='gender'){sorted.sort((a,b)=>(a.gender==='female'?0:1)-(b.gender==='female'?0:1));}if(groupStrategy==='balance'){sorted.forEach((s,i)=>{const pass=Math.floor(i/count),pos=pass%2===0?(i%count):(count-1-(i%count));ng[pos].memberIds.push(s.id);});}else if(groupStrategy==='gender'){const f=sorted.filter(s=>s.gender==='female'),m=sorted.filter(s=>s.gender!=='female');let gi=0;while(f.length||m.length){if(f.length)ng[gi%count].memberIds.push(f.shift().id);if(m.length)ng[gi%count].memberIds.push(m.shift().id);gi++;}}else{sorted.forEach((s,i)=>ng[i%count].memberIds.push(s.id));}}groups=ng;saveGroups();document.getElementById('group-modal').style.display='none';switchView('group');showNotify(`已编制 ${count} 支小队！`);}
+function confirmGroupSetup(){const count=parseInt(document.getElementById('group-count-input').value)||4;if(count<2||count>20){showNotify("队伍数量须在 2–20 之间");return;}if(students.length===0){showNotify("尚无弟子可编制");return;}let names=[];if(groupNaming==='custom'){const inputs=document.querySelectorAll('.group-custom-name');names=Array.from(inputs).map((i,idx)=>i.value.trim()||GROUP_AUTO_NAMES[idx]||`第${idx+1}队`);}else{names=GROUP_AUTO_NAMES.slice(0,count);}const ca=GROUP_COLORS;const ng=[];for(let i=0;i<count;i++){ng.push({id:generateGroupId(),name:names[i]||`第${i+1}队`,emblem:GROUP_EMBLEMS[i%GROUP_EMBLEMS.length],color:ca[i%ca.length],memberIds:[]});}if(groupMode==='auto'){let sorted=[...students];if(groupStrategy==='random'){sorted.sort(()=>Math.random()-0.5);}else if(groupStrategy==='balance'){sorted.sort((a,b)=>calculateCP(b)-calculateCP(a));}else if(groupStrategy==='state'){sorted.sort((a,b)=>STATES.indexOf(getState(calculateLevel(b.exp)))-STATES.indexOf(getState(calculateLevel(a.exp))));}else if(groupStrategy==='gender'){sorted.sort((a,b)=>(a.gender==='female'?0:1)-(b.gender==='female'?0:1));}if(groupStrategy==='balance'){sorted.forEach((s,i)=>{const pass=Math.floor(i/count),pos=pass%2===0?(i%count):(count-1-(i%count));ng[pos].memberIds.push(s.id);});}else if(groupStrategy==='gender'){const f=sorted.filter(s=>s.gender==='female'),m=sorted.filter(s=>s.gender!=='female');let gi=0;while(f.length||m.length){if(f.length)ng[gi%count].memberIds.push(f.shift().id);if(m.length)ng[gi%count].memberIds.push(m.shift().id);gi++;}}else{sorted.forEach((s,i)=>ng[i%count].memberIds.push(s.id));}}groups=ng;saveGroups();document.getElementById('group-modal').style.display='none';switchView('group');showNotify(`已编制 ${count} 支小队！`);
+    // Reset team pool since groups changed
+    teamUsedIds.clear();
+}
 function saveGroups(){localStorage.setItem('wuxia_groups_data',JSON.stringify(groups));}
-function clearAllGroups(){showCustomModal({title:"解散所有小队",msg:"确定清空所有分组？弟子将回到未编制状态。",showCancel:true,onConfirm:()=>{groups=[];saveGroups();renderGroupView();showNotify("所有小队已解散。");}});}
+function clearAllGroups(){showCustomModal({title:"解散所有小队",msg:"确定清空所有分组？弟子将回到未编制状态。",showCancel:true,onConfirm:()=>{groups=[];saveGroups();renderGroupView();teamUsedIds.clear();showNotify("所有小队已解散。");}});}
 function renderGroupView(){const container=document.getElementById('groups-container'),empty=document.getElementById('group-empty-state'),up=document.getElementById('unassigned-pool');if(!groups.length){container.innerHTML='';empty.style.display='block';up.style.display='none';return;}empty.style.display='none';const aid=new Set(groups.flatMap(g=>g.memberIds)),ua=students.filter(s=>!aid.has(s.id));if(ua.length>0){up.style.display='block';document.getElementById('unassigned-count').innerText=`(${ua.length}人)`;const grid=document.getElementById('unassigned-grid');grid.innerHTML='';ua.forEach(s=>grid.appendChild(buildMemberRow(s,null)));}else up.style.display='none';container.innerHTML='';groups.forEach(group=>container.appendChild(buildGroupPanel(group)));}
 function buildGroupPanel(group){const ms=group.memberIds.map(id=>students.find(s=>s.id===id)).filter(Boolean),tcp=ms.reduce((sum,s)=>sum+calculateCP(s),0),avg=ms.length>0?Math.round(ms.reduce((sum,s)=>sum+calculateLevel(s.exp),0)/ms.length):0;const panel=document.createElement('div');panel.className='group-panel';panel.dataset.groupId=group.id;const header=document.createElement('div');header.className='group-header';const em=document.createElement('div');em.className='group-emblem';em.innerText=group.emblem||'⬡';em.style.borderColor=group.color?.border||'#c8a84b';em.style.color=group.color?.border||'#c8a84b';header.appendChild(em);const tw=document.createElement('div');tw.className='group-title-wrap';tw.innerHTML=`<div class="group-name" style="color:${group.color?.border||'var(--gold-bright)'};">${group.name}</div><div class="group-meta"><span>◈ ${ms.length} 名弟子</span>${avg>0?`<span>均阶 Lv.${avg}</span>`:''}</div>`;header.appendChild(tw);const sb=document.createElement('div');sb.className='group-stats-bar';sb.innerHTML=`<span class="group-stat-pill cnt">人数 ${ms.length}</span><span class="group-stat-pill cp">总战力 ${tcp}</span><span class="group-stat-pill avg">均战力 ${ms.length?Math.round(tcp/ms.length):0}</span>`;if(isTeacherMode){const eb=document.createElement('button');eb.className='sacred-btn gold-tier xs';eb.innerText='编辑';eb.onclick=(e)=>{e.stopPropagation();openGroupEditModal(group.id);};sb.appendChild(eb);}header.appendChild(sb);const cb=document.createElement('span');cb.className='group-collapse-btn';cb.innerText='▾';header.appendChild(cb);header.onclick=()=>panel.classList.toggle('collapsed');panel.appendChild(header);const body=document.createElement('div');body.className='group-body';body.addEventListener('dragover',e=>{e.preventDefault();body.style.background='rgba(200,168,75,0.05)';});body.addEventListener('dragleave',()=>{body.style.background='';});body.addEventListener('drop',e=>{e.preventDefault();body.style.background='';if(dragSrcStudentId!==null)moveStudentToGroup(dragSrcStudentId,group.id);});const grid=document.createElement('div');grid.className='group-member-grid';if(ms.length===0){grid.innerHTML=`<div style="color:var(--text-dim);font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;padding:14px;text-align:center;border:1px dashed var(--border);width:100%;">将弟子拖入此处</div>`;}else ms.forEach(s=>grid.appendChild(buildMemberRow(s,group.id)));body.appendChild(grid);panel.appendChild(body);return panel;}
 function buildMemberRow(s,groupId){const info=getStudentInfo(s);const row=document.createElement('div');row.className='member-row';row.dataset.studentId=s.id;row.draggable=true;row.addEventListener('dragstart',e=>{dragSrcStudentId=s.id;dragSrcGroupId=groupId;row.classList.add('dragging');e.dataTransfer.effectAllowed='move';});row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over');});row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));row.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();row.classList.remove('drag-over');if(dragSrcStudentId!==null&&dragSrcStudentId!==s.id)swapStudents(dragSrcStudentId,s.id,dragSrcGroupId,groupId);});const handle=document.createElement('span');handle.className='member-drag-handle';handle.innerText='⠿';const avatar=document.createElement('img');avatar.className='member-avatar';avatar.src=info.avatar;avatar.onerror=()=>avatar.src=PLAYER_ARTS[0];const id=document.createElement('div');id.className='member-info';id.innerHTML=`<div class="member-name">${s.name}</div><div class="member-sub"><span class="member-lv">Lv.${info.level}</span><span class="state-badge ${info.state.cssClass}" style="font-size:0.58rem;padding:1px 5px 1px 3px;"><span class="state-dot"></span>${info.state.icon}</span><span class="member-cp-val">CP ${calculateCP(s)}</span></div><div class="member-mini-bar"><div class="member-mini-fill ${info.state.barClass}" style="width:${info.pct}%;"></div></div>`;row.appendChild(handle);row.appendChild(avatar);row.appendChild(id);if(isTeacherMode&&groupId!==null){const rb=document.createElement('button');rb.className='member-remove-btn';rb.innerText='✕';rb.onclick=(e)=>{e.stopPropagation();removeStudentFromGroup(s.id,groupId);};row.appendChild(rb);}return row;}
@@ -1066,7 +1333,7 @@ function swapStudents(idA,idB,gA,gB){if(gA===gB&&gA!==null){const g=groups.find(
 function removeStudentFromGroup(sid,gid){const g=groups.find(x=>x.id===gid);if(g)g.memberIds=g.memberIds.filter(id=>id!==sid);saveGroups();renderGroupView();}
 function openGroupEditModal(gid){const g=groups.find(x=>x.id===gid);if(!g)return;document.getElementById('group-edit-id').value=gid;document.getElementById('group-edit-name').value=g.name;document.getElementById('group-edit-title').innerText=`编辑：${g.name}`;const ep=document.getElementById('emblem-picker');ep.innerHTML='';GROUP_EMBLEMS.forEach(em=>{const btn=document.createElement('button');btn.className='sacred-btn xs';btn.innerText=em;btn.style.fontSize='1.1rem';if(em===g.emblem)btn.style.borderColor='var(--gold)';btn.onclick=()=>{ep.querySelectorAll('.sacred-btn').forEach(b=>b.style.borderColor='');btn.style.borderColor='var(--gold)';};ep.appendChild(btn);});buildColorPresets('group-color-picker');const cr=document.getElementById('group-color-picker'),ci=GROUP_COLORS.findIndex(c=>c.value===g.color?.value);cr.querySelectorAll('.group-color-dot').forEach((d,i)=>d.classList.toggle('selected',i===ci));document.getElementById('group-edit-modal').style.display='flex';}
 function saveGroupEdit(){const id=document.getElementById('group-edit-id').value,g=groups.find(x=>x.id===id);if(!g)return;g.name=document.getElementById('group-edit-name').value.trim()||g.name;const ep=document.getElementById('emblem-picker'),se=ep.querySelector('.sacred-btn[style*="gold"]');if(se)g.emblem=se.innerText;const cr=document.getElementById('group-color-picker'),sel=cr.querySelector('.group-color-dot.selected');if(sel)g.color=GROUP_COLORS[parseInt(sel.dataset.idx)];saveGroups();renderGroupView();document.getElementById('group-edit-modal').style.display='none';showNotify(`小队「${g.name}」已更新`);}
-function dissolveGroup(){const id=document.getElementById('group-edit-id').value;groups=groups.filter(g=>g.id!==id);saveGroups();renderGroupView();document.getElementById('group-edit-modal').style.display='none';showNotify("小队已解散，弟子回归未编制状态。");}
+function dissolveGroup(){const id=document.getElementById('group-edit-id').value;groups=groups.filter(g=>g.id!==id);teamUsedIds.delete(id);saveGroups();renderGroupView();document.getElementById('group-edit-modal').style.display='none';showNotify("小队已解散，弟子回归未编制状态。");}
 
 // ── INDIVIDUAL VIEW ──
 function normalizeStudent(s){const base={id:Date.now(),name:'弟子',gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};if(typeof s.points!=='undefined'&&typeof s.coins==='undefined')base.coins=s.points;const n=Object.assign(base,s||{});delete n.title;if(!n.equipped)n.equipped={pets:[],swords:[]};if(!Array.isArray(n.equipped.pets)){n.equipped.pets=n.equipped.pet?[n.equipped.pet]:[];delete n.equipped.pet;}if(!Array.isArray(n.equipped.swords)){n.equipped.swords=n.equipped.sword?[n.equipped.sword]:[];delete n.equipped.sword;}return n;}
@@ -1081,10 +1348,9 @@ function preloadAssets(){const o=document.getElementById('loading-overlay'),asse
 
 window.onload=()=>{
     students=(students||[]).map(normalizeStudent);
-    preloadAssets();renderGrid();updateTeacherUI();
-    // ── 修复关键调用 ── renderStatesInfo 现在能正常访问 STATES_CHARACTER_ARTS
+    preloadAssets(); renderGrid(); updateTeacherUI();
     renderStatesInfo();
-    buildColorPresets('color-preset-row');updateGroupPreview();
+    buildColorPresets('color-preset-row'); updateGroupPreview();
     if(currentView==='group')renderGroupView();
 };
 
@@ -1095,166 +1361,37 @@ function toggleTeacherMode(){if(!isTeacherMode){showCustomModal({title:"导师�
 function updateTeacherUI(){document.querySelectorAll('.teacher-only').forEach(el=>{if(isTeacherMode){if(el.classList.contains('card-actions'))el.style.setProperty('display','grid','important');else if(el.classList.contains('teacher-controls-header'))el.style.setProperty('display','flex','important');else el.style.setProperty('display','block','important');}else el.style.setProperty('display','none','important');});if(currentView==='group')renderGroupView();}
 function openLeaderboard(){playSfx(sfxClick);const container=document.getElementById('lb-container');container.innerHTML='';const sorted=[...students].sort((a,b)=>calculateCP(b)-calculateCP(a));if(!sorted.length)container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim);font-family:\'Cinzel\',serif;">暂无弟子数据</div>';else sorted.forEach((s,i)=>{const info=getStudentInfo(s),cp=calculateCP(s);const row=document.createElement('div');row.className=`leaderboard-row rank-${i+1}`;row.innerHTML=`<div class="rank-num">${i+1}</div><img class="lb-avatar" src="${info.avatar}"><div class="lb-name">${s.name}<span class="state-badge ${info.state.cssClass}" style="font-size:0.62rem;padding:1px 6px 1px 4px;margin-left:6px;"><span class="state-dot"></span>${info.state.name}</span><span style="font-size:0.75em;color:var(--text-dim);margin-left:4px;">Lv.${info.level}</span></div><div class="lb-cp">${cp}</div>`;container.appendChild(row);});document.getElementById('leaderboard-modal').style.display='flex';}
 
-// ══════════════════════════════════════════════════════════
-// renderStatesInfo — 五境界图鉴渲染
-// ── 修复说明 ──────────────────────────────────────────────
-// 此函数现已可正常读取 STATES_CHARACTER_ARTS（已正确定义）
-// 每个境界展示男女两种角色形象，图片加载失败时显示占位符
-// ══════════════════════════════════════════════════════════
 function renderStatesInfo() {
     const c = document.getElementById('states-grid-container');
     if (!c) return;
     c.innerHTML = '';
     c.style.cssText = 'display:flex;flex-direction:column;gap:20px;';
-
     STATES.forEach((state, idx) => {
-        // 取对应境界的男女立绘路径
         const arts = STATES_CHARACTER_ARTS[idx] || { male: '', female: '' };
-
         const panel = document.createElement('div');
-        panel.style.cssText = `
-            border:1px solid ${state.color};
-            background:rgba(6,8,22,0.88);
-            overflow:hidden; position:relative;
-        `;
-
-        // ── 顶部标题栏 ──
+        panel.style.cssText = `border:1px solid ${state.color};background:rgba(6,8,22,0.88);overflow:hidden;position:relative;`;
         const titleBar = document.createElement('div');
-        titleBar.style.cssText = `
-            display:flex; align-items:center; gap:14px;
-            padding:14px 20px 12px; flex-wrap:wrap;
-            border-bottom:1px solid ${state.color}44;
-            background:linear-gradient(90deg,${state.color}18 0%,transparent 100%);
-        `;
-        titleBar.innerHTML = `
-            <span style="font-size:2.2rem;text-shadow:0 0 16px ${state.color};">${state.icon}</span>
-            <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:4px;">
-                <div style="font-family:'Cinzel Decorative',serif;font-size:1.15rem;
-                            color:${state.color};text-shadow:0 0 12px ${state.color};letter-spacing:0.06em;">
-                    ${state.name}
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <span style="font-family:'IM Fell English',serif;font-style:italic;
-                                 font-size:0.78rem;color:var(--text-dim);">${state.latin}</span>
-                    <span style="font-family:'Cinzel Decorative',serif;font-size:0.72rem;
-                                 color:${state.color};background:rgba(0,0,0,0.5);
-                                 padding:2px 10px;border:1px solid ${state.color}55;">
-                        Lv.${state.minLevel}${state.maxLevel === Infinity ? '+' : ' – ' + state.maxLevel}
-                    </span>
-                </div>
-            </div>
-            <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.82rem;
-                        color:var(--text-secondary);max-width:280px;text-align:right;line-height:1.5;">
-                ${state.desc}
-            </div>
-        `;
+        titleBar.style.cssText = `display:flex;align-items:center;gap:14px;padding:14px 20px 12px;flex-wrap:wrap;border-bottom:1px solid ${state.color}44;background:linear-gradient(90deg,${state.color}18 0%,transparent 100%);`;
+        titleBar.innerHTML = `<span style="font-size:2.2rem;text-shadow:0 0 16px ${state.color};">${state.icon}</span><div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:4px;"><div style="font-family:'Cinzel Decorative',serif;font-size:1.15rem;color:${state.color};text-shadow:0 0 12px ${state.color};letter-spacing:0.06em;">${state.name}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.78rem;color:var(--text-dim);">${state.latin}</span><span style="font-family:'Cinzel Decorative',serif;font-size:0.72rem;color:${state.color};background:rgba(0,0,0,0.5);padding:2px 10px;border:1px solid ${state.color}55;">Lv.${state.minLevel}${state.maxLevel===Infinity?'+':' – '+state.maxLevel}</span></div></div><div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.82rem;color:var(--text-secondary);max-width:280px;text-align:right;line-height:1.5;">${state.desc}</div>`;
         panel.appendChild(titleBar);
-
-        // ── 男女角色展示区（左右各一格）──
         const charsRow = document.createElement('div');
         charsRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;';
-
-        ['male', 'female'].forEach((gender, gi) => {
-            const imgUrl  = (arts[gender] || '').trim();
-            const gLabel  = gender === 'male' ? '男弟子' : '女弟子';
-            const gIcon   = gender === 'male' ? '♂' : '♀';
-            const gColor  = gender === 'male' ? '#6090d8' : '#d870a0';
-
-            const cell = document.createElement('div');
-            cell.style.cssText = `
-                position:relative; display:flex; flex-direction:column;
-                align-items:center; justify-content:flex-end;
-                padding:0 0 14px; min-height:250px; overflow:hidden;
-                ${gi === 0 ? 'border-right:1px solid ' + state.color + '2a;' : ''}
-                background:radial-gradient(ellipse at 50% 90%, ${state.color}1a 0%, transparent 65%);
-            `;
-
-            // 背景装饰大字
-            const bgDeco = document.createElement('div');
-            bgDeco.style.cssText = `
-                position:absolute; inset:0; display:flex; align-items:center;
-                justify-content:center; font-size:9rem;
-                color:${state.color}09; pointer-events:none; user-select:none;
-            `;
-            bgDeco.innerText = state.icon;
-            cell.appendChild(bgDeco);
-
-            // 角色图片 or 占位符
-            if (imgUrl) {
-                const img = document.createElement('img');
-                img.style.cssText = `
-                    position:relative; z-index:2;
-                    height:190px; width:auto; object-fit:contain;
-                    image-rendering:pixelated;
-                    filter:drop-shadow(0 0 14px ${state.color}55) drop-shadow(0 4px 10px rgba(0,0,0,0.8));
-                    animation:breathe 4s ease-in-out infinite;
-                    animation-delay:${gi * 0.7}s;
-                `;
-                img.src   = imgUrl;
-                img.alt   = `${state.name} ${gLabel}`;
-                img.onerror = function () {
-                    this.replaceWith(makeStatePlaceholder(state.color, state.icon));
-                };
-                cell.appendChild(img);
-            } else {
-                cell.appendChild(makeStatePlaceholder(state.color, state.icon));
-            }
-
-            // 性别标签
-            const label = document.createElement('div');
-            label.style.cssText = `
-                position:relative; z-index:3; margin-top:8px;
-                font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.18em;
-                color:${gColor}; display:flex; align-items:center; gap:5px;
-                border:1px solid ${gColor}55; padding:3px 12px;
-                background:rgba(4,6,20,0.6);
-            `;
-            label.innerHTML = `<span style="font-size:1rem;">${gIcon}</span>${gLabel}`;
-            cell.appendChild(label);
-
+        ['male','female'].forEach((gender,gi)=>{
+            const imgUrl=(arts[gender]||'').trim(),gLabel=gender==='male'?'男弟子':'女弟子',gIcon=gender==='male'?'♂':'♀',gColor=gender==='male'?'#6090d8':'#d870a0';
+            const cell=document.createElement('div');
+            cell.style.cssText=`position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 14px;min-height:250px;overflow:hidden;${gi===0?'border-right:1px solid '+state.color+'2a;':''}background:radial-gradient(ellipse at 50% 90%,${state.color}1a 0%,transparent 65%);`;
+            const bgDeco=document.createElement('div');bgDeco.style.cssText=`position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9rem;color:${state.color}09;pointer-events:none;user-select:none;`;bgDeco.innerText=state.icon;cell.appendChild(bgDeco);
+            if(imgUrl){const img=document.createElement('img');img.style.cssText=`position:relative;z-index:2;height:190px;width:auto;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 14px ${state.color}55) drop-shadow(0 4px 10px rgba(0,0,0,0.8));animation:breathe 4s ease-in-out infinite;animation-delay:${gi*0.7}s;`;img.src=imgUrl;img.alt=`${state.name} ${gLabel}`;img.onerror=function(){this.replaceWith(makeStatePlaceholder(state.color,state.icon));};cell.appendChild(img);}else{cell.appendChild(makeStatePlaceholder(state.color,state.icon));}
+            const label=document.createElement('div');label.style.cssText=`position:relative;z-index:3;margin-top:8px;font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.18em;color:${gColor};display:flex;align-items:center;gap:5px;border:1px solid ${gColor}55;padding:3px 12px;background:rgba(4,6,20,0.6);`;label.innerHTML=`<span style="font-size:1rem;">${gIcon}</span>${gLabel}`;cell.appendChild(label);
             charsRow.appendChild(cell);
         });
-
         panel.appendChild(charsRow);
-
-        // ── 底部格言 ──
-        const footer = document.createElement('div');
-        footer.style.cssText = `
-            text-align:center; font-family:'IM Fell English',serif; font-style:italic;
-            font-size:0.76rem; color:${state.color}; opacity:0.7;
-            padding:9px 24px; border-top:1px solid ${state.color}2a; letter-spacing:0.06em;
-        `;
-        footer.innerText = '"' + state.flavor + '"';
-        panel.appendChild(footer);
-
+        const footer=document.createElement('div');footer.style.cssText=`text-align:center;font-family:'IM Fell English',serif;font-style:italic;font-size:0.76rem;color:${state.color};opacity:0.7;padding:9px 24px;border-top:1px solid ${state.color}2a;letter-spacing:0.06em;`;footer.innerText='"'+state.flavor+'"';panel.appendChild(footer);
         c.appendChild(panel);
     });
 }
-
-// 占位符辅助（图片路径不存在或加载失败时显示）
-function makeStatePlaceholder(color, icon) {
-    const ph = document.createElement('div');
-    ph.style.cssText = `
-        position:relative; z-index:2;
-        width:110px; height:170px; margin-bottom:10px;
-        display:flex; flex-direction:column;
-        align-items:center; justify-content:center; gap:10px;
-        border:2px dashed ${color}44; color:${color}88;
-        font-size:0.68rem; font-family:'Cinzel',serif;
-        letter-spacing:0.1em; text-align:center; padding:10px;
-    `;
-    ph.innerHTML = `
-        <span style="font-size:2.8rem;opacity:0.35;">${icon}</span>
-        <span style="line-height:1.5;">待填入<br>角色图片路径</span>
-    `;
-    return ph;
-}
-
-// openStatesInfo 函数（点击「境界图鉴」按钮触发）
-function openStatesInfo() {
-    playSfx(sfxClick);
-    document.getElementById('states-modal').style.display = 'flex';
-}
+function makeStatePlaceholder(color,icon){const ph=document.createElement('div');ph.style.cssText=`position:relative;z-index:2;width:110px;height:170px;margin-bottom:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed ${color}44;color:${color}88;font-size:0.68rem;font-family:'Cinzel',serif;letter-spacing:0.1em;text-align:center;padding:10px;`;ph.innerHTML=`<span style="font-size:2.8rem;opacity:0.35;">${icon}</span><span style="line-height:1.5;">待填入<br>角色图片路径</span>`;return ph;}
+function openStatesInfo(){playSfx(sfxClick);document.getElementById('states-modal').style.display='flex';}
 
 function openShopDirect(){if(!students.length){showNotify("先收录弟子再来万宝阁！");return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
 function openShopForCurrent(){if(currentInvStudentIndex===-1){showNotify("请先开启某位弟子的行囊");return;}document.getElementById('inventory-modal').style.display='none';openShopModal();}
@@ -1267,20 +1404,47 @@ function buyItem(itemId){const s=students[currentInvStudentIndex],itemData=getIt
 function openInventory(index){currentInvStudentIndex=index;const s=students[index];document.getElementById('inv-modal-title').innerText=`${s.name} · 行囊`;const container=document.getElementById('inv-container');container.innerHTML='';if(!s.inventory||!s.inventory.length){container.innerHTML='<p style="color:var(--text-dim);text-align:center;width:100%;font-family:\'Cinzel\',serif;font-size:0.75rem;letter-spacing:0.1em;padding:20px;">行囊空空，尚无器物</p>';}else s.inventory.forEach(itemId=>{const itemData=getItemData(itemId);if(!itemData)return;const pets=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const swords=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);const isEquipped=pets.includes(itemId)||swords.includes(itemId);const isConsumable=itemData.type==='consumable';const div=document.createElement('div');div.className=`inventory-item ${isEquipped?'equipped':''}`;div.innerHTML=`<img src="${itemData.icon||itemData.src}"><div class="item-tooltip"><b>${itemData.name}</b>\n${itemData.cp?`战力 +${itemData.cp}\n`:''}${itemData.desc||''}</div>`;div.onclick=isConsumable?()=>useRealReward(index,itemId):()=>toggleEquip(index,itemId,itemData.type);container.appendChild(div);});document.getElementById('inventory-modal').style.display='flex';}
 function toggleEquip(si,itemId,type){const s=students[si];if(!s.equipped)s.equipped={pets:[],swords:[]};if(!Array.isArray(s.equipped.pets))s.equipped.pets=s.equipped.pet?[s.equipped.pet]:[];if(!Array.isArray(s.equipped.swords))s.equipped.swords=s.equipped.sword?[s.equipped.sword]:[];const MAX=3;if(type==='pet'){const idx=s.equipped.pets.indexOf(itemId);if(idx>-1){s.equipped.pets.splice(idx,1);}else if(s.equipped.pets.length<MAX){s.equipped.pets.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 只神兽！请先卸下一只。`);return;}}else if(type==='sword'){const idx=s.equipped.swords.indexOf(itemId);if(idx>-1){s.equipped.swords.splice(idx,1);}else if(s.equipped.swords.length<MAX){s.equipped.swords.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 把神兵！请先卸下一把。`);return;}}saveData();renderGrid();openInventory(si);}
 function useRealReward(si,uid){const s=students[si],baseId=uid.split('_')[0],item=REAL_REWARDS.find(r=>baseId===r.id);if(!item)return;if(confirm(`确定使用【${item.name}】？请向导师出示此画面。`)){s.inventory=s.inventory.filter(id=>id!==uid);saveData();openInventory(si);showNotify(`已使用 ${item.name}！`);}}
-function addStudent(){const input=document.getElementById('newStudentName'),name=input.value.trim();const grs=document.getElementsByName('newStudentGender');let gender='male';for(let r of grs)if(r.checked)gender=r.value;if(!name)return;playSfx(sfxClick);students.push({id:Date.now(),name,gender,exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});input.value='';saveData();renderGrid();showNotify(`${name} 已载入真理编年史！`);}
+function addStudent(){const input=document.getElementById('newStudentName'),name=input.value.trim();const grs=document.getElementsByName('newStudentGender');let gender='male';for(let r of grs)if(r.checked)gender=r.value;if(!name)return;playSfx(sfxClick);students.push({id:Date.now(),name,gender,exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});input.value='';saveData();renderGrid();showNotify(`${name} 已载入真理编年史！`);
+    // New student resets solo pool since roster changed
+    soloUsedIds.clear();
+}
 function openBatchModal(){document.getElementById('batch-modal').style.display='flex';}
-function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name))students.push({id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';}else showNotify("请输入 1~100 之间的人数。");}
+function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name))students.push({id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify("请输入 1~100 之间的人数。");}
 function openEditModal(id){const s=students.find(st=>st.id===id);if(!s)return;document.getElementById('edit-id').value=id;document.getElementById('edit-name').value=s.name;const gr=document.getElementsByName('editGender');for(let r of gr)r.checked=(r.value===(s.gender||'male'));document.getElementById('edit-student-modal').style.display='flex';}
 function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子卷册已修订！");}}
-function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
+function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
 function renderGrid(){const grid=document.getElementById('studentGrid');grid.innerHTML='';students.forEach((s,index)=>{const info=getStudentInfo(s),state=info.state;let companions='';const ep=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const es=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);ep.slice(0,3).forEach((pid,i)=>{const d=getItemData(pid);if(d)companions+=`<img src="${d.src||d.icon}" class="companion-img companion-pet-${i}" onerror="this.style.display='none'">`;});es.slice(0,3).forEach((sid,i)=>{const d=getItemData(sid);if(d)companions+=`<img src="${d.src}" class="companion-img companion-sword-${i}" onerror="this.style.display='none'">`;});const card=document.createElement('div');card.className=`student-card ${state.cardClass}`;card.id=`card-${index}`;card.innerHTML=`<button class="card-edit-btn teacher-only" onclick="openEditModal(${s.id})">⚙</button><div class="card-header"><div class="student-name-wrap"><div class="student-name">${s.name}</div><span class="state-badge ${state.cssClass}"><span class="state-dot"></span>${state.icon} ${state.name}</span></div><div class="level-badge">Lv.${info.level}</div></div><div class="state-desc-row">${state.flavor}</div><div class="avatar-area ${state.bgClass}"><img src="${info.avatar}" class="avatar-img" onerror="this.src='${PLAYER_ARTS[0]}'"> ${companions}</div><div class="stat-section"><div class="stat-row"><span class="stat-label">律典</span><div class="bar-container"><div class="bar-fill ${state.barClass}" style="width:${info.pct}%"></div></div><span class="stat-value">${info.expText}</span></div><div class="stat-row"><span class="stat-label">灵石</span><div class="coin-display"><span>◈</span>${s.coins||0}</div></div></div><div class="common-actions"><button class="sacred-btn teal-tier sm" onclick="openInventory(${index})">⬡ 行囊</button></div><div class="card-actions teacher-only"><button class="sacred-btn sm" onclick="updateExp(${index},30)">+30 表现</button><button class="sacred-btn gold-tier sm" onclick="updateExp(${index},100)">+100 优秀</button><button class="sacred-btn crimson-tier sm" onclick="updateExp(${index},-30)">-30 律罚</button><button class="sacred-btn success-tier sm" onclick="updateExp(${index},300)">+300 奇遇</button></div>`;grid.appendChild(card);});updateTeacherUI();}
 
 // ── BATTLE ──
-function openBattleModal(){if(!students.length){showNotify("宗门无人，无法历练！");return;}playSfx(sfxClick);playBGM('battle');document.getElementById('battle-stage').style.backgroundImage=`url('${BATTLE_BG[Math.floor(Math.random()*BATTLE_BG.length)]}')`;battleMode='solo';document.getElementById('modeBtnSolo').classList.add('active');document.getElementById('modeBtnTeam').classList.remove('active');document.getElementById('team-selector-row').style.display='none';document.getElementById('solo-fighters-area').style.display='flex';document.getElementById('team-fighters-area').style.display='none';document.getElementById('team-battle-display').style.display='none';document.getElementById('battle-pick-btn').innerText='◈ 天命点选';currentBattleStudentIndex=-1;currentBattleTeamMembers=[];isTreasureEncounter=Math.random()<0.2;if(isTreasureEncounter)setupTreasureEncounter();else setupMonsterEncounter();document.getElementById('fighter-student').style.opacity='0';document.getElementById('battle-controls-start').style.display='flex';document.getElementById('battle-controls-judge').style.display='none';document.getElementById('battle-msg').innerText='道途险阻，试炼降临。选择历练方式。';document.getElementById('battle-modal').style.display='flex';}
+function openBattleModal(){
+    if(!students.length){showNotify("宗门无人，无法历练！");return;}
+    playSfx(sfxClick); playBGM('battle');
+    document.getElementById('battle-stage').style.backgroundImage=`url('${BATTLE_BG[Math.floor(Math.random()*BATTLE_BG.length)]}')`;
+    battleMode='solo';
+    document.getElementById('modeBtnSolo').classList.add('active');
+    document.getElementById('modeBtnTeam').classList.remove('active');
+    document.getElementById('team-selector-row').style.display='none';
+    document.getElementById('solo-fighters-area').style.display='flex';
+    document.getElementById('team-fighters-area').style.display='none';
+    document.getElementById('team-battle-display').style.display='none';
+    document.getElementById('battle-pick-btn').innerText='◈ 天命点选';
+    currentBattleStudentIndex=-1; currentBattleTeamMembers=[];
+    isTreasureEncounter=Math.random()<0.2;
+    if(isTreasureEncounter) setupTreasureEncounter(); else setupMonsterEncounter();
+    document.getElementById('fighter-student').style.opacity='0';
+    document.getElementById('battle-controls-start').style.display='flex';
+    document.getElementById('battle-controls-judge').style.display='none';
+    document.getElementById('battle-msg').innerText='道途险阻，试炼降临。选择历练方式。';
+    // Show solo counter, hide team counter
+    document.getElementById('solo-pool-counter').style.display='flex';
+    document.getElementById('team-pool-counter').style.display='none';
+    updateSoloPoolCounter();
+    document.getElementById('battle-modal').style.display='flex';
+}
 function setupMonsterEncounter(){currentMonster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];const img=document.getElementById('battle-monster-img');img.src=currentMonster.src;img.className='';img.style.opacity='1';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('battle-monster-name').innerText=currentMonster.name;document.getElementById('battle-msg').innerText=`试炼：${currentMonster.name} 现身，迎战！`;}
 function setupTreasureEncounter(){currentMonster=null;const img=document.getElementById('battle-monster-img');img.src=BASE_URL+"images/ui/icon_shop_pixel.png";img.className='treasure-chest';img.style.opacity='1';document.getElementById('battle-monster-name').innerText="封印宝契";document.getElementById('battle-msg').innerText=`发现封印宝契！真理之光可将其开启！`;}
 function closeBattleModal(){playSfx(sfxClick);playBGM('main');document.getElementById('battle-modal').style.display='none';}
-function pickRandomStudent(){playSfx(sfxClick);document.getElementById('battle-controls-start').style.display='none';document.getElementById('battle-msg').innerText="圣律轮盘运转中...";let speed=50,total=0;const max=2500;(function roll(){const ri=Math.floor(Math.random()*students.length),s=students[ri],info=getStudentInfo(s);currentBattleStudentIndex=ri;document.getElementById('battle-student-name').innerText=s.name;document.getElementById('battle-student-img').src=info.battleAvatar;document.getElementById('fighter-student').style.opacity='1';total+=speed;if(total<max){speed+=10;setTimeout(roll,speed);}else finalizePick(s);})();}
+
 function finalizePick(s){const fl=document.getElementById('battle-flash');fl.style.animation='flash 0.5s';setTimeout(()=>fl.style.animation='',500);document.getElementById('battle-msg').innerText=isTreasureEncounter?`${s.name} 尝试解开封印宝契！`:`${s.name} 挺身迎接真理试炼！`;document.getElementById('battle-controls-judge').style.display='flex';playSfx(sfxLevelUp);}
 function resolveBattle(isWin){if(battleMode==='team'){resolveTeamBattle(isWin);return;}if(currentBattleStudentIndex===-1)return;const mi=document.getElementById('battle-monster-img'),si=document.getElementById('battle-student-img'),s=students[currentBattleStudentIndex];if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');let eg=50,cg=50;if(isTreasureEncounter){eg=100;cg=200;document.getElementById('battle-msg').innerText=`封印解除！获得 ${eg} 律典 / ${cg} 灵石！`;checkWeaponDrop(currentBattleStudentIndex,true);}else{document.getElementById('battle-msg').innerText=`真理洞彻！获得 ${eg} 律典 / ${cg} 灵石！`;checkWeaponDrop(currentBattleStudentIndex,false);}updateExp(currentBattleStudentIndex,eg);s.coins=parseInt(s.coins||0)+cg;saveData();renderGrid();setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},500);}else{playSfx(sfxAttack);si.classList.add('shake-effect');playHitEffect(si,'#c42040');document.getElementById('battle-msg').innerText=isTreasureEncounter?"封印反噬！宝契消散...":"真理迷失，此役败退...";setTimeout(closeBattleModal,1500);}document.getElementById('battle-controls-judge').style.display='none';}
 function resolveTeamBattle(isWin){if(!currentBattleTeamMembers.length)return;const members=currentBattleTeamMembers,mi=document.getElementById('team-battle-monster-img'),chips=document.getElementById('team-members-chips');document.getElementById('battle-controls-judge').style.display='none';if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');const te=isTreasureEncounter?300:150,tc=isTreasureEncounter?400:150,ep=Math.floor(te/members.length),cp=Math.floor(tc/members.length),er=te-ep*members.length,cr=tc-cp*members.length;members.forEach((s,i)=>{setTimeout(()=>{const eg=ep+(i===0?er:0),cg=cp+(i===0?cr:0),idx=students.findIndex(st=>st.id===s.id);if(idx===-1)return;const ol=calculateLevel(students[idx].exp),os=getState(ol);students[idx].exp=Math.max(0,students[idx].exp+eg);students[idx].coins=(students[idx].coins||0)+cg;const nl=calculateLevel(students[idx].exp),ns=getState(nl);if(nl>ol){playSfx(sfxLevelUp);showNotify(`${students[idx].name} 晋阶至 Lv.${nl}！`);if(ns.id!==os.id)setTimeout(()=>showStateUnlock(ns),1200);}const chip=chips.querySelector(`[data-student-id="${s.id}"]`);if(chip)chip.className='team-member-chip chip-win';},i*120);});const al=isTreasureEncounter?'封印解除':'真理洞彻';document.getElementById('battle-msg').innerText=`${al}！全队分享 ${te} 律典 · ${tc} 灵石，每人获得 ${ep} 律典 / ${cp} 灵石！`;setTimeout(()=>{saveData();renderGrid();if(currentView==='group')renderGroupView();},members.length*120+200);setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},members.length*120+800);if(isTreasureEncounter)checkWeaponDrop(students.findIndex(s=>s.id===members[0].id),true);}else{playSfx(sfxAttack);chips.querySelectorAll('.team-member-chip').forEach(c=>c.className='team-member-chip chip-lose');document.getElementById('battle-msg').innerText=isTreasureEncounter?"封印反噬！小队力竭，宝契消散...":"真理迷失，小队此役败退...";setTimeout(closeBattleModal,1800);}}
@@ -1289,7 +1453,7 @@ function playHitEffect(ti,color='#c8a84b'){if(!ti||!ti.parentElement)return;cons
 function showFloatText(text,index){const card=document.getElementById(`card-${index}`);if(card){const el=document.createElement('div');el.className='float-text';el.innerText=text;el.style.left='50%';el.style.top='50%';el.style.transform='translate(-50%,-50%)';card.appendChild(el);setTimeout(()=>el.remove(),1700);}}
 function showLevelUpEffect(){const o=document.getElementById('level-up-overlay');o.style.display='flex';setTimeout(()=>o.style.display='none',2000);}
 function saveData(){localStorage.setItem('wuxia_class_data',JSON.stringify(students));showNotify("真理编年史已封印保存");}
-function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];renderGrid();renderGroupView();showNotify("圣律归虚，真理湮灭...");}});}
+function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();showNotify("圣律归虚，真理湮灭...");}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
 </script>
 </body>
