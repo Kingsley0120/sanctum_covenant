@@ -545,7 +545,7 @@
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
             <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
-            <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 万宝阁</button>
+            <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 星辰秘宝阁</button>
             <button class="sacred-btn gold-tier" onclick="openLeaderboard()">⬖ 圣律榜</button>
             <button class="sacred-btn crimson-tier" onclick="openBattleModal()">⚔ 历练</button>
             <div style="width:1px;height:24px;background:var(--border-glow);opacity:0.5;"></div>
@@ -696,7 +696,7 @@
 <!-- ── SHOP MODAL ── -->
 <div id="shop-modal" class="modal-overlay">
     <div class="modal-panel" style="width:780px;max-height:84vh;display:flex;flex-direction:column;gap:12px;background-image:url('assets/backgrounds/shop_background.png');background-size:cover;background-position:center;">
-        <div class="modal-title">⬡ 万宝阁</div>
+        <div class="modal-title">⬡ 星辰秘宝阁</div>
         <div class="ornament">· · · · · · ·</div>
         <div class="shop-select-row">
             <span class="label-tag">购买者</span>
@@ -721,7 +721,7 @@
         <p style="text-align:center;color:var(--text-dim);font-size:0.75rem;font-family:'Cinzel',serif;letter-spacing:0.1em;margin:0;">装备点击穿戴（最多 3 神兵 · 3 神兽）· 特赦令点击使用</p>
         <div id="inv-container" class="inventory-grid"></div>
         <div style="display:flex;justify-content:center;gap:10px;">
-            <button class="sacred-btn gold-tier" onclick="openShopForCurrent()">⬡ 万宝阁</button>
+            <button class="sacred-btn gold-tier" onclick="openShopForCurrent()">⬡ 星辰秘宝阁</button>
             <button class="sacred-btn" onclick="document.getElementById('inventory-modal').style.display='none'">闭囊</button>
         </div>
     </div>
@@ -1650,7 +1650,7 @@ function renderStatesInfo() {
 function makeStatePlaceholder(color,icon){const ph=document.createElement('div');ph.style.cssText=`position:relative;z-index:2;width:110px;height:170px;margin-bottom:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed ${color}44;color:${color}88;font-size:0.68rem;font-family:'Cinzel',serif;letter-spacing:0.1em;text-align:center;padding:10px;`;ph.innerHTML=`<span style="font-size:2.8rem;opacity:0.35;">${icon}</span><span style="line-height:1.5;">待填入<br>角色图片路径</span>`;return ph;}
 function openStatesInfo(){playSfx(sfxClick);document.getElementById('states-modal').style.display='flex';}
 
-function openShopDirect(){if(!students.length){showNotify("先收录弟子再来万宝阁！");return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
+function openShopDirect(){if(!students.length){showNotify("先收录弟子再来星辰秘宝阁！");return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
 function openShopForCurrent(){if(currentInvStudentIndex===-1){showNotify("请先开启某位弟子的行囊");return;}document.getElementById('inventory-modal').style.display='none';openShopModal();}
 function openShopModal(){const sel=document.getElementById('shop-student-select');sel.innerHTML='';students.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.innerText=`${s.name} (灵石 ${s.coins||0})`;sel.appendChild(o);});sel.value=currentInvStudentIndex;updateShopBalance();renderShop();document.getElementById('shop-modal').style.display='flex';}
 function switchShopStudent(){currentInvStudentIndex=parseInt(document.getElementById('shop-student-select').value);updateShopBalance();renderShop();}
