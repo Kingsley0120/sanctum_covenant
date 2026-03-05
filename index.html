@@ -53,6 +53,22 @@
         .toggle-btn:hover:not(.active) { background:rgba(30,40,80,0.6); color:var(--silver); }
         .view-separator { width:1px; height:22px; background:var(--border-glow); opacity:0.5; }
 
+        /* ── SUBJECT SELECTOR ── */
+        .subject-selector-wrap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .subject-label { font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.2em; color:var(--text-dim); text-transform:uppercase; white-space:nowrap; }
+        .subject-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+        .subject-tab { font-family:'Cinzel','Noto Serif SC',serif; font-size:0.72rem; letter-spacing:0.06em; padding:5px 14px; border:1px solid var(--border-glow); background:rgba(10,14,30,0.8); color:var(--text-secondary); cursor:pointer; transition:all 0.2s; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); white-space:nowrap; }
+        .subject-tab.active { background:rgba(20,16,8,0.9); color:var(--gold); border-color:var(--gold-dim); box-shadow:0 0 10px rgba(200,168,75,0.15); }
+        .subject-tab:hover:not(.active) { background:rgba(30,40,80,0.6); color:var(--silver); border-color:var(--border-glow); }
+        .subject-manage-btn { font-family:'Cinzel',serif; font-size:0.65rem; padding:4px 8px; border:1px solid var(--border); background:rgba(10,14,30,0.6); color:var(--text-dim); cursor:pointer; transition:all 0.2s; }
+        .subject-manage-btn:hover { color:var(--gold); border-color:var(--gold-dim); }
+        .subject-indicator { font-family:'Cinzel Decorative',serif; font-size:0.75rem; color:var(--gold); letter-spacing:0.08em; padding:3px 10px; border:1px solid var(--gold-dim); background:rgba(20,16,8,0.7); clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+
+        /* ── SUBJECT MANAGE MODAL ── */
+        .subject-list-item { display:flex; align-items:center; gap:8px; padding:7px 10px; background:rgba(8,12,28,0.7); border:1px solid var(--border); margin-bottom:5px; }
+        .subject-list-name { flex-grow:1; font-family:'Cinzel','Noto Serif SC',serif; font-size:0.85rem; color:var(--text-primary); }
+        .subject-list-default { font-family:'Cinzel',serif; font-size:0.62rem; color:var(--gold-dim); padding:2px 6px; border:1px solid var(--gold-dim); opacity:0.7; }
+
         /* ── BUTTONS ── */
         .sacred-btn { font-family:'Cinzel','Noto Serif SC',serif; font-size:0.78rem; letter-spacing:0.08em; padding:9px 18px; border:1px solid var(--border-glow); background:rgba(20,25,55,0.8); color:var(--silver); cursor:pointer; position:relative; transition:all 0.2s ease; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); white-space:nowrap; }
         .sacred-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,0.04) 0%,transparent 100%); }
@@ -560,6 +576,12 @@
             <button class="sacred-btn purple-tier sm" onclick="openGroupModal()">✦ 编制小队</button>
             <button class="sacred-btn teal-tier sm teacher-only" onclick="clearAllGroups()">清空分组</button>
         </div>
+        <div class="view-separator"></div>
+        <div class="subject-selector-wrap">
+            <span class="subject-label">科目</span>
+            <div class="subject-tabs" id="subject-tabs"></div>
+            <button class="subject-manage-btn teacher-only" onclick="openSubjectModal()" title="管理科目">⚙</button>
+        </div>
     </div>
 
     <div id="individual-view">
@@ -1050,6 +1072,160 @@ let currentBattleTeamId=null;
 let currentBattleTeamMembers=[];
 
 // ══════════════════════════════════════════════════════
+// ── SUBJECT SYSTEM ──
+// ══════════════════════════════════════════════════════
+const DEFAULT_SUBJECTS = [
+    { id: 'math',    name: '数学' },
+    { id: 'english', name: '英语' },
+    { id: 'chinese', name: '华文' },
+    { id: 'moral',   name: '品格' }
+];
+let subjects = JSON.parse(localStorage.getItem('wuxia_subjects')) || DEFAULT_SUBJECTS.map(s => ({...s}));
+let currentSubjectId = localStorage.getItem('wuxia_current_subject') || subjects[0].id;
+
+// Ensure current subject is valid
+if (!subjects.find(s => s.id === currentSubjectId)) currentSubjectId = subjects[0].id;
+
+function saveSubjects() {
+    localStorage.setItem('wuxia_subjects', JSON.stringify(subjects));
+}
+
+function getCurrentSubject() {
+    return subjects.find(s => s.id === currentSubjectId) || subjects[0];
+}
+
+// Get or init subject data for a student
+function getSubjectData(student, subjectId) {
+    if (!student.subjectData) student.subjectData = {};
+    if (!student.subjectData[subjectId]) {
+        // If switching for the first time, carry over legacy flat data for the first subject
+        const isFirst = subjectId === subjects[0].id && !Object.keys(student.subjectData).length;
+        student.subjectData[subjectId] = {
+            exp: isFirst ? (student._legacyExp || student.exp || 0) : 0,
+            coins: isFirst ? (student._legacyCoins || student.coins || 0) : 0,
+            inventory: isFirst ? (student._legacyInventory || student.inventory || []) : [],
+            equipped: isFirst ? (student._legacyEquipped || student.equipped || []) : []
+        };
+    }
+    return student.subjectData[subjectId];
+}
+
+// Sync student's flat fields (exp/coins/inventory/equipped) with current subject
+function syncStudentToSubject(student, subjectId) {
+    const sd = getSubjectData(student, subjectId);
+    student.exp = sd.exp;
+    student.coins = sd.coins;
+    student.inventory = sd.inventory;
+    student.equipped = sd.equipped;
+}
+
+// Save current flat fields back into subjectData before switching
+function saveStudentSubjectData(student, subjectId) {
+    if (!student.subjectData) student.subjectData = {};
+    student.subjectData[subjectId] = {
+        exp: student.exp || 0,
+        coins: student.coins || 0,
+        inventory: student.inventory || [],
+        equipped: student.equipped || []
+    };
+}
+
+// Switch active subject
+function switchSubject(subjectId) {
+    if (subjectId === currentSubjectId) return;
+    // Save current subject data for all students
+    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    currentSubjectId = subjectId;
+    localStorage.setItem('wuxia_current_subject', currentSubjectId);
+    // Load new subject data for all students
+    students.forEach(s => syncStudentToSubject(s, currentSubjectId));
+    saveData();
+    renderSubjectTabs();
+    renderGrid();
+    if (currentView === 'group') renderGroupView();
+    showNotify(`◈ 已切换至科目：${getCurrentSubject().name}`);
+    playSfx(sfxClick);
+}
+
+function renderSubjectTabs() {
+    const container = document.getElementById('subject-tabs');
+    if (!container) return;
+    container.innerHTML = '';
+    subjects.forEach(subj => {
+        const btn = document.createElement('button');
+        btn.className = 'subject-tab' + (subj.id === currentSubjectId ? ' active' : '');
+        btn.textContent = subj.name;
+        btn.onclick = () => switchSubject(subj.id);
+        container.appendChild(btn);
+    });
+}
+
+function openSubjectModal() {
+    renderSubjectList();
+    document.getElementById('subject-modal').style.display = 'flex';
+}
+
+function renderSubjectList() {
+    const c = document.getElementById('subject-list-container');
+    c.innerHTML = '';
+    subjects.forEach((subj, i) => {
+        const row = document.createElement('div');
+        row.className = 'subject-list-item';
+        row.innerHTML = `
+            <span class="subject-list-name">${subj.name}</span>
+            ${i === 0 ? '<span class="subject-list-default">预设</span>' : ''}
+            <button class="sacred-btn teal-tier xs" onclick="renameSubjectPrompt('${subj.id}')">改名</button>
+            ${subjects.length > 1 && subj.id !== currentSubjectId ? `<button class="sacred-btn crimson-tier xs" onclick="deleteSubject('${subj.id}')">删除</button>` : '<button class="sacred-btn xs" disabled style="opacity:0.3;">删除</button>'}
+        `;
+        c.appendChild(row);
+    });
+}
+
+function addSubject() {
+    const inp = document.getElementById('new-subject-name');
+    const name = inp.value.trim();
+    if (!name) { showNotify('请填写科目名称！'); return; }
+    if (subjects.find(s => s.name === name)) { showNotify('已有同名科目！'); return; }
+    const id = 'subj_' + Date.now();
+    subjects.push({ id, name });
+    saveSubjects();
+    inp.value = '';
+    renderSubjectList();
+    renderSubjectTabs();
+    showNotify(`◈ 科目「${name}」已新增！`);
+}
+
+function renameSubjectPrompt(subjectId) {
+    const subj = subjects.find(s => s.id === subjectId);
+    if (!subj) return;
+    showCustomModal({ title: '科目改名', msg: `目前名称：${subj.name}`, hasInput: true, showCancel: true, onConfirm: (val) => {
+        const newName = val.trim();
+        if (!newName) { showNotify('名称不能为空！'); return; }
+        subj.name = newName;
+        saveSubjects();
+        renderSubjectList();
+        renderSubjectTabs();
+        showNotify(`◈ 已改名为「${newName}」`);
+    }});
+}
+
+function deleteSubject(subjectId) {
+    if (subjects.length <= 1) { showNotify('至少保留一个科目！'); return; }
+    const subj = subjects.find(s => s.id === subjectId);
+    if (!subj) return;
+    showCustomModal({ title: '删除科目', msg: `确定删除科目「${subj.name}」？该科目所有弟子数据将一并清除。`, showCancel: true, onConfirm: () => {
+        // Remove subject data from all students
+        students.forEach(s => { if (s.subjectData) delete s.subjectData[subjectId]; });
+        subjects = subjects.filter(s => s.id !== subjectId);
+        saveSubjects();
+        saveData();
+        renderSubjectList();
+        renderSubjectTabs();
+        showNotify(`◈ 科目「${subj.name}」已删除`);
+    }});
+}
+
+// ══════════════════════════════════════════════════════
 // ── POOL TRACKING (新增历练轮次池) ──
 // soloUsedIds: 本轮已被点中的弟子 ID 集合
 // teamUsedIds: 本轮已被点中的小队 ID 集合
@@ -1414,6 +1590,21 @@ function preloadAssets(){const o=document.getElementById('loading-overlay'),asse
 
 window.onload=()=>{
     students=(students||[]).map(normalizeStudent);
+    // ── Subject system init: sync all students to current subject ──
+    students.forEach(s => {
+        // Migrate legacy flat data: if no subjectData yet, store current flat data under first subject
+        if (!s.subjectData) {
+            s.subjectData = {};
+            s.subjectData[subjects[0].id] = {
+                exp: s.exp || 0,
+                coins: s.coins || 0,
+                inventory: s.inventory || [],
+                equipped: s.equipped || { pets:[], swords:[] }
+            };
+        }
+        syncStudentToSubject(s, currentSubjectId);
+    });
+    renderSubjectTabs();
     preloadAssets(); renderGrid(); updateTeacherUI();
     renderStatesInfo();
     buildColorPresets('color-preset-row'); updateGroupPreview();
@@ -1470,12 +1661,12 @@ function buyItem(itemId){const s=students[currentInvStudentIndex],itemData=getIt
 function openInventory(index){currentInvStudentIndex=index;const s=students[index];document.getElementById('inv-modal-title').innerText=`${s.name} · 行囊`;const container=document.getElementById('inv-container');container.innerHTML='';if(!s.inventory||!s.inventory.length){container.innerHTML='<p style="color:var(--text-dim);text-align:center;width:100%;font-family:\'Cinzel\',serif;font-size:0.75rem;letter-spacing:0.1em;padding:20px;">行囊空空，尚无器物</p>';}else s.inventory.forEach(itemId=>{const itemData=getItemData(itemId);if(!itemData)return;const pets=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const swords=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);const isEquipped=pets.includes(itemId)||swords.includes(itemId);const isConsumable=itemData.type==='consumable';const div=document.createElement('div');div.className=`inventory-item ${isEquipped?'equipped':''}`;div.innerHTML=`<img src="${itemData.icon||itemData.src}"><div class="item-tooltip"><b>${itemData.name}</b>\n${itemData.cp?`战力 +${itemData.cp}\n`:''}${itemData.desc||''}</div>`;div.onclick=isConsumable?()=>useRealReward(index,itemId):()=>toggleEquip(index,itemId,itemData.type);container.appendChild(div);});document.getElementById('inventory-modal').style.display='flex';}
 function toggleEquip(si,itemId,type){const s=students[si];if(!s.equipped)s.equipped={pets:[],swords:[]};if(!Array.isArray(s.equipped.pets))s.equipped.pets=s.equipped.pet?[s.equipped.pet]:[];if(!Array.isArray(s.equipped.swords))s.equipped.swords=s.equipped.sword?[s.equipped.sword]:[];const MAX=3;if(type==='pet'){const idx=s.equipped.pets.indexOf(itemId);if(idx>-1){s.equipped.pets.splice(idx,1);}else if(s.equipped.pets.length<MAX){s.equipped.pets.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 只神兽！请先卸下一只。`);return;}}else if(type==='sword'){const idx=s.equipped.swords.indexOf(itemId);if(idx>-1){s.equipped.swords.splice(idx,1);}else if(s.equipped.swords.length<MAX){s.equipped.swords.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 把神兵！请先卸下一把。`);return;}}saveData();renderGrid();openInventory(si);}
 function useRealReward(si,uid){const s=students[si],baseId=uid.split('_')[0],item=REAL_REWARDS.find(r=>baseId===r.id);if(!item)return;if(confirm(`确定使用【${item.name}】？请向导师出示此画面。`)){s.inventory=s.inventory.filter(id=>id!==uid);saveData();openInventory(si);showNotify(`已使用 ${item.name}！`);}}
-function addStudent(){const input=document.getElementById('newStudentName'),name=input.value.trim();const grs=document.getElementsByName('newStudentGender');let gender='male';for(let r of grs)if(r.checked)gender=r.value;if(!name)return;playSfx(sfxClick);students.push({id:Date.now(),name,gender,exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});input.value='';saveData();renderGrid();showNotify(`${name} 已载入真理编年史！`);
+function addStudent(){const input=document.getElementById('newStudentName'),name=input.value.trim();const grs=document.getElementsByName('newStudentGender');let gender='male';for(let r of grs)if(r.checked)gender=r.value;if(!name)return;playSfx(sfxClick);const newS={id:Date.now(),name,gender,exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{newS.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});newS.exp=newS.subjectData[currentSubjectId]?.exp||0;newS.coins=newS.subjectData[currentSubjectId]?.coins||0;students.push(newS);input.value='';saveData();renderGrid();showNotify(`${name} 已载入真理编年史！`);
     // New student resets solo pool since roster changed
     soloUsedIds.clear();
 }
 function openBatchModal(){document.getElementById('batch-modal').style.display='flex';}
-function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name))students.push({id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}});}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify("请输入 1~100 之间的人数。");}
+function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name)){const ns={id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{ns.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});students.push(ns);}}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify("请输入 1~100 之间的人数。");}
 function openEditModal(id){const s=students.find(st=>st.id===id);if(!s)return;document.getElementById('edit-id').value=id;document.getElementById('edit-name').value=s.name;const gr=document.getElementsByName('editGender');for(let r of gr)r.checked=(r.value===(s.gender||'male'));document.getElementById('edit-student-modal').style.display='flex';}
 function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子卷册已修订！");}}
 function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
@@ -1518,7 +1709,12 @@ function checkWeaponDrop(si,guaranteed=false){if(guaranteed||Math.random()<0.05)
 function playHitEffect(ti,color='#c8a84b'){if(!ti||!ti.parentElement)return;const spark=document.createElement('div');spark.className='hit-spark';spark.style.background=`radial-gradient(circle, ${color} 0%, rgba(255,255,255,0.3) 40%, transparent 70%)`;spark.style.left='50%';spark.style.top='50%';spark.style.transform='translate(-50%,-50%)';ti.parentElement.appendChild(spark);ti.classList.add('damage-flash');setTimeout(()=>{spark.remove();ti.classList.remove('damage-flash');},500);}
 function showFloatText(text,index){const card=document.getElementById(`card-${index}`);if(card){const el=document.createElement('div');el.className='float-text';el.innerText=text;el.style.left='50%';el.style.top='50%';el.style.transform='translate(-50%,-50%)';card.appendChild(el);setTimeout(()=>el.remove(),1700);}}
 function showLevelUpEffect(){const o=document.getElementById('level-up-overlay');o.style.display='flex';setTimeout(()=>o.style.display='none',2000);}
-function saveData(){localStorage.setItem('wuxia_class_data',JSON.stringify(students));showNotify("真理编年史已封印保存");}
+function saveData(){
+    // Save current flat fields back to subjectData before persisting
+    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    localStorage.setItem('wuxia_class_data',JSON.stringify(students));
+    showNotify("真理编年史已封印保存");
+}
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();showNotify("圣律归虚，真理湮灭...");}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
 </script>
@@ -2129,5 +2325,22 @@ function renderCardActions(s, index) {
     return div;
 }
 </script>
+<!-- ── SUBJECT MANAGE MODAL ── -->
+<div id="subject-modal" class="modal-overlay">
+    <div class="modal-panel" style="width:420px;display:flex;flex-direction:column;gap:14px;">
+        <div class="modal-title">⬡ 科目管理</div>
+        <div class="ornament">· · · · · · ·</div>
+        <p style="text-align:center;color:var(--text-dim);font-size:0.75rem;font-family:'Cinzel',serif;letter-spacing:0.08em;">每科目的等级与道具独立计算，弟子名称共通</p>
+        <div id="subject-list-container" style="max-height:300px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="new-subject-name" placeholder="新科目名称" style="flex-grow:1;">
+            <button class="sacred-btn success-tier sm" onclick="addSubject()">✦ 新增</button>
+        </div>
+        <div style="display:flex;justify-content:center;">
+            <button class="sacred-btn" onclick="document.getElementById('subject-modal').style.display='none'">完成</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
