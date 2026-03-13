@@ -523,6 +523,28 @@
         .state-unlock-card::before { content:''; position:absolute; inset:0; background:currentColor; opacity:0.06; }
         .ornament { text-align:center; color:var(--gold-dim); font-size:0.9rem; letter-spacing:0.5em; margin:4px 0; opacity:0.6; }
 
+        /* ── ATTENDANCE ── */
+        .attend-row { display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(8,12,28,0.7); border:1px solid var(--border); transition:all 0.2s; }
+        .attend-row.absent { background:rgba(28,8,12,0.8); border-color:var(--crimson); opacity:0.75; }
+        .attend-name { flex-grow:1; font-family:'Cinzel','Noto Serif SC',serif; font-size:0.9rem; color:var(--text-primary); }
+        .attend-row.absent .attend-name { color:#e08090; text-decoration:line-through; }
+        .attend-toggle { display:flex; align-items:center; gap:0; border:1px solid var(--border-glow); overflow:hidden; flex-shrink:0; }
+        .attend-btn { font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.06em; padding:5px 12px; cursor:pointer; border:none; transition:all 0.18s; }
+        .attend-btn-present { background:rgba(8,26,14,0.8); color:#60d090; }
+        .attend-btn-present.active { background:rgba(20,80,40,0.9); color:#90f0b0; box-shadow:inset 0 0 8px rgba(40,200,80,0.15); }
+        .attend-btn-absent { background:rgba(26,8,12,0.8); color:#c06070; }
+        .attend-btn-absent.active { background:rgba(80,10,20,0.9); color:#ffb0c0; box-shadow:inset 0 0 8px rgba(196,32,64,0.2); }
+        .absent-card { opacity:0.52; border-top-color:var(--crimson) !important; filter:saturate(0.4); }
+        .absent-card:hover { opacity:0.7; }
+        .absent-badge { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.08em; padding:2px 7px; border:1px solid var(--crimson); color:#e08090; background:rgba(28,6,10,0.85); position:absolute; top:8px; left:8px; z-index:6; }
+
+        /* ── LANG SWITCHER ── */
+        .lang-switcher { display:flex; border:1px solid var(--border-glow); overflow:hidden; flex-shrink:0; }
+        .lang-btn { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.06em; padding:5px 9px; background:rgba(10,14,30,0.8); color:var(--text-secondary); cursor:pointer; border:none; border-right:1px solid var(--border); transition:all 0.2s; }
+        .lang-btn:last-child { border-right:none; }
+        .lang-btn.active { background:rgba(30,22,8,0.9); color:var(--gold); box-shadow:inset 0 0 6px rgba(200,168,75,0.12); }
+        .lang-btn:hover:not(.active) { background:rgba(30,40,80,0.6); color:var(--silver); }
+
         ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:rgba(8,12,26,0.5); } ::-webkit-scrollbar-thumb { background:var(--border-glow); } ::-webkit-scrollbar-thumb:hover { background:var(--gold-dim); }
     </style>
 </head>
@@ -542,43 +564,49 @@
             <div class="header-divider"></div>
         </div>
         <div class="controls">
-            <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
-            <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
-            <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
-            <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 星辰秘宝阁</button>
-            <button class="sacred-btn gold-tier" onclick="openLeaderboard()">⬖ 圣律榜</button>
-            <button class="sacred-btn crimson-tier" onclick="openBattleModal()">⚔ 历练</button>
+            <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()" data-i18n="btn_music"></button>
+            <button class="sacred-btn teal-tier" onclick="openTimerModal()" data-i18n="btn_timer"></button>
+            <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;" data-i18n="btn_states"></button>
+            <button class="sacred-btn gold-tier" onclick="openShopDirect()" data-i18n="btn_shop"></button>
+            <button class="sacred-btn gold-tier" onclick="openLeaderboard()" data-i18n="btn_leaderboard"></button>
+            <button class="sacred-btn crimson-tier" onclick="openBattleModal()" data-i18n="btn_battle"></button>
             <div style="width:1px;height:24px;background:var(--border-glow);opacity:0.5;"></div>
-            <button id="loginBtn" class="sacred-btn" onclick="toggleTeacherMode()">◈ 导师登入</button>
+            <div class="lang-switcher" id="langSwitcher">
+                <button class="lang-btn active" onclick="setLang('zh')" id="langZH">中文</button>
+                <button class="lang-btn" onclick="setLang('en')" id="langEN">EN</button>
+                <button class="lang-btn" onclick="setLang('ms')" id="langMS">BM</button>
+            </div>
+            <button id="loginBtn" class="sacred-btn" onclick="toggleTeacherMode()" data-i18n="btn_login"></button>
             <div class="teacher-only teacher-controls-header" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <input type="text" id="newStudentName" placeholder="弟子名号" style="width:90px;">
+                <input type="text" id="newStudentName" data-i18n-placeholder="ph_student_name" style="width:90px;">
                 <div class="gender-radio">
-                    <label><input type="radio" name="newStudentGender" value="male" checked>男</label>
-                    <label><input type="radio" name="newStudentGender" value="female">女</label>
+                    <label><input type="radio" name="newStudentGender" value="male" checked><span data-i18n="label_male"></span></label>
+                    <label><input type="radio" name="newStudentGender" value="female"><span data-i18n="label_female"></span></label>
                 </div>
-                <button class="sacred-btn success-tier" onclick="addStudent()">收录</button>
-                <button class="sacred-btn teal-tier" onclick="openBatchModal()">批量</button>
-                <button class="sacred-btn gold-tier" onclick="openRPPanel()">⚖ 赏罚台</button>
-                <button class="sacred-btn" onclick="saveData()">封印</button>
-                <button class="sacred-btn crimson-tier" onclick="resetAll()">湮灭</button>
+                <button class="sacred-btn success-tier" onclick="addStudent()" data-i18n="btn_enroll"></button>
+                <button class="sacred-btn teal-tier" onclick="openBatchModal()" data-i18n="btn_batch"></button>
+                <button class="sacred-btn" onclick="openAttendanceModal()" style="border-color:#3a7050;color:#70d090;" id="attendanceBtn" data-i18n="btn_attendance"></button>
+                <button class="sacred-btn gold-tier" onclick="openRPPanel()" data-i18n="btn_rp"></button>
+                <button class="sacred-btn" onclick="saveData()" data-i18n="btn_save"></button>
+                <button class="sacred-btn crimson-tier" onclick="resetAll()" data-i18n="btn_reset"></button>
             </div>
         </div>
     </header>
 
     <div class="view-toggle-bar">
-        <span class="view-toggle-label">视图</span>
+        <span class="view-toggle-label" data-i18n="label_view"></span>
         <div class="toggle-group">
-            <button class="toggle-btn active" id="toggleIndividual" onclick="switchView('individual')">◈ 个人榜</button>
-            <button class="toggle-btn" id="toggleGroup" onclick="switchView('group')">⬡ 宗门小队</button>
+            <button class="toggle-btn active" id="toggleIndividual" onclick="switchView('individual')" data-i18n="btn_individual_view"></button>
+            <button class="toggle-btn" id="toggleGroup" onclick="switchView('group')" data-i18n="btn_group_view"></button>
         </div>
         <div class="view-separator"></div>
         <div id="group-view-controls" style="display:none;">
-            <button class="sacred-btn purple-tier sm" onclick="openGroupModal()">✦ 编制小队</button>
-            <button class="sacred-btn teal-tier sm teacher-only" onclick="clearAllGroups()">清空分组</button>
+            <button class="sacred-btn purple-tier sm" onclick="openGroupModal()" data-i18n="btn_create_group"></button>
+            <button class="sacred-btn teal-tier sm teacher-only" onclick="clearAllGroups()" data-i18n="btn_clear_groups"></button>
         </div>
         <div class="view-separator"></div>
         <div class="subject-selector-wrap">
-            <span class="subject-label">科目</span>
+            <span class="subject-label" data-i18n="label_subject"></span>
             <div class="subject-tabs" id="subject-tabs"></div>
             <button class="subject-manage-btn teacher-only" onclick="openSubjectModal()" title="管理科目">⚙</button>
         </div>
@@ -612,11 +640,11 @@
             <div class="battle-mode-bar">
                 <button class="battle-mode-btn active" id="modeBtnSolo" onclick="selectBattleMode('solo')">
                     <span class="battle-mode-icon">◈</span>
-                    <span class="battle-mode-label"><span class="battle-mode-name">个人历练</span><span class="battle-mode-desc">天命点选单名弟子</span></span>
+                    <span class="battle-mode-label"><span class="battle-mode-name" data-i18n="battle_solo_name"></span><span class="battle-mode-desc" data-i18n="battle_solo_desc"></span></span>
                 </button>
                 <button class="battle-mode-btn" id="modeBtnTeam" onclick="selectBattleMode('team')">
                     <span class="battle-mode-icon">⬡</span>
-                    <span class="battle-mode-label"><span class="battle-mode-name">小队历练</span><span class="battle-mode-desc">点选队伍，奖励全员平分</span></span>
+                    <span class="battle-mode-label"><span class="battle-mode-name" data-i18n="battle_team_name"></span><span class="battle-mode-desc" data-i18n="battle_team_desc"></span></span>
                 </button>
             </div>
             <div id="team-selector-row" style="display:none;background:rgba(8,12,28,0.9);border:1px solid var(--border);border-top:none;padding:8px 14px;display:flex;gap:10px;align-items:center;justify-content:center;">
@@ -649,32 +677,33 @@
         <div id="battle-ui">
             <p id="battle-msg">道途险阻，试炼降临。</p>
             <div class="battle-controls" id="battle-controls-start">
-                <button class="sacred-btn gold-tier" style="font-size:1rem;padding:12px 28px;" id="battle-pick-btn" onclick="handleBattlePick()">◈ 天命点选</button>
-                <button class="sacred-btn" onclick="closeBattleModal()">退隐</button>
+                <button class="sacred-btn gold-tier" style="font-size:1rem;padding:12px 28px;" id="battle-pick-btn" onclick="handleBattlePick()" data-i18n="btn_battle_pick"></button>
+                <button class="sacred-btn" onclick="closeBattleModal()" data-i18n="btn_retreat"></button>
             </div>
             <!-- ── SOLO POOL COUNTER ── -->
             <div class="pool-counter" id="solo-pool-counter" style="display:none;">
-                <span class="pc-label">◈ 待历练</span>
+                <span class="pc-label" data-i18n="pc_solo_label"></span>
                 <span class="pc-remaining" id="solo-pc-remaining">0</span>
                 <span class="pc-sep">/</span>
                 <span class="pc-total" id="solo-pc-total">0</span>
-                <span class="pc-label">弟子</span>
+                <span class="pc-label" data-i18n="pc_solo_unit"></span>
                 <span style="color:var(--border-glow);opacity:0.5;margin:0 4px;">·</span>
                 <div class="pc-used-dots" id="solo-pc-dots"></div>
+                <span id="solo-absent-note" style="font-family:'Cinzel',serif;font-size:0.62rem;color:#e08090;letter-spacing:0.06em;display:none;margin-left:6px;"></span>
             </div>
             <!-- ── TEAM POOL COUNTER ── -->
             <div class="pool-counter" id="team-pool-counter" style="display:none;">
-                <span class="pc-label">⬡ 待出阵</span>
+                <span class="pc-label" data-i18n="pc_team_label"></span>
                 <span class="pc-remaining" id="team-pc-remaining">0</span>
                 <span class="pc-sep">/</span>
                 <span class="pc-total" id="team-pc-total">0</span>
-                <span class="pc-label">支小队</span>
+                <span class="pc-label" data-i18n="pc_team_unit"></span>
                 <span style="color:var(--border-glow);opacity:0.5;margin:0 4px;">·</span>
                 <div class="pc-used-dots" id="team-pc-dots"></div>
             </div>
             <div class="battle-controls" id="battle-controls-judge" style="display:none;">
-                <button class="sacred-btn success-tier" onclick="resolveBattle(true)">✦ 洞彻真理 (斩获)</button>
-                <button class="sacred-btn crimson-tier" onclick="resolveBattle(false)">✦ 迷失道途 (受伤)</button>
+                <button class="sacred-btn success-tier" onclick="resolveBattle(true)" data-i18n="btn_battle_win"></button>
+                <button class="sacred-btn crimson-tier" onclick="resolveBattle(false)" data-i18n="btn_battle_lose"></button>
             </div>
         </div>
     </div>
@@ -683,33 +712,33 @@
 <!-- ── LEADERBOARD ── -->
 <div id="leaderboard-modal" class="modal-overlay">
     <div class="modal-panel" style="width:460px;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
-        <div class="modal-title">⬖ 圣律战力榜</div>
+        <div class="modal-title" data-i18n="lb_title"></div>
         <div class="ornament">· · · · · · ·</div>
         <div style="display:flex;justify-content:space-between;padding:0 10px;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.15em;color:var(--text-dim);border-bottom:1px solid var(--border);">
-            <span>RANK / DISCIPLE</span><span>POWER (CP)</span>
+            <span data-i18n="lb_rank_header"></span><span data-i18n="lb_power_header"></span>
         </div>
         <div id="lb-container" style="flex-grow:1;overflow-y:auto;"></div>
-        <button class="sacred-btn" onclick="document.getElementById('leaderboard-modal').style.display='none'">闭卷</button>
+        <button class="sacred-btn" onclick="document.getElementById('leaderboard-modal').style.display='none'" data-i18n="btn_close_scroll"></button>
     </div>
 </div>
 
 <!-- ── SHOP MODAL ── -->
 <div id="shop-modal" class="modal-overlay">
     <div class="modal-panel" style="width:780px;max-height:84vh;display:flex;flex-direction:column;gap:12px;background-image:url('assets/backgrounds/shop_background.png');background-size:cover;background-position:center;">
-        <div class="modal-title">⬡ 星辰秘宝阁</div>
+        <div class="modal-title" data-i18n="shop_title"></div>
         <div class="ornament">· · · · · · ·</div>
         <div class="shop-select-row">
-            <span class="label-tag">购买者</span>
+            <span class="label-tag" data-i18n="shop_buyer"></span>
             <select id="shop-student-select" onchange="switchShopStudent()"></select>
-            <span id="shop-balance-display" class="label-tag">灵石 0</span>
-            <span class="shop-note">※ 神兽仅限此处购得，历练无缘</span>
+            <span id="shop-balance-display" class="label-tag"></span>
+            <span class="shop-note" data-i18n="shop_note"></span>
         </div>
         <div class="shop-tabs">
-            <div class="shop-tab active" data-tab="gear" onclick="switchShopTab('gear')">神兵 · 灵兽</div>
-            <div class="shop-tab" data-tab="reward" onclick="switchShopTab('reward')">圣律特赦</div>
+            <div class="shop-tab active" data-tab="gear" onclick="switchShopTab('gear')" data-i18n="shop_tab_gear"></div>
+            <div class="shop-tab" data-tab="reward" onclick="switchShopTab('reward')" data-i18n="shop_tab_reward"></div>
         </div>
         <div id="shop-container" class="shop-grid"></div>
-        <button class="sacred-btn" onclick="document.getElementById('shop-modal').style.display='none'">离阁</button>
+        <button class="sacred-btn" onclick="document.getElementById('shop-modal').style.display='none'" data-i18n="btn_leave_shop"></button>
     </div>
 </div>
 
@@ -730,11 +759,11 @@
 <!-- ── BATCH ── -->
 <div id="batch-modal" class="modal-overlay">
     <div class="modal-panel" style="width:300px;text-align:center;display:flex;flex-direction:column;gap:16px;">
-        <div class="modal-title">批量收录弟子</div>
+        <div class="modal-title" data-i18n="batch_title"></div>
         <input type="number" id="batch-count" min="1" max="100" value="30" style="text-align:center;width:100%;">
         <div style="display:flex;justify-content:center;gap:10px;">
-            <button class="sacred-btn" onclick="document.getElementById('batch-modal').style.display='none'">取消</button>
-            <button class="sacred-btn success-tier" onclick="confirmBatchAdd()">收录</button>
+            <button class="sacred-btn" onclick="document.getElementById('batch-modal').style.display='none'" data-i18n="btn_cancel"></button>
+            <button class="sacred-btn success-tier" onclick="confirmBatchAdd()" data-i18n="btn_enroll"></button>
         </div>
     </div>
 </div>
@@ -742,21 +771,21 @@
 <!-- ── EDIT STUDENT ── -->
 <div id="edit-student-modal" class="modal-overlay">
     <div class="modal-panel" style="width:300px;display:flex;flex-direction:column;gap:14px;">
-        <div class="modal-title">修订弟子卷册</div>
+        <div class="modal-title" data-i18n="edit_title"></div>
         <input type="hidden" id="edit-id">
-        <div><label style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--text-dim);">名号</label><input type="text" id="edit-name" style="width:100%;margin-top:5px;"></div>
+        <div><label style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--text-dim);" data-i18n="label_name"></label><input type="text" id="edit-name" style="width:100%;margin-top:5px;"></div>
         <div>
-            <label style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--text-dim);">性别</label>
+            <label style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--text-dim);" data-i18n="label_gender"></label>
             <div class="gender-radio" style="margin-top:6px;">
-                <label><input type="radio" name="editGender" value="male">男弟子</label>
-                <label><input type="radio" name="editGender" value="female">女弟子</label>
+                <label><input type="radio" name="editGender" value="male"><span data-i18n="label_male_student"></span></label>
+                <label><input type="radio" name="editGender" value="female"><span data-i18n="label_female_student"></span></label>
             </div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:6px;">
-            <button class="sacred-btn crimson-tier" onclick="confirmDeleteStudent()">逐出宗门</button>
+            <button class="sacred-btn crimson-tier" onclick="confirmDeleteStudent()" data-i18n="btn_expel"></button>
             <div style="display:flex;gap:8px;">
-                <button class="sacred-btn" onclick="document.getElementById('edit-student-modal').style.display='none'">取消</button>
-                <button class="sacred-btn success-tier" onclick="saveStudentEdit()">确立</button>
+                <button class="sacred-btn" onclick="document.getElementById('edit-student-modal').style.display='none'" data-i18n="btn_cancel"></button>
+                <button class="sacred-btn success-tier" onclick="saveStudentEdit()" data-i18n="btn_confirm"></button>
             </div>
         </div>
     </div>
@@ -769,8 +798,8 @@
         <p id="modal-msg" style="color:var(--text-secondary);font-family:'IM Fell English',serif;font-style:italic;"></p>
         <div id="modal-input-container" style="display:none;"><input type="text" id="modal-input" style="width:90%;text-align:center;"></div>
         <div style="display:flex;justify-content:center;gap:10px;margin-top:4px;">
-            <button id="modal-cancel-btn" class="sacred-btn" style="display:none;">取消</button>
-            <button id="modal-confirm-btn" class="sacred-btn success-tier">确认</button>
+            <button id="modal-cancel-btn" class="sacred-btn" style="display:none;" data-i18n="btn_cancel"></button>
+            <button id="modal-confirm-btn" class="sacred-btn success-tier" data-i18n="btn_confirm"></button>
         </div>
     </div>
 </div>
@@ -778,17 +807,17 @@
 <!-- ── GROUP SETUP MODAL ── -->
 <div id="group-modal" class="modal-overlay">
     <div class="modal-panel" style="width:560px;max-width:96vw;max-height:86vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">
-        <div class="modal-title">✦ 编制宗门小队</div>
+        <div class="modal-title" data-i18n="group_setup_title"></div>
         <div class="ornament">· · · · · · ·</div>
         <div class="group-modal-section">
-            <div class="group-modal-label">编制方式</div>
+            <div class="group-modal-label" data-i18n="group_mode_label"></div>
             <div class="auto-mode-grid">
                 <div class="auto-mode-card selected" id="modeAuto" onclick="selectGroupMode('auto')"><h4>⚙ 自动编制</h4><p>系统自动随机或按战力均衡分配弟子至各小队</p></div>
                 <div class="auto-mode-card" id="modeManual" onclick="selectGroupMode('manual')"><h4>✦ 手动编制</h4><p>仅创建空队伍，导师手动拖拽弟子至各队伍</p></div>
             </div>
         </div>
         <div id="auto-options" class="group-modal-section">
-            <div class="group-modal-label">自动分配策略</div>
+            <div class="group-modal-label" data-i18n="group_strategy_label"></div>
             <div class="auto-mode-grid">
                 <div class="auto-mode-card selected" id="strategyRandom" onclick="selectStrategy('random')"><h4>🎲 随机分配</h4><p>随机打乱，无论战力高低均匀分散</p></div>
                 <div class="auto-mode-card" id="strategyBalance" onclick="selectStrategy('balance')"><h4>⚖ 战力均衡</h4><p>蛇形排列，使每队总战力尽量相近</p></div>
@@ -797,7 +826,7 @@
             </div>
         </div>
         <div class="group-modal-section">
-            <div class="group-modal-label">分组数量</div>
+            <div class="group-modal-label" data-i18n="group_count_label"></div>
             <div class="num-row">
                 <span style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--text-secondary);">共分</span>
                 <input type="number" id="group-count-input" min="2" max="20" value="4" class="group-count-input" oninput="updateGroupPreview()">
@@ -806,7 +835,7 @@
             </div>
         </div>
         <div class="group-modal-section">
-            <div class="group-modal-label">队伍命名方式</div>
+            <div class="group-modal-label" data-i18n="group_naming_label"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="sacred-btn sm" id="namingAuto" onclick="selectNaming('auto')">自动命名</button>
                 <button class="sacred-btn sm" id="namingCustom" onclick="selectNaming('custom')">自定义名称</button>
@@ -814,12 +843,12 @@
             <div id="custom-names-container" style="display:none;margin-top:8px;flex-direction:column;gap:6px;"></div>
         </div>
         <div class="group-modal-section">
-            <div class="group-modal-label">小队颜色</div>
+            <div class="group-modal-label" data-i18n="group_color_label"></div>
             <div class="color-picker-row" id="color-preset-row"></div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-            <button class="sacred-btn" onclick="document.getElementById('group-modal').style.display='none'">取消</button>
-            <button class="sacred-btn purple-tier" onclick="confirmGroupSetup()" style="padding:10px 28px;">⚔ 立即编制</button>
+            <button class="sacred-btn" 
+            <button class="sacred-btn purple-tier" onclick="confirmGroupSetup()" style="padding:10px 28px;"data-i18n="btn_create_now"></button>
         </div>
     </div>
 </div>
@@ -827,7 +856,7 @@
 <!-- ── GROUP EDIT MODAL ── -->
 <div id="group-edit-modal" class="modal-overlay">
     <div class="modal-panel" style="width:360px;display:flex;flex-direction:column;gap:14px;">
-        <div class="modal-title" id="group-edit-title">编辑小队</div>
+        <div class="modal-title" id="group-edit-title" data-i18n="group_edit_title"></div>
         <input type="hidden" id="group-edit-id">
         <div><label style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--text-dim);">队伍名称</label><input type="text" id="group-edit-name" style="width:100%;margin-top:5px;"></div>
         <div>
@@ -839,10 +868,10 @@
             <div class="color-picker-row" style="margin-top:6px;" id="group-color-picker"></div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:6px;">
-            <button class="sacred-btn crimson-tier" onclick="dissolveGroup()">解散小队</button>
+            <button class="sacred-btn crimson-tier" onclick="dissolveGroup()" data-i18n="btn_dissolve_group"></button>
             <div style="display:flex;gap:8px;">
-                <button class="sacred-btn" onclick="document.getElementById('group-edit-modal').style.display='none'">取消</button>
-                <button class="sacred-btn success-tier" onclick="saveGroupEdit()">确立</button>
+                <button class="sacred-btn" 
+                <button class="sacred-btn success-tier" onclick="saveGroupEdit()" data-i18n="btn_confirm"></button>
             </div>
         </div>
     </div>
@@ -851,12 +880,12 @@
 <!-- ── STATES INFO MODAL ── -->
 <div id="states-modal" class="modal-overlay">
     <div class="modal-panel" style="width:960px;max-width:96vw;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">
-        <div class="modal-title">◈ 五境界图鉴</div>
+        <div class="modal-title" data-i18n="states_title"></div>
         <div class="ornament">· · · · · · · · ·</div>
         <p style="text-align:center;color:var(--text-dim);font-family:'IM Fell English',serif;font-style:italic;font-size:0.85rem;">随等级晋升，弟子将解锁五大境界，外貌与光环随之蜕变</p>
         <div id="states-grid-container"></div>
         <div style="text-align:center;margin-top:4px;">
-            <button class="sacred-btn" onclick="document.getElementById('states-modal').style.display='none'">合典</button>
+            <button class="sacred-btn" onclick="document.getElementById('states-modal').style.display='none'"data-i18n="btn_close_tome"></button>
         </div>
     </div>
 </div>
@@ -864,23 +893,23 @@
 <!-- ── STATE UNLOCK ── -->
 <div id="state-unlock-overlay" style="position:fixed;inset:0;display:none;z-index:9997;background:rgba(2,4,14,0.92);justify-content:center;align-items:center;backdrop-filter:blur(8px);">
     <div class="state-unlock-card" id="state-unlock-card">
-        <div style="font-family:'Cinzel',serif;letter-spacing:0.1em;opacity:0.8;font-size:0.9rem;">境界突破</div>
+        <div style="font-family:'Cinzel',serif;letter-spacing:0.1em;opacity:0.8;font-size:0.9rem;"data-i18n="state_breakthrough"></div>
         <div style="width:80%;height:1px;background:currentColor;opacity:0.3;"></div>
         <div style="font-family:'Cinzel Decorative',serif;font-size:1.8rem;letter-spacing:0.06em;text-shadow:0 0 20px currentColor;" id="state-unlock-name">虚影之民</div>
         <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.95rem;color:var(--text-secondary);" id="state-unlock-desc"></div>
-        <button class="sacred-btn" onclick="document.getElementById('state-unlock-overlay').style.display='none'" style="margin-top:10px;">领悟</button>
+        <button class="sacred-btn" onclick="document.getElementById('state-unlock-overlay').style.display='none'" style="margin-top:10px;"data-i18n="btn_enlighten"></button>
     </div>
 </div>
 
 <!-- ── ITEM GET ── -->
 <div id="item-get-overlay" style="position:fixed;inset:0;display:none;z-index:9998;background:rgba(2,4,14,0.9);justify-content:center;align-items:center;flex-direction:column;backdrop-filter:blur(6px);">
     <div class="item-card-anim">
-        <div style="font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1.4rem;margin-bottom:12px;text-shadow:0 0 16px rgba(200,168,75,0.5);">✦ 机缘降临 ✦</div>
+        <div style="font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1.4rem;margin-bottom:12px;text-shadow:0 0 16px rgba(200,168,75,0.5);"data-i18n="item_fortune"></div>
         <img id="item-get-img" src="" style="width:100px;height:100px;image-rendering:pixelated;border:1px solid var(--gold-dim);background:rgba(0,0,0,0.5);">
         <p id="item-get-name" style="color:var(--gold-bright);font-family:'Cinzel',serif;font-size:1.3rem;margin:12px 0 4px;letter-spacing:0.05em;"></p>
         <p id="item-get-desc" style="color:var(--text-secondary);font-family:'IM Fell English',serif;font-style:italic;font-size:0.95rem;margin:0;"></p>
         <br>
-        <button class="sacred-btn success-tier" onclick="document.getElementById('item-get-overlay').style.display='none'">承纳</button>
+        <button class="sacred-btn success-tier" onclick="document.getElementById('item-get-overlay').style.display='none'"data-i18n="btn_receive"></button>
     </div>
 </div>
 
@@ -890,8 +919,8 @@
 <div id="timer-modal" class="modal-overlay">
     <div class="modal-panel">
         <div class="timer-mode-bar">
-            <button class="timer-mode-tab active" id="timerTabSW" onclick="switchTimerMode('stopwatch')">⏱ 正计时</button>
-            <button class="timer-mode-tab" id="timerTabCD" onclick="switchTimerMode('countdown')">⏳ 倒计时</button>
+            <button class="timer-mode-tab active" id="timerTabSW" onclick="switchTimerMode('stopwatch')"data-i18n="timer_stopwatch"></button>
+            <button class="timer-mode-tab" id="timerTabCD" onclick="switchTimerMode('countdown')"data-i18n="timer_countdown"></button>
         </div>
         <div class="timer-body">
             <div class="timer-display-wrap">
@@ -928,7 +957,7 @@
                 </div>
             </div>
             <div class="timer-controls" id="timer-controls"></div>
-            <button class="sacred-btn sm" onclick="closeTimerModal()" style="margin-top:2px;">离开</button>
+            <button class="sacred-btn sm" onclick="closeTimerModal()" style="margin-top:2px;"data-i18n="btn_leave"></button>
         </div>
     </div>
 </div>
@@ -940,8 +969,8 @@
     <div class="music-master-row">
         <span class="music-master-label">◈ 总开关</span>
         <div class="music-on-off-toggle">
-            <button class="music-on-off-btn off-active" id="masterOff" onclick="setMasterMusic(false)">✕ 关闭</button>
-            <button class="music-on-off-btn" id="masterOn" onclick="setMasterMusic(true)">♫ 开启</button>
+            <button class="music-on-off-btn off-active" id="masterOff" onclick="setMasterMusic(false)"data-i18n="music_off"></button>
+            <button class="music-on-off-btn" id="masterOn" onclick="setMasterMusic(true)"data-i18n="music_on"></button>
         </div>
     </div>
     <div class="music-panel-divider"></div>
@@ -980,10 +1009,10 @@
     </div>
     <div class="music-panel-divider"></div>
     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-        <button class="sacred-btn xs" onclick="applyPreset('off')" style="border-color:#5a3040;color:#c08090;">全静音</button>
-        <button class="sacred-btn xs" onclick="applyPreset('low')" style="border-color:var(--border-glow);">轻柔</button>
-        <button class="sacred-btn xs" onclick="applyPreset('mid')" style="border-color:var(--teal);color:var(--teal-glow);">标准</button>
-        <button class="sacred-btn xs gold-tier" onclick="applyPreset('full')">全开</button>
+        <button class="sacred-btn xs" onclick="applyPreset('off')" style="border-color:#5a3040;color:#c08090;"data-i18n="music_preset_off"></button>
+        <button class="sacred-btn xs" onclick="applyPreset('low')" style="border-color:var(--border-glow);"data-i18n="music_preset_low"></button>
+        <button class="sacred-btn xs" onclick="applyPreset('mid')" style="border-color:var(--teal);color:var(--teal-glow);"data-i18n="music_preset_mid"></button>
+        <button class="sacred-btn xs gold-tier" onclick="applyPreset('full')"data-i18n="music_preset_full"></button>
     </div>
 </div>
 
@@ -1026,15 +1055,15 @@ document.addEventListener('click',e=>{ if(!musicPanelOpen)return; const p=docume
 function syncMusicPanelUI(){
     document.getElementById('masterOn').className='music-on-off-btn'+(audioState.masterOn?' on-active':'');
     document.getElementById('masterOff').className='music-on-off-btn'+(audioState.masterOn?'':' off-active');
-    document.getElementById('musicBtn').innerText=audioState.masterOn?'♫ 律音':'♪ 律音';
+    document.getElementById('musicBtn').innerText=audioState.masterOn?'♫ '+(typeof t==='function'?t('btn_music').replace('♪ ',''):t('btn_music')):'♪ '+(typeof t==='function'?t('btn_music').replace('♪ ',''):'律音');
     const bv=audioState.bgmVol; document.getElementById('bgm-slider').value=bv; document.getElementById('bgm-fill').style.width=bv+'%'; document.getElementById('bgm-thumb').style.left=bv+'%'; document.getElementById('bgm-vol-label').innerText=bv+'%';
-    document.getElementById('bgm-mute-btn').className='music-mute-btn'+(audioState.bgmMuted?' muted':''); document.getElementById('bgm-mute-btn').innerText=audioState.bgmMuted?'取消静音':'静音';
+    document.getElementById('bgm-mute-btn').className='music-mute-btn'+(audioState.bgmMuted?' muted':''); document.getElementById('bgm-mute-btn').innerText=typeof t==='function'?(audioState.bgmMuted?t('music_unmute'):t('music_mute')):(audioState.bgmMuted?'取消静音':'静音');
     const sv=audioState.sfxVol; document.getElementById('sfx-slider').value=sv; document.getElementById('sfx-fill').style.width=sv+'%'; document.getElementById('sfx-thumb').style.left=sv+'%'; document.getElementById('sfx-vol-label').innerText=sv+'%';
-    document.getElementById('sfx-mute-btn').className='music-mute-btn'+(audioState.sfxMuted?' muted':''); document.getElementById('sfx-mute-btn').innerText=audioState.sfxMuted?'取消静音':'静音';
+    document.getElementById('sfx-mute-btn').className='music-mute-btn'+(audioState.sfxMuted?' muted':''); document.getElementById('sfx-mute-btn').innerText=typeof t==='function'?(audioState.sfxMuted?t('music_unmute'):t('music_mute')):(audioState.sfxMuted?'取消静音':'静音');
 }
 function setMasterMusic(on){ audioState.masterOn=on; if(on){applyBGMVolume();applySFXVolume();playBGM(audioState.currentBGM);}else{stopBGM();applySFXVolume();} syncMusicPanelUI(); }
-function onBGMSlider(val){ val=parseInt(val); audioState.bgmVol=val; if(val>0)audioState.bgmMuted=false; applyBGMVolume(); document.getElementById('bgm-fill').style.width=val+'%'; document.getElementById('bgm-thumb').style.left=val+'%'; document.getElementById('bgm-vol-label').innerText=val+'%'; document.getElementById('bgm-mute-btn').className='music-mute-btn'+(audioState.bgmMuted?' muted':''); document.getElementById('bgm-mute-btn').innerText=audioState.bgmMuted?'取消静音':'静音'; }
-function onSFXSlider(val){ val=parseInt(val); audioState.sfxVol=val; if(val>0)audioState.sfxMuted=false; applySFXVolume(); document.getElementById('sfx-fill').style.width=val+'%'; document.getElementById('sfx-thumb').style.left=val+'%'; document.getElementById('sfx-vol-label').innerText=val+'%'; document.getElementById('sfx-mute-btn').className='music-mute-btn'+(audioState.sfxMuted?' muted':''); document.getElementById('sfx-mute-btn').innerText=audioState.sfxMuted?'取消静音':'静音'; try{sfxClick.volume=getSFXVol();sfxClick.currentTime=0;sfxClick.play().catch(()=>{});}catch(e){} }
+function onBGMSlider(val){ val=parseInt(val); audioState.bgmVol=val; if(val>0)audioState.bgmMuted=false; applyBGMVolume(); document.getElementById('bgm-fill').style.width=val+'%'; document.getElementById('bgm-thumb').style.left=val+'%'; document.getElementById('bgm-vol-label').innerText=val+'%'; document.getElementById('bgm-mute-btn').className='music-mute-btn'+(audioState.bgmMuted?' muted':''); document.getElementById('bgm-mute-btn').innerText=typeof t==='function'?(audioState.bgmMuted?t('music_unmute'):t('music_mute')):(audioState.bgmMuted?'取消静音':'静音'); }
+function onSFXSlider(val){ val=parseInt(val); audioState.sfxVol=val; if(val>0)audioState.sfxMuted=false; applySFXVolume(); document.getElementById('sfx-fill').style.width=val+'%'; document.getElementById('sfx-thumb').style.left=val+'%'; document.getElementById('sfx-vol-label').innerText=val+'%'; document.getElementById('sfx-mute-btn').className='music-mute-btn'+(audioState.sfxMuted?' muted':''); document.getElementById('sfx-mute-btn').innerText=typeof t==='function'?(audioState.sfxMuted?t('music_unmute'):t('music_mute')):(audioState.sfxMuted?'取消静音':'静音'); try{sfxClick.volume=getSFXVol();sfxClick.currentTime=0;sfxClick.play().catch(()=>{});}catch(e){} }
 function toggleMuteBGM(){ audioState.bgmMuted=!audioState.bgmMuted; applyBGMVolume(); syncMusicPanelUI(); }
 function toggleMuteSFX(){ audioState.sfxMuted=!audioState.sfxMuted; applySFXVolume(); syncMusicPanelUI(); }
 function applyPreset(p){ if(p==='off'){audioState.masterOn=false;stopBGM();applySFXVolume();}else{audioState.masterOn=true;audioState.bgmMuted=false;audioState.sfxMuted=false; if(p==='low'){audioState.bgmVol=15;audioState.sfxVol=30;}else if(p==='mid'){audioState.bgmVol=30;audioState.sfxVol=70;}else if(p==='full'){audioState.bgmVol=80;audioState.sfxVol=100;} applyBGMVolume();applySFXVolume();playBGM(audioState.currentBGM);} syncMusicPanelUI(); if(p!=='off')try{sfxClick.volume=getSFXVol();sfxClick.currentTime=0;sfxClick.play().catch(()=>{});}catch(e){} }
@@ -1143,7 +1172,7 @@ function switchSubject(subjectId) {
     renderSubjectTabs();
     renderGrid();
     if (currentView === 'group') renderGroupView();
-    showNotify(`◈ 已切换至科目：${getCurrentSubject().name}`);
+    showNotify(t("subject_switched",{name:getCurrentSubject().name}));
     playSfx(sfxClick);
 }
 
@@ -1173,7 +1202,7 @@ function renderSubjectList() {
         row.className = 'subject-list-item';
         row.innerHTML = `
             <span class="subject-list-name">${subj.name}</span>
-            ${i === 0 ? '<span class="subject-list-default">预设</span>' : ''}
+            ${i === 0 ? '<span class="subject-list-default">'+t("subject_default_badge")+'</span>' : ''}
             <button class="sacred-btn teal-tier xs" onclick="renameSubjectPrompt('${subj.id}')">改名</button>
             ${subjects.length > 1 && subj.id !== currentSubjectId ? `<button class="sacred-btn crimson-tier xs" onclick="deleteSubject('${subj.id}')">删除</button>` : '<button class="sacred-btn xs" disabled style="opacity:0.3;">删除</button>'}
         `;
@@ -1192,7 +1221,7 @@ function addSubject() {
     inp.value = '';
     renderSubjectList();
     renderSubjectTabs();
-    showNotify(`◈ 科目「${name}」已新增！`);
+    showNotify(t("subject_add_success",{name}));
 }
 
 function renameSubjectPrompt(subjectId) {
@@ -1233,6 +1262,7 @@ function deleteSubject(subjectId) {
 // ══════════════════════════════════════════════════════
 let soloUsedIds = new Set();
 let teamUsedIds = new Set();
+let absentIds = new Set(); // attendance system: IDs of absent students
 
 const PLAYER_ARTS=[
     "assets/characters/player_art_1-24.png",
@@ -1292,8 +1322,8 @@ let cdTotal=0, cdRemaining=0, timerLastTick=0, alarmTimeout=null;
 function openTimerModal(){ playSfx(sfxClick); document.getElementById('timer-modal').style.display='flex'; renderTimerControls(); renderTimerDisplay(); }
 function closeTimerModal(){ document.getElementById('timer-modal').style.display='none'; stopAlarm(); }
 function switchTimerMode(mode){ if(timerState==='running')pauseTimer(); resetTimer(); timerMode=mode; document.getElementById('timerTabSW').classList.toggle('active',mode==='stopwatch'); document.getElementById('timerTabCD').classList.toggle('active',mode==='countdown'); document.getElementById('sw-laps-wrap').style.display=mode==='stopwatch'?'block':'none'; document.getElementById('cd-setup-wrap').style.display=mode==='countdown'?'block':'none'; renderTimerControls(); renderTimerDisplay(); }
-function renderTimerControls(){ const w=document.getElementById('timer-controls'); w.innerHTML=''; if(timerMode==='stopwatch'){ if(timerState==='idle'||timerState==='done'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="startTimer()">▶ 开始</button><button class="sacred-btn sm" onclick="resetTimer()" ${timerState==='idle'?'disabled':''}>↺ 重置</button>`;}else if(timerState==='running'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="pauseTimer()">⏸ 暂停</button><button class="sacred-btn teal-tier" onclick="lapTimer()">◈ 计次</button>`;}else if(timerState==='paused'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="resumeTimer()">▶ 继续</button><button class="sacred-btn teal-tier" onclick="lapTimer()">◈ 计次</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;} }else{ if(timerState==='idle'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="startCountdown()">▶ 开始</button>`;}else if(timerState==='running'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="pauseTimer()">⏸ 暂停</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;}else if(timerState==='paused'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="resumeTimer()">▶ 继续</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">↺ 重置</button>`;}else if(timerState==='done'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="stopAlarm();resetTimer()">✕ 关闭警报</button>`;} } const cr=document.getElementById('cd-setup-wrap'); if(timerMode==='countdown')cr.style.display=(timerState==='idle')?'block':'none'; }
-function renderTimerDisplay(){ const d=document.getElementById('timerDigits'),ms=document.getElementById('timerMs'),lb=document.getElementById('timerLabel'),ring=document.getElementById('timerRing'); if(timerMode==='stopwatch'){ const t=swElapsed; d.textContent=formatTimerHMS(t); ms.textContent='.'+String(Math.floor((t%1000)/10)).padStart(2,'0'); lb.textContent=timerState==='running'?'计时中':timerState==='paused'?'已暂停':'待命'; d.className='timer-digits'+(timerState==='running'?' running':''); const fr=timerState==='idle'?0:((t/1000)%60)/60; setRing(ring,fr,'normal'); ms.style.display='block'; }else{ const t=cdRemaining,total=cdTotal||1,fr=t/total; d.textContent=formatTimerHMS(t); ms.textContent='.'+String(Math.floor((t%1000)/10)).padStart(2,'0'); const pct=t/total; if(timerState==='done'){lb.textContent='⚠ 时间到！';d.className='timer-digits danger-color';setRing(ring,0,'danger');ms.style.display='none';}else if(pct<=0.1&&timerState!=='idle'){lb.textContent='即将结束！';d.className='timer-digits danger-color';setRing(ring,fr,'danger');ms.style.display='block';}else if(pct<=0.25&&timerState!=='idle'){lb.textContent='注意时间';d.className='timer-digits warning-color';setRing(ring,fr,'warning');ms.style.display='block';}else{lb.textContent=timerState==='running'?'倒计中':timerState==='paused'?'已暂停':'待命';d.className='timer-digits'+(timerState==='running'?' running':'');setRing(ring,fr,'normal');ms.style.display=timerState==='idle'?'none':'block';} } }
+function renderTimerControls(){ const w=document.getElementById('timer-controls'); w.innerHTML=''; if(timerMode==='stopwatch'){ if(timerState==='idle'||timerState==='done'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="startTimer()">${t('timer_btn_start')}</button><button class="sacred-btn sm" onclick="resetTimer()" ${timerState==='idle'?'disabled':''}>${t('timer_btn_reset')}</button>`;}else if(timerState==='running'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="pauseTimer()">${t('timer_btn_pause')}</button><button class="sacred-btn teal-tier" onclick="lapTimer()">${t('timer_btn_lap')}</button>`;}else if(timerState==='paused'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="resumeTimer()">${t('timer_btn_resume')}</button><button class="sacred-btn teal-tier" onclick="lapTimer()">${t('timer_btn_lap')}</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">${t('timer_btn_reset')}</button>`;} }else{ if(timerState==='idle'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="startCountdown()">${t('timer_btn_start')}</button>`;}else if(timerState==='running'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="pauseTimer()">${t('timer_btn_pause')}</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">${t('timer_btn_reset')}</button>`;}else if(timerState==='paused'){w.innerHTML=`<button class="sacred-btn success-tier" onclick="resumeTimer()">${t('timer_btn_resume')}</button><button class="sacred-btn crimson-tier sm" onclick="resetTimer()">${t('timer_btn_reset')}</button>`;}else if(timerState==='done'){w.innerHTML=`<button class="sacred-btn gold-tier" onclick="stopAlarm();resetTimer()">${t('timer_btn_stop_alarm')}</button>`;} } const cr=document.getElementById('cd-setup-wrap'); if(timerMode==='countdown')cr.style.display=(timerState==='idle')?'block':'none'; }
+function renderTimerDisplay(){ const d=document.getElementById('timerDigits'),ms=document.getElementById('timerMs'),lb=document.getElementById('timerLabel'),ring=document.getElementById('timerRing'); if(timerMode==='stopwatch'){ const elapsed=swElapsed; d.textContent=formatTimerHMS(elapsed); ms.textContent='.'+String(Math.floor((elapsed%1000)/10)).padStart(2,'0'); lb.textContent=timerState==='running'?t('timer_running'):timerState==='paused'?t('timer_paused'):t('timer_standby'); d.className='timer-digits'+(timerState==='running'?' running':''); const fr=timerState==='idle'?0:((elapsed/1000)%60)/60; setRing(ring,fr,'normal'); ms.style.display='block'; }else{ const rem=cdRemaining,total=cdTotal||1,fr=rem/total; d.textContent=formatTimerHMS(rem); ms.textContent='.'+String(Math.floor((rem%1000)/10)).padStart(2,'0'); const pct=rem/total; if(timerState==='done'){lb.textContent=t('timer_done');d.className='timer-digits danger-color';setRing(ring,0,'danger');ms.style.display='none';}else if(pct<=0.1&&timerState!=='idle'){lb.textContent=t('timer_ending');d.className='timer-digits danger-color';setRing(ring,fr,'danger');ms.style.display='block';}else if(pct<=0.25&&timerState!=='idle'){lb.textContent=t('timer_warning');d.className='timer-digits warning-color';setRing(ring,fr,'warning');ms.style.display='block';}else{lb.textContent=timerState==='running'?t('timer_counting'):timerState==='paused'?t('timer_paused'):t('timer_standby');d.className='timer-digits'+(timerState==='running'?' running':'');setRing(ring,fr,'normal');ms.style.display=timerState==='idle'?'none':'block';} } }
 function setRing(ring,fr,state){ const off=CIRCUMFERENCE*(1-Math.min(1,Math.max(0,fr))); ring.style.strokeDashoffset=off; ring.className='timer-ring-prog'+(state==='warning'?' warning':state==='danger'?' danger':''); }
 function formatTimerHMS(ms){ const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; if(h>0)return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 function timerTick(){ const now=performance.now(),delta=now-timerLastTick; timerLastTick=now; if(timerMode==='stopwatch'){swElapsed+=delta;}else{cdRemaining=Math.max(0,cdRemaining-delta);if(cdRemaining<=0){cdRemaining=0;timerState='done';clearInterval(timerInterval);timerInterval=null;triggerAlarm();renderTimerControls();}} renderTimerDisplay(); }
@@ -1344,17 +1374,17 @@ function selectBattleMode(mode){
     document.getElementById('team-pool-counter').style.display = mode==='team' ? 'flex' : 'none';
     if(mode==='solo'){
         ts.style.display='none'; sa.style.display='flex'; ta.style.display='none'; td.style.display='none';
-        pb.innerText='◈ 天命点选';
-        document.getElementById('battle-msg').innerText='道途险阻，试炼降临。';
+        pb.innerText=t('btn_battle_pick');
+        document.getElementById('battle-msg').innerText=t('battle_msg_solo_default');
         resetMonsterDisplay('solo');
         updateSoloPoolCounter();
     } else {
-        if(!groups.length){ showNotify("尚无小队编制，请先前往宗门小队视图编制队伍！"); battleMode='solo'; document.getElementById('modeBtnSolo').classList.add('active'); document.getElementById('modeBtnTeam').classList.remove('active'); return; }
+        if(!groups.length){ showNotify(t("battle_msg_no_group_setup")); battleMode='solo'; document.getElementById('modeBtnSolo').classList.add('active'); document.getElementById('modeBtnTeam').classList.remove('active'); return; }
         ts.style.display='flex'; sa.style.display='none'; ta.style.display='flex'; td.style.display='block';
-        pb.innerText='⬡ 天命点选小队';
+        pb.innerText=t('btn_battle_pick_team');
         const vg=groups.filter(g=>g.memberIds.some(id=>students.find(s=>s.id===id)));
-        document.getElementById('battle-team-count').innerText=`共 ${vg.length} 支小队待命`;
-        document.getElementById('battle-msg').innerText='小队历练：天命将召唤一支小队出阵！';
+        document.getElementById('battle-team-count').innerText=t('battle_teams_count',{n:vg.length});
+        document.getElementById('battle-msg').innerText=t('battle_msg_team_select');
         document.getElementById('team-fighters-left').innerHTML='';
         document.getElementById('team-members-chips').innerHTML='';
         document.getElementById('team-battle-name-label').innerText='等待天命召唤...';
@@ -1373,9 +1403,10 @@ function handleBattlePick(){ if(battleMode==='solo')pickRandomStudent(); else pi
 // 显示当前轮次中还剩多少弟子/小队待被点中
 // ══════════════════════════════════════════════════════════════
 function updateSoloPoolCounter() {
-    const total = students.length;
-    if (total === 0) return;
-    const used = soloUsedIds.size;
+    const presentStudents = students.filter(s => !absentIds.has(s.id));
+    const total = presentStudents.length;
+    if (total === 0) { document.getElementById('solo-pool-counter').style.display='flex'; document.getElementById('solo-pc-remaining').textContent='0'; document.getElementById('solo-pc-total').textContent='0'; document.getElementById('solo-pc-dots').innerHTML=''; return; }
+    const used = [...soloUsedIds].filter(id => !absentIds.has(id)).length;
     const remaining = total - used;
 
     document.getElementById('solo-pc-remaining').textContent = remaining;
@@ -1385,7 +1416,7 @@ function updateSoloPoolCounter() {
     const dotsEl = document.getElementById('solo-pc-dots');
     if (total <= 40) {
         dotsEl.innerHTML = '';
-        students.forEach(s => {
+        presentStudents.forEach(s => {
             const dot = document.createElement('span');
             dot.className = 'pc-dot ' + (soloUsedIds.has(s.id) ? 'used' : 'pending');
             dot.title = s.name;
@@ -1396,6 +1427,13 @@ function updateSoloPoolCounter() {
     }
 
     document.getElementById('solo-pool-counter').style.display = 'flex';
+    // Show absent count note if any
+    const absentNote = document.getElementById('solo-absent-note');
+    if (absentNote) {
+        const absentCount = absentIds.size;
+        if (absentCount > 0) { absentNote.style.display='inline'; absentNote.textContent=t('absent_note',{n:absentCount}); }
+        else { absentNote.style.display='none'; }
+    }
 }
 
 function updateTeamPoolCounter() {
@@ -1434,14 +1472,15 @@ function pickRandomStudent() {
     document.getElementById('battle-controls-start').style.display = 'none';
     document.getElementById('battle-msg').innerText = "圣律轮盘运转中...";
 
-    // Build available pool (exclude already-used)
-    let pool = students.filter(s => !soloUsedIds.has(s.id));
+    // Build available pool (exclude already-used AND absent)
+    let pool = students.filter(s => !soloUsedIds.has(s.id) && !absentIds.has(s.id));
 
-    // If everyone has been picked, reset for a new round
+    // If everyone has been picked, reset for a new round (still excluding absent)
     if (pool.length === 0) {
         soloUsedIds.clear();
-        pool = [...students];
-        showNotify("☆ 所有弟子均已历练！天命轮回，新一轮开始。");
+        pool = students.filter(s => !absentIds.has(s.id));
+        if (pool.length === 0) { showNotify(t("battle_msg_no_present")); document.getElementById('battle-controls-start').style.display='flex'; return; }
+        showNotify(t("battle_msg_reset"));
     }
 
     let speed = 50, total = 0;
@@ -1478,7 +1517,7 @@ function pickRandomStudent() {
 // ══════════════════════════════════════════════════════════════
 function pickRandomTeam() {
     const vg = groups.filter(g => g.memberIds.some(id => students.find(s => s.id === id)));
-    if (!vg.length) { showNotify("尚无有效小队可出阵！"); return; }
+    if (!vg.length) { showNotify(t("battle_msg_no_groups")); return; }
 
     playSfx(sfxClick);
     document.getElementById('battle-controls-start').style.display = 'none';
@@ -1491,7 +1530,7 @@ function pickRandomTeam() {
     if (pool.length === 0) {
         teamUsedIds.clear();
         pool = [...vg];
-        showNotify("☆ 所有小队均已历练！天命轮回，新一轮开始。");
+        showNotify(t("battle_msg_team_reset"));
     }
 
     let speed = 60, total = 0;
@@ -1609,12 +1648,19 @@ window.onload=()=>{
     renderStatesInfo();
     buildColorPresets('color-preset-row'); updateGroupPreview();
     if(currentView==='group')renderGroupView();
+    // Apply language on load
+    applyLang();
+    // Set correct lang button active
+    ['zh','en','ms'].forEach(l => {
+        const btn = document.getElementById('lang'+l.toUpperCase());
+        if (btn) btn.classList.toggle('active', l === currentLang);
+    });
 };
 
-function updateExp(index,amount){playSfx(sfxClick);const s=students[index];const ol=calculateLevel(s.exp),os=getState(ol);s.exp=Math.max(0,s.exp+amount);const nl=calculateLevel(s.exp),ns=getState(nl);showFloatText(amount>0?`+${amount} 律典`:`${amount}`,index);if(nl>ol){playSfx(sfxLevelUp);showLevelUpEffect();showNotify(`${s.name} 晋阶至 Lv.${nl}，圣律认可！`);if(ns.id!==os.id)setTimeout(()=>showStateUnlock(ns),1200);}saveData();renderGrid();if(currentView==='group')renderGroupView();}
+function updateExp(index,amount){playSfx(sfxClick);const s=students[index];const ol=calculateLevel(s.exp),os=getState(ol);s.exp=Math.max(0,s.exp+amount);const nl=calculateLevel(s.exp),ns=getState(nl);showFloatText(amount>0?`+${amount} 律典`:`${amount}`,index);if(nl>ol){playSfx(sfxLevelUp);showLevelUpEffect();showNotify(t('notify_level_up',{name:s.name,level:nl}));if(ns.id!==os.id)setTimeout(()=>showStateUnlock(ns),1200);}saveData();renderGrid();if(currentView==='group')renderGroupView();}
 function updateExpById(sid,amount){const idx=students.findIndex(s=>s.id===sid);if(idx===-1)return;updateExp(idx,amount);}
 function showStateUnlock(state){const o=document.getElementById('state-unlock-overlay'),card=document.getElementById('state-unlock-card');document.getElementById('state-unlock-name').innerText=state.name;document.getElementById('state-unlock-desc').innerText=state.desc;card.style.borderColor=state.color;card.style.color=state.color;o.style.display='flex';playSfx(sfxLevelUp);}
-function toggleTeacherMode(){if(!isTeacherMode){showCustomModal({title:"导师验证",msg:"请输入圣律口令 (预设: admin)",hasInput:true,isPassword:true,showCancel:true,onConfirm:(val)=>{if(val==="admin"||val==="師尊"||val==="1234"){isTeacherMode=true;document.getElementById('loginBtn').innerText="◈ 导师登出";showNotify("导师降临，圣律权限已解锁！");updateTeacherUI();}else showNotify("口令有误！");}});}else{isTeacherMode=false;document.getElementById('loginBtn').innerText="◈ 导师登入";showNotify("已切换回弟子视角。");updateTeacherUI();}}
+function toggleTeacherMode(){if(!isTeacherMode){showCustomModal({title:t("teacher_login_title"),msg:t("teacher_login_msg"),hasInput:true,isPassword:true,showCancel:true,onConfirm:(val)=>{if(val==="admin"||val==="師尊"||val==="1234"){isTeacherMode=true;document.getElementById("loginBtn").innerText=t("btn_logout");showNotify(t("btn_logout").replace("◈ ","")+" 🔓");updateTeacherUI();}else showNotify(t('teacher_wrong_pw'));}});}else{isTeacherMode=false;document.getElementById('loginBtn').innerText=t('btn_login');showNotify(t("btn_login"));updateTeacherUI();}}
 function updateTeacherUI(){document.querySelectorAll('.teacher-only').forEach(el=>{if(isTeacherMode){if(el.classList.contains('card-actions'))el.style.setProperty('display','grid','important');else if(el.classList.contains('teacher-controls-header'))el.style.setProperty('display','flex','important');else el.style.setProperty('display','block','important');}else el.style.setProperty('display','none','important');});if(currentView==='group')renderGroupView();}
 function openLeaderboard(){playSfx(sfxClick);const container=document.getElementById('lb-container');container.innerHTML='';const sorted=[...students].sort((a,b)=>calculateCP(b)-calculateCP(a));if(!sorted.length)container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim);font-family:\'Cinzel\',serif;">暂无弟子数据</div>';else sorted.forEach((s,i)=>{const info=getStudentInfo(s),cp=calculateCP(s);const row=document.createElement('div');row.className=`leaderboard-row rank-${i+1}`;row.innerHTML=`<div class="rank-num">${i+1}</div><img class="lb-avatar" src="${info.avatar}"><div class="lb-name">${s.name}<span class="state-badge ${info.state.cssClass}" style="font-size:0.62rem;padding:1px 6px 1px 4px;margin-left:6px;"><span class="state-dot"></span>${info.state.name}</span><span style="font-size:0.75em;color:var(--text-dim);margin-left:4px;">Lv.${info.level}</span></div><div class="lb-cp">${cp}</div>`;container.appendChild(row);});document.getElementById('leaderboard-modal').style.display='flex';}
 
@@ -1650,15 +1696,15 @@ function renderStatesInfo() {
 function makeStatePlaceholder(color,icon){const ph=document.createElement('div');ph.style.cssText=`position:relative;z-index:2;width:110px;height:170px;margin-bottom:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed ${color}44;color:${color}88;font-size:0.68rem;font-family:'Cinzel',serif;letter-spacing:0.1em;text-align:center;padding:10px;`;ph.innerHTML=`<span style="font-size:2.8rem;opacity:0.35;">${icon}</span><span style="line-height:1.5;">待填入<br>角色图片路径</span>`;return ph;}
 function openStatesInfo(){playSfx(sfxClick);document.getElementById('states-modal').style.display='flex';}
 
-function openShopDirect(){if(!students.length){showNotify("先收录弟子再来星辰秘宝阁！");return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
+function openShopDirect(){if(!students.length){showNotify(t("notify_no_students"));return;}currentInvStudentIndex=currentInvStudentIndex===-1?0:currentInvStudentIndex;openShopModal();}
 function openShopForCurrent(){if(currentInvStudentIndex===-1){showNotify("请先开启某位弟子的行囊");return;}document.getElementById('inventory-modal').style.display='none';openShopModal();}
 function openShopModal(){const sel=document.getElementById('shop-student-select');sel.innerHTML='';students.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.innerText=`${s.name} (灵石 ${s.coins||0})`;sel.appendChild(o);});sel.value=currentInvStudentIndex;updateShopBalance();renderShop();document.getElementById('shop-modal').style.display='flex';}
 function switchShopStudent(){currentInvStudentIndex=parseInt(document.getElementById('shop-student-select').value);updateShopBalance();renderShop();}
 function switchShopTab(tab){shopTab=tab;document.querySelectorAll('.shop-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));renderShop();}
 function updateShopBalance(){const s=students[currentInvStudentIndex];document.getElementById('shop-balance-display').innerText=`灵石 ${s?.coins||0}`;}
-function renderShop(){const container=document.getElementById('shop-container');container.innerHTML='';const items=shopTab==='gear'?Object.values(ITEMS):REAL_REWARDS;items.forEach(item=>{const card=document.createElement('div');card.className=`shop-card ${item.type==='pet'?'pet':item.type==='consumable'?'reward':''}`;card.innerHTML=`<img src="${item.icon||item.src||BASE_URL+'images/ui/icon_shop_pixel.png'}"><h4>${item.name}</h4><p>${item.desc||''}</p>${item.cp?`<div class="cp-bonus">战力 +${item.cp}</div>`:''}<div class="item-price">◈ ${item.price}</div><button class="sacred-btn success-tier sm" onclick="buyItem('${item.id}')">购入</button>`;container.appendChild(card);});}
-function buyItem(itemId){const s=students[currentInvStudentIndex],itemData=getItemData(itemId);if(!itemData){showNotify("商品不存在");return;}if((s.coins||0)<itemData.price){showNotify("灵石不足，先去历练汲取！");return;}playSfx(sfxGetItem);s.coins=(s.coins||0)-itemData.price;if(!s.inventory)s.inventory=[];if(itemData.type==='consumable'){s.inventory.push(`${itemId}_${Date.now()}`);showNotify("购入成功！已收入行囊。");}else{if(s.inventory.includes(itemId)){showNotify("已拥有此装备。");s.coins+=itemData.price;}else{s.inventory.push(itemId);showNotify("购入成功！战力大增！");}}saveData();updateShopBalance();renderGrid();}
-function openInventory(index){currentInvStudentIndex=index;const s=students[index];document.getElementById('inv-modal-title').innerText=`${s.name} · 行囊`;const container=document.getElementById('inv-container');container.innerHTML='';if(!s.inventory||!s.inventory.length){container.innerHTML='<p style="color:var(--text-dim);text-align:center;width:100%;font-family:\'Cinzel\',serif;font-size:0.75rem;letter-spacing:0.1em;padding:20px;">行囊空空，尚无器物</p>';}else s.inventory.forEach(itemId=>{const itemData=getItemData(itemId);if(!itemData)return;const pets=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const swords=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);const isEquipped=pets.includes(itemId)||swords.includes(itemId);const isConsumable=itemData.type==='consumable';const div=document.createElement('div');div.className=`inventory-item ${isEquipped?'equipped':''}`;div.innerHTML=`<img src="${itemData.icon||itemData.src}"><div class="item-tooltip"><b>${itemData.name}</b>\n${itemData.cp?`战力 +${itemData.cp}\n`:''}${itemData.desc||''}</div>`;div.onclick=isConsumable?()=>useRealReward(index,itemId):()=>toggleEquip(index,itemId,itemData.type);container.appendChild(div);});document.getElementById('inventory-modal').style.display='flex';}
+function renderShop(){const container=document.getElementById('shop-container');container.innerHTML='';const items=shopTab==='gear'?Object.values(ITEMS):REAL_REWARDS;items.forEach(item=>{const card=document.createElement('div');card.className=`shop-card ${item.type==='pet'?'pet':item.type==='consumable'?'reward':''}`;card.innerHTML=`<img src="${item.icon||item.src||BASE_URL+'images/ui/icon_shop_pixel.png'}"><h4>${item.name}</h4><p>${item.desc||''}</p>${item.cp?`<div class="cp-bonus">战力 +${item.cp}</div>`:''}<div class="item-price">◈ ${item.price}</div><button class="sacred-btn success-tier sm" onclick="buyItem('${item.id}')">${t('shop_buy')}</button>`;container.appendChild(card);});}
+function buyItem(itemId){const s=students[currentInvStudentIndex],itemData=getItemData(itemId);if(!itemData){showNotify(t("shop_no_item"));return;}if((s.coins||0)<itemData.price){showNotify(t("shop_insufficient"));return;}playSfx(sfxGetItem);s.coins=(s.coins||0)-itemData.price;if(!s.inventory)s.inventory=[];if(itemData.type==='consumable'){s.inventory.push(`${itemId}_${Date.now()}`);showNotify(t("shop_buy_success"));}else{if(s.inventory.includes(itemId)){showNotify(t("shop_owned"));s.coins+=itemData.price;}else{s.inventory.push(itemId);showNotify(t("shop_buy_success_gear"));}}saveData();updateShopBalance();renderGrid();}
+function openInventory(index){currentInvStudentIndex=index;const s=students[index];document.getElementById('inv-modal-title').innerText=t('inv_title',{name:s.name});const container=document.getElementById('inv-container');container.innerHTML='';if(!s.inventory||!s.inventory.length){container.innerHTML='<p style="color:var(--text-dim);text-align:center;width:100%;font-family:\'Cinzel\',serif;font-size:0.75rem;letter-spacing:0.1em;padding:20px;">行囊空空，尚无器物</p>';}else s.inventory.forEach(itemId=>{const itemData=getItemData(itemId);if(!itemData)return;const pets=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const swords=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);const isEquipped=pets.includes(itemId)||swords.includes(itemId);const isConsumable=itemData.type==='consumable';const div=document.createElement('div');div.className=`inventory-item ${isEquipped?'equipped':''}`;div.innerHTML=`<img src="${itemData.icon||itemData.src}"><div class="item-tooltip"><b>${itemData.name}</b>\n${itemData.cp?`战力 +${itemData.cp}\n`:''}${itemData.desc||''}</div>`;div.onclick=isConsumable?()=>useRealReward(index,itemId):()=>toggleEquip(index,itemId,itemData.type);container.appendChild(div);});document.getElementById('inventory-modal').style.display='flex';}
 function toggleEquip(si,itemId,type){const s=students[si];if(!s.equipped)s.equipped={pets:[],swords:[]};if(!Array.isArray(s.equipped.pets))s.equipped.pets=s.equipped.pet?[s.equipped.pet]:[];if(!Array.isArray(s.equipped.swords))s.equipped.swords=s.equipped.sword?[s.equipped.sword]:[];const MAX=3;if(type==='pet'){const idx=s.equipped.pets.indexOf(itemId);if(idx>-1){s.equipped.pets.splice(idx,1);}else if(s.equipped.pets.length<MAX){s.equipped.pets.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 只神兽！请先卸下一只。`);return;}}else if(type==='sword'){const idx=s.equipped.swords.indexOf(itemId);if(idx>-1){s.equipped.swords.splice(idx,1);}else if(s.equipped.swords.length<MAX){s.equipped.swords.push(itemId);}else{showNotify(`最多同时装备 ${MAX} 把神兵！请先卸下一把。`);return;}}saveData();renderGrid();openInventory(si);}
 function useRealReward(si,uid){const s=students[si],baseId=uid.split('_')[0],item=REAL_REWARDS.find(r=>baseId===r.id);if(!item)return;if(confirm(`确定使用【${item.name}】？请向导师出示此画面。`)){s.inventory=s.inventory.filter(id=>id!==uid);saveData();openInventory(si);showNotify(`已使用 ${item.name}！`);}}
 function addStudent(){const input=document.getElementById('newStudentName'),name=input.value.trim();const grs=document.getElementsByName('newStudentGender');let gender='male';for(let r of grs)if(r.checked)gender=r.value;if(!name)return;playSfx(sfxClick);const newS={id:Date.now(),name,gender,exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{newS.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});newS.exp=newS.subjectData[currentSubjectId]?.exp||0;newS.coins=newS.subjectData[currentSubjectId]?.coins||0;students.push(newS);input.value='';saveData();renderGrid();showNotify(`${name} 已载入真理编年史！`);
@@ -1666,15 +1712,15 @@ function addStudent(){const input=document.getElementById('newStudentName'),name
     soloUsedIds.clear();
 }
 function openBatchModal(){document.getElementById('batch-modal').style.display='flex';}
-function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name)){const ns={id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{ns.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});students.push(ns);}}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify("请输入 1~100 之间的人数。");}
+function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name)){const ns={id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{ns.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});students.push(ns);}}saveData();renderGrid();showNotify(t("batch_success",{n:count}));document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify(t("batch_invalid"));}
 function openEditModal(id){const s=students.find(st=>st.id===id);if(!s)return;document.getElementById('edit-id').value=id;document.getElementById('edit-name').value=s.name;const gr=document.getElementsByName('editGender');for(let r of gr)r.checked=(r.value===(s.gender||'male'));document.getElementById('edit-student-modal').style.display='flex';}
-function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子卷册已修订！");}}
-function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
-function renderGrid(){const grid=document.getElementById('studentGrid');grid.innerHTML='';students.forEach((s,index)=>{const info=getStudentInfo(s),state=info.state;let companions='';const ep=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const es=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);ep.slice(0,3).forEach((pid,i)=>{const d=getItemData(pid);if(d)companions+=`<img src="${d.src||d.icon}" class="companion-img companion-pet-${i}" onerror="this.style.display='none'">`;});es.slice(0,3).forEach((sid,i)=>{const d=getItemData(sid);if(d)companions+=`<img src="${d.src}" class="companion-img companion-sword-${i}" onerror="this.style.display='none'">`;});const card=document.createElement('div');card.className=`student-card ${state.cardClass}`;card.id=`card-${index}`;card.innerHTML=`<button class="card-edit-btn teacher-only" onclick="openEditModal(${s.id})">⚙</button><div class="card-header"><div class="student-name-wrap"><div class="student-name">${s.name}</div><span class="state-badge ${state.cssClass}"><span class="state-dot"></span>${state.icon} ${state.name}</span></div><div class="level-badge">Lv.${info.level}</div></div><div class="state-desc-row">${state.flavor}</div><div class="avatar-area ${state.bgClass}"><img src="${info.avatar}" class="avatar-img" onerror="this.src='${PLAYER_ARTS[0]}'"> ${companions}</div><div class="stat-section"><div class="stat-row"><span class="stat-label">律典</span><div class="bar-container"><div class="bar-fill ${state.barClass}" style="width:${info.pct}%"></div></div><span class="stat-value">${info.expText}</span></div><div class="stat-row"><span class="stat-label">灵石</span><div class="coin-display"><span>◈</span>${s.coins||0}</div></div></div><div class="common-actions"><button class="sacred-btn teal-tier sm" onclick="openInventory(${index})">⬡ 行囊</button></div>`;card.appendChild(renderCardActions(s,index));grid.appendChild(card);});updateTeacherUI();}
+function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify(t("edit_save_success"));}}
+function confirmDeleteStudent(){if(confirm(t('expel_confirm'))){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);saveData();saveGroups();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify(t("expel_success"));}}
+function renderGrid(){const grid=document.getElementById('studentGrid');grid.innerHTML='';students.forEach((s,index)=>{const info=getStudentInfo(s),state=info.state;let companions='';const ep=Array.isArray(s.equipped?.pets)?s.equipped.pets:(s.equipped?.pet?[s.equipped.pet]:[]);const es=Array.isArray(s.equipped?.swords)?s.equipped.swords:(s.equipped?.sword?[s.equipped.sword]:[]);ep.slice(0,3).forEach((pid,i)=>{const d=getItemData(pid);if(d)companions+=`<img src="${d.src||d.icon}" class="companion-img companion-pet-${i}" onerror="this.style.display='none'">`;});es.slice(0,3).forEach((sid,i)=>{const d=getItemData(sid);if(d)companions+=`<img src="${d.src}" class="companion-img companion-sword-${i}" onerror="this.style.display='none'">`;});const card=document.createElement('div');card.className=`student-card ${state.cardClass}${absentIds.has(s.id)?' absent-card':''}`;card.id=`card-${index}`;card.innerHTML=`<button class="card-edit-btn teacher-only" onclick="openEditModal(${s.id})">⚙</button>${absentIds.has(s.id)?'<span class="absent-badge">'+t("card_absent_badge")+'</span>':''}<div class="card-header"><div class="student-name-wrap"><div class="student-name">${s.name}</div><span class="state-badge ${state.cssClass}"><span class="state-dot"></span>${state.icon} ${state.name}</span></div><div class="level-badge">Lv.${info.level}</div></div><div class="state-desc-row">${state.flavor}</div><div class="avatar-area ${state.bgClass}"><img src="${info.avatar}" class="avatar-img" onerror="this.src='${PLAYER_ARTS[0]}'"> ${companions}</div><div class="stat-section"><div class="stat-row"><span class="stat-label" data-i18n="card_stat_exp"></span><div class="bar-container"><div class="bar-fill ${state.barClass}" style="width:${info.pct}%"></div></div><span class="stat-value">${info.expText}</span></div><div class="stat-row"><span class="stat-label" data-i18n="card_stat_coins"></span><div class="coin-display"><span>◈</span>${s.coins||0}</div></div></div><div class="common-actions"><button class="sacred-btn teal-tier sm" onclick="openInventory(${index})">${t('card_inventory')}</button></div>`;card.appendChild(renderCardActions(s,index));grid.appendChild(card);});updateTeacherUI();applyLang();}
 
 // ── BATTLE ──
 function openBattleModal(){
-    if(!students.length){showNotify("宗门无人，无法历练！");return;}
+    if(!students.length){showNotify(t("battle_msg_no_students"));return;}
     playSfx(sfxClick); playBGM('battle');
     document.getElementById('battle-stage').style.backgroundImage=`url('${BATTLE_BG[Math.floor(Math.random()*BATTLE_BG.length)]}')`;
     battleMode='solo';
@@ -1684,39 +1730,1042 @@ function openBattleModal(){
     document.getElementById('solo-fighters-area').style.display='flex';
     document.getElementById('team-fighters-area').style.display='none';
     document.getElementById('team-battle-display').style.display='none';
-    document.getElementById('battle-pick-btn').innerText='◈ 天命点选';
+    document.getElementById('battle-pick-btn').innerText=t('btn_battle_pick');
     currentBattleStudentIndex=-1; currentBattleTeamMembers=[];
     isTreasureEncounter=Math.random()<0.2;
     if(isTreasureEncounter) setupTreasureEncounter(); else setupMonsterEncounter();
     document.getElementById('fighter-student').style.opacity='0';
     document.getElementById('battle-controls-start').style.display='flex';
     document.getElementById('battle-controls-judge').style.display='none';
-    document.getElementById('battle-msg').innerText='道途险阻，试炼降临。选择历练方式。';
+    document.getElementById('battle-msg').innerText=t('battle_msg_default');
     // Show solo counter, hide team counter
     document.getElementById('solo-pool-counter').style.display='flex';
     document.getElementById('team-pool-counter').style.display='none';
     updateSoloPoolCounter();
     document.getElementById('battle-modal').style.display='flex';
 }
-function setupMonsterEncounter(){currentMonster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];const img=document.getElementById('battle-monster-img');img.src=currentMonster.src;img.className='';img.style.opacity='1';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('battle-monster-name').innerText=currentMonster.name;document.getElementById('battle-msg').innerText=`试炼：${currentMonster.name} 现身，迎战！`;}
-function setupTreasureEncounter(){currentMonster=null;const img=document.getElementById('battle-monster-img');img.src=BASE_URL+"images/ui/icon_shop_pixel.png";img.className='treasure-chest';img.style.opacity='1';document.getElementById('battle-monster-name').innerText="封印宝契";document.getElementById('battle-msg').innerText=`发现封印宝契！真理之光可将其开启！`;}
+function setupMonsterEncounter(){currentMonster=MONSTERS[Math.floor(Math.random()*MONSTERS.length)];const img=document.getElementById('battle-monster-img');img.src=currentMonster.src;img.className='';img.style.opacity='1';img.onerror=function(){this.src=BASE_URL+"images/monsters/placeholder_monster.gif";this.onerror=null;};document.getElementById('battle-monster-name').innerText=currentMonster.name;document.getElementById('battle-msg').innerText=t("battle_msg_monster",{name:currentMonster.name});}
+function setupTreasureEncounter(){currentMonster=null;const img=document.getElementById('battle-monster-img');img.src=BASE_URL+"images/ui/icon_shop_pixel.png";img.className='treasure-chest';img.style.opacity='1';document.getElementById('battle-monster-name').innerText="封印宝契";document.getElementById('battle-msg').innerText=t('battle_msg_treasure');}
 function closeBattleModal(){playSfx(sfxClick);playBGM('main');document.getElementById('battle-modal').style.display='none';}
 
-function finalizePick(s){const fl=document.getElementById('battle-flash');fl.style.animation='flash 0.5s';setTimeout(()=>fl.style.animation='',500);document.getElementById('battle-msg').innerText=isTreasureEncounter?`${s.name} 尝试解开封印宝契！`:`${s.name} 挺身迎接真理试炼！`;document.getElementById('battle-controls-judge').style.display='flex';playSfx(sfxLevelUp);}
-function resolveBattle(isWin){if(battleMode==='team'){resolveTeamBattle(isWin);return;}if(currentBattleStudentIndex===-1)return;const mi=document.getElementById('battle-monster-img'),si=document.getElementById('battle-student-img'),s=students[currentBattleStudentIndex];if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');let eg=50,cg=50;if(isTreasureEncounter){eg=100;cg=200;document.getElementById('battle-msg').innerText=`封印解除！获得 ${eg} 律典 / ${cg} 灵石！`;checkWeaponDrop(currentBattleStudentIndex,true);}else{document.getElementById('battle-msg').innerText=`真理洞彻！获得 ${eg} 律典 / ${cg} 灵石！`;checkWeaponDrop(currentBattleStudentIndex,false);}updateExp(currentBattleStudentIndex,eg);s.coins=parseInt(s.coins||0)+cg;saveData();renderGrid();setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},500);}else{playSfx(sfxAttack);si.classList.add('shake-effect');playHitEffect(si,'#c42040');document.getElementById('battle-msg').innerText=isTreasureEncounter?"封印反噬！宝契消散...":"真理迷失，此役败退...";setTimeout(closeBattleModal,1500);}document.getElementById('battle-controls-judge').style.display='none';}
-function resolveTeamBattle(isWin){if(!currentBattleTeamMembers.length)return;const members=currentBattleTeamMembers,mi=document.getElementById('team-battle-monster-img'),chips=document.getElementById('team-members-chips');document.getElementById('battle-controls-judge').style.display='none';if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');const te=isTreasureEncounter?300:150,tc=isTreasureEncounter?400:150,ep=Math.floor(te/members.length),cp=Math.floor(tc/members.length),er=te-ep*members.length,cr=tc-cp*members.length;members.forEach((s,i)=>{setTimeout(()=>{const eg=ep+(i===0?er:0),cg=cp+(i===0?cr:0),idx=students.findIndex(st=>st.id===s.id);if(idx===-1)return;const ol=calculateLevel(students[idx].exp),os=getState(ol);students[idx].exp=Math.max(0,students[idx].exp+eg);students[idx].coins=(students[idx].coins||0)+cg;const nl=calculateLevel(students[idx].exp),ns=getState(nl);if(nl>ol){playSfx(sfxLevelUp);showNotify(`${students[idx].name} 晋阶至 Lv.${nl}！`);if(ns.id!==os.id)setTimeout(()=>showStateUnlock(ns),1200);}const chip=chips.querySelector(`[data-student-id="${s.id}"]`);if(chip)chip.className='team-member-chip chip-win';},i*120);});const al=isTreasureEncounter?'封印解除':'真理洞彻';document.getElementById('battle-msg').innerText=`${al}！全队分享 ${te} 律典 · ${tc} 灵石，每人获得 ${ep} 律典 / ${cp} 灵石！`;setTimeout(()=>{saveData();renderGrid();if(currentView==='group')renderGroupView();},members.length*120+200);setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},members.length*120+800);if(isTreasureEncounter)checkWeaponDrop(students.findIndex(s=>s.id===members[0].id),true);}else{playSfx(sfxAttack);chips.querySelectorAll('.team-member-chip').forEach(c=>c.className='team-member-chip chip-lose');document.getElementById('battle-msg').innerText=isTreasureEncounter?"封印反噬！小队力竭，宝契消散...":"真理迷失，小队此役败退...";setTimeout(closeBattleModal,1800);}}
-function checkWeaponDrop(si,guaranteed=false){if(guaranteed||Math.random()<0.05){const keys=Object.keys(ITEMS).filter(k=>ITEMS[k].type==='sword'),key=keys[Math.floor(Math.random()*keys.length)],s=students[si];if(!s||!key)return;if(!s.inventory)s.inventory=[];if(!s.inventory.includes(key)){s.inventory.push(key);saveData();const item=ITEMS[key];document.getElementById('item-get-img').src=item.icon;document.getElementById('item-get-name').innerText=`获得神兵：${item.name}`;document.getElementById('item-get-desc').innerText=`战力 +${item.cp}，圣律之器加身！`;document.getElementById('item-get-overlay').style.display='flex';playSfx(sfxGetItem);}}}
+function finalizePick(s){const fl=document.getElementById('battle-flash');fl.style.animation='flash 0.5s';setTimeout(()=>fl.style.animation='',500);document.getElementById('battle-msg').innerText=t(isTreasureEncounter?'battle_msg_treasure_challenge':'battle_msg_challenge',{name:s.name});document.getElementById('battle-controls-judge').style.display='flex';playSfx(sfxLevelUp);}
+function resolveBattle(isWin){if(battleMode==='team'){resolveTeamBattle(isWin);return;}if(currentBattleStudentIndex===-1)return;const mi=document.getElementById('battle-monster-img'),si=document.getElementById('battle-student-img'),s=students[currentBattleStudentIndex];if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');let eg=50,cg=50;if(isTreasureEncounter){eg=100;cg=200;document.getElementById('battle-msg').innerText=t('battle_msg_treasure_win',{exp:eg,coins:cg});checkWeaponDrop(currentBattleStudentIndex,true);}else{document.getElementById('battle-msg').innerText=t('battle_msg_win',{exp:eg,coins:cg});checkWeaponDrop(currentBattleStudentIndex,false);}updateExp(currentBattleStudentIndex,eg);s.coins=parseInt(s.coins||0)+cg;saveData();renderGrid();setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},500);}else{playSfx(sfxAttack);si.classList.add('shake-effect');playHitEffect(si,'#c42040');document.getElementById('battle-msg').innerText=t(isTreasureEncounter?'battle_msg_treasure_lose':'battle_msg_lose');setTimeout(closeBattleModal,1500);}document.getElementById('battle-controls-judge').style.display='none';}
+function resolveTeamBattle(isWin){if(!currentBattleTeamMembers.length)return;const members=currentBattleTeamMembers,mi=document.getElementById('team-battle-monster-img'),chips=document.getElementById('team-members-chips');document.getElementById('battle-controls-judge').style.display='none';if(isWin){playSfx(sfxWin);mi.classList.add('shake-effect');playHitEffect(mi,'#c8a84b');const te=isTreasureEncounter?300:150,tc=isTreasureEncounter?400:150,ep=Math.floor(te/members.length),cp=Math.floor(tc/members.length),er=te-ep*members.length,cr=tc-cp*members.length;members.forEach((s,i)=>{setTimeout(()=>{const eg=ep+(i===0?er:0),cg=cp+(i===0?cr:0),idx=students.findIndex(st=>st.id===s.id);if(idx===-1)return;const ol=calculateLevel(students[idx].exp),os=getState(ol);students[idx].exp=Math.max(0,students[idx].exp+eg);students[idx].coins=(students[idx].coins||0)+cg;const nl=calculateLevel(students[idx].exp),ns=getState(nl);if(nl>ol){playSfx(sfxLevelUp);showNotify(t('notify_level_up',{name:students[idx].name,level:nl}));if(ns.id!==os.id)setTimeout(()=>showStateUnlock(ns),1200);}const chip=chips.querySelector(`[data-student-id="${s.id}"]`);if(chip)chip.className='team-member-chip chip-win';},i*120);});const resultKey=isTreasureEncounter?'封印解除':'真理洞彻';document.getElementById('battle-msg').innerText=t('battle_msg_team_win',{result:resultKey,exp:te,coins:tc,each_exp:ep,each_coins:cp});setTimeout(()=>{saveData();renderGrid();if(currentView==='group')renderGroupView();},members.length*120+200);setTimeout(()=>{mi.style.opacity='0';setTimeout(closeBattleModal,1500);},members.length*120+800);if(isTreasureEncounter)checkWeaponDrop(students.findIndex(s=>s.id===members[0].id),true);}else{playSfx(sfxAttack);chips.querySelectorAll('.team-member-chip').forEach(c=>c.className='team-member-chip chip-lose');document.getElementById('battle-msg').innerText=t(isTreasureEncounter?'battle_msg_team_treasure_lose':'battle_msg_team_lose');setTimeout(closeBattleModal,1800);}}
+function checkWeaponDrop(si,guaranteed=false){if(guaranteed||Math.random()<0.05){const keys=Object.keys(ITEMS).filter(k=>ITEMS[k].type==='sword'),key=keys[Math.floor(Math.random()*keys.length)],s=students[si];if(!s||!key)return;if(!s.inventory)s.inventory=[];if(!s.inventory.includes(key)){s.inventory.push(key);saveData();const item=ITEMS[key];document.getElementById('item-get-img').src=item.icon;document.getElementById('item-get-name').innerText=t('item_got_weapon',{name:item.name});document.getElementById('item-get-desc').innerText=t('item_got_weapon_desc',{cp:item.cp});document.getElementById('item-get-overlay').style.display='flex';playSfx(sfxGetItem);}}}
 function playHitEffect(ti,color='#c8a84b'){if(!ti||!ti.parentElement)return;const spark=document.createElement('div');spark.className='hit-spark';spark.style.background=`radial-gradient(circle, ${color} 0%, rgba(255,255,255,0.3) 40%, transparent 70%)`;spark.style.left='50%';spark.style.top='50%';spark.style.transform='translate(-50%,-50%)';ti.parentElement.appendChild(spark);ti.classList.add('damage-flash');setTimeout(()=>{spark.remove();ti.classList.remove('damage-flash');},500);}
 function showFloatText(text,index){const card=document.getElementById(`card-${index}`);if(card){const el=document.createElement('div');el.className='float-text';el.innerText=text;el.style.left='50%';el.style.top='50%';el.style.transform='translate(-50%,-50%)';card.appendChild(el);setTimeout(()=>el.remove(),1700);}}
 function showLevelUpEffect(){const o=document.getElementById('level-up-overlay');o.style.display='flex';setTimeout(()=>o.style.display='none',2000);}
+
+// ══════════════════════════════════════════════════════════════
+// ── ATTENDANCE SYSTEM ──
+// ══════════════════════════════════════════════════════════════
+function openAttendanceModal() {
+    playSfx(sfxClick);
+    renderAttendanceList();
+    document.getElementById('attendance-modal').style.display = 'flex';
+}
+
+function renderAttendanceList() {
+    const list = document.getElementById('attendance-list');
+    list.innerHTML = '';
+    students.forEach(s => {
+        const isAbsent = absentIds.has(s.id);
+        const row = document.createElement('div');
+        row.className = 'attend-row' + (isAbsent ? ' absent' : '');
+        row.id = `attend-row-${s.id}`;
+        const lv = calculateLevel(s.exp);
+        row.innerHTML = `
+            <span class="attend-name">${s.name} <span style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text-dim);">Lv.${lv}</span></span>
+            <div class="attend-toggle">
+                <button class="attend-btn attend-btn-present ${!isAbsent ? 'active' : ''}" onclick="setAttendance(${s.id}, true)">${t('attendance_present')}</button>
+                <button class="attend-btn attend-btn-absent ${isAbsent ? 'active' : ''}" onclick="setAttendance(${s.id}, false)">${t('attendance_absent')}</button>
+            </div>`;
+        list.appendChild(row);
+    });
+    updateAttendanceSummary();
+}
+
+function setAttendance(id, present) {
+    if (present) {
+        absentIds.delete(id);
+    } else {
+        absentIds.add(id);
+        soloUsedIds.delete(id);
+    }
+    const row = document.getElementById(`attend-row-${id}`);
+    if (row) {
+        row.className = 'attend-row' + (!present ? ' absent' : '');
+        const btns = row.querySelectorAll('.attend-btn');
+        btns[0].className = 'attend-btn attend-btn-present' + (present ? ' active' : '');
+        btns[1].className = 'attend-btn attend-btn-absent' + (!present ? ' active' : '');
+    }
+    updateAttendanceSummary();
+    updateAttendanceBtn();
+    updateSoloPoolCounter();
+    renderGrid();
+}
+
+function attendanceMarkAll(present) {
+    students.forEach(s => {
+        if (present) { absentIds.delete(s.id); }
+        else { absentIds.add(s.id); soloUsedIds.delete(s.id); }
+    });
+    renderAttendanceList();
+    updateAttendanceBtn();
+    updateSoloPoolCounter();
+    renderGrid();
+}
+
+function updateAttendanceSummary() {
+    const total = students.length;
+    const absent = absentIds.size;
+    const present = total - absent;
+    const el = document.getElementById('attendance-summary');
+    if (el) el.textContent = t('attendance_summary',{present,total});
+}
+
+function updateAttendanceBtn() {
+    const btn = document.getElementById('attendanceBtn');
+    if (!btn) return;
+    const absent = absentIds.size;
+    if (absent > 0) {
+        btn.textContent = t('btn_attendance_absent',{n:absent});
+        btn.style.borderColor = '#c04030';
+        btn.style.color = '#e08090';
+    } else {
+        btn.textContent = t('btn_attendance');
+        btn.style.borderColor = '#3a7050';
+        btn.style.color = '#70d090';
+    }
+}
+
 function saveData(){
     // Save current flat fields back to subjectData before persisting
     students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
     localStorage.setItem('wuxia_class_data',JSON.stringify(students));
-    showNotify("真理编年史已封印保存");
+    showNotify(t("notify_save"));
 }
-function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();showNotify("圣律归虚，真理湮灭...");}});}
+function resetAll(){showCustomModal({title:t('reset_title'),msg:t('reset_msg'),showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');students=[];groups=[];soloUsedIds.clear();teamUsedIds.clear();absentIds.clear();updateAttendanceBtn();renderGrid();renderGroupView();showNotify(t("notify_reset_done"));}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
+
+// ══════════════════════════════════════════════════════════════
+// ── LANGUAGE / i18n SYSTEM ──
+// ══════════════════════════════════════════════════════════════
+const LANG = {
+    zh: {
+        // Header
+        app_subtitle: 'Sanctum Covenant · Annals of Truth',
+        app_title: '圣律契约：真理编年史',
+        btn_music: '♪ 律音',
+        btn_timer: '⏱ 计时',
+        btn_states: '◈ 境界图鉴',
+        btn_shop: '⬡ 星辰秘宝阁',
+        btn_leaderboard: '⬖ 圣律榜',
+        btn_battle: '⚔ 历练',
+        btn_login: '◈ 导师登入',
+        btn_logout: '◈ 导师登出',
+        ph_student_name: '弟子名号',
+        label_male: '男',
+        label_female: '女',
+        btn_enroll: '收录',
+        btn_batch: '批量',
+        btn_attendance: '◎ 点名',
+        btn_attendance_absent: '◎ 点名 (缺{n})',
+        btn_rp: '⚖ 赏罚台',
+        btn_save: '封印',
+        btn_reset: '湮灭',
+        // View bar
+        label_view: '视图',
+        btn_individual_view: '◈ 个人榜',
+        btn_group_view: '⬡ 宗门小队',
+        btn_create_group: '✦ 编制小队',
+        btn_clear_groups: '清空分组',
+        label_subject: '科目',
+        // Group empty state
+        group_empty_text: '尚无小队编制',
+        btn_create_group_now: '✦ 立即编制小队',
+        // Battle
+        battle_solo_name: '个人历练',
+        battle_solo_desc: '天命点选单名弟子',
+        battle_team_name: '小队历练',
+        battle_team_desc: '点选队伍，奖励全员平分',
+        battle_team_waiting: '◈ 圣律将随机召唤一支小队出阵',
+        battle_msg_default: '道途险阻，试炼降临。选择历练方式。',
+        battle_msg_solo_default: '道途险阻，试炼降临。',
+        battle_msg_spinning: '圣律轮盘运转中...',
+        battle_msg_team_spinning: '圣律轮盘运转，召唤天命小队...',
+        battle_msg_challenge: '{name} 挺身迎接真理试炼！',
+        battle_msg_treasure_challenge: '{name} 尝试解开封印宝契！',
+        battle_msg_win: '真理洞彻！获得 {exp} 律典 / {coins} 灵石！',
+        battle_msg_treasure_win: '封印解除！获得 {exp} 律典 / {coins} 灵石！',
+        battle_msg_lose: '真理迷失，此役败退...',
+        battle_msg_treasure_lose: '封印反噬！宝契消散...',
+        battle_msg_team_win: '{result}！全队分享 {exp} 律典 · {coins} 灵石，每人获得 {each_exp} 律典 / {each_coins} 灵石！',
+        battle_msg_team_lose: '真理迷失，小队此役败退...',
+        battle_msg_team_treasure_lose: '封印反噬！小队力竭，宝契消散...',
+        battle_msg_monster: '试炼：{name} 现身，迎战！',
+        battle_msg_treasure: '发现封印宝契！真理之光可将其开启！',
+        battle_msg_team_select: '小队历练：天命将召唤一支小队出阵！',
+        battle_msg_no_students: '宗门无人，无法历练！',
+        battle_msg_no_present: '无在席弟子可点选！请先进行点名。',
+        battle_msg_reset: '☆ 所有在席弟子均已历练！天命轮回，新一轮开始。',
+        battle_msg_team_reset: '☆ 所有小队均已历练！天命轮回，新一轮开始。',
+        battle_msg_no_groups: '尚无有效小队可出阵！',
+        battle_msg_no_group_setup: '尚无小队编制，请先前往宗门小队视图编制队伍！',
+        battle_teams_count: '共 {n} 支小队待命',
+        btn_battle_pick: '◈ 天命点选',
+        btn_battle_pick_team: '⬡ 天命点选小队',
+        btn_battle_win: '✦ 洞彻真理 (斩获)',
+        btn_battle_lose: '✦ 迷失道途 (受伤)',
+        btn_retreat: '退隐',
+        pc_solo_label: '◈ 待历练',
+        pc_solo_unit: '弟子',
+        pc_team_label: '⬡ 待出阵',
+        pc_team_unit: '支小队',
+        absent_note: '(缺席 {n})',
+        // Leaderboard
+        lb_title: '⬖ 圣律战力榜',
+        lb_rank_header: 'RANK / DISCIPLE',
+        lb_power_header: 'POWER (CP)',
+        btn_close_scroll: '闭卷',
+        // Shop
+        shop_title: '⬡ 星辰秘宝阁',
+        shop_buyer: '购买者',
+        shop_balance: '灵石 {n}',
+        shop_note: '※ 神兽仅限此处购得，历练无缘',
+        shop_tab_gear: '神兵 · 灵兽',
+        shop_tab_reward: '圣律特赦',
+        btn_leave_shop: '离阁',
+        shop_buy: '购入',
+        shop_cp: '战力 +{n}',
+        shop_insufficient: '灵石不足，先去历练汲取！',
+        shop_owned: '已拥有此装备。',
+        shop_buy_success: '购入成功！已收入行囊。',
+        shop_buy_success_gear: '购入成功！战力大增！',
+        shop_no_item: '商品不存在',
+        // Inventory
+        inv_title: '{name} · 行囊',
+        inv_empty: t('inv_empty'),
+        // Batch
+        batch_title: '批量收录弟子',
+        batch_success: '已收录 {n} 位弟子至编年史！',
+        batch_invalid: '请输入 1~100 之间的人数。',
+        // Edit student
+        edit_title: '修订弟子卷册',
+        label_name: '名号',
+        label_gender: '性别',
+        label_male_student: '男弟子',
+        label_female_student: '女弟子',
+        btn_expel: '逐出宗门',
+        edit_save_success: '弟子卷册已修订！',
+        expel_confirm: '确定逐出此弟子？其将从编年史中消除。',
+        expel_success: '弟子已逐出圣律宗门。',
+        // Common buttons
+        btn_cancel: '取消',
+        btn_confirm: '确认',
+        btn_done: '完成',
+        btn_add: '✦ 新增',
+        btn_leave: '离开',
+        btn_close_tome: '合典',
+        btn_enlighten: '领悟',
+        btn_receive: '承纳',
+        btn_dissolve_group: '解散小队',
+        btn_create_now: '⚔ 立即编制',
+        btn_save_preset: '确立预设',
+        btn_all_present: '✦ 全员到席',
+        btn_all_absent: '✕ 全员缺席',
+        // Group setup
+        group_setup_title: '✦ 编制宗门小队',
+        group_mode_label: '编制方式',
+        group_strategy_label: '自动分配策略',
+        group_count_label: '分组数量',
+        group_naming_label: '队伍命名方式',
+        group_color_label: '小队颜色',
+        group_mode_auto_title: '⚙ 自动编制',
+        group_mode_auto_desc: '系统自动随机或按战力均衡分配弟子至各小队',
+        group_mode_manual_title: '✦ 手动编制',
+        group_mode_manual_desc: '仅创建空队伍，导师手动拖拽弟子至各队伍',
+        group_strategy_random_title: '🎲 随机分配',
+        group_strategy_random_desc: '随机打乱，无论战力高低均匀分散',
+        group_strategy_balance_title: '⚖ 战力均衡',
+        group_strategy_balance_desc: '蛇形排列，使每队总战力尽量相近',
+        group_strategy_state_title: '◈ 境界混编',
+        group_strategy_state_desc: '每队尽量包含不同境界的弟子',
+        group_strategy_gender_title: '⚥ 性别均衡',
+        group_strategy_gender_desc: '男女弟子尽量均匀分布各队',
+        group_count_prefix: '共分',
+        group_count_suffix: '队',
+        btn_naming_auto: '自动命名',
+        btn_naming_custom: '自定义名称',
+        group_edit_title: '编辑小队',
+        label_group_name: '队伍名称',
+        label_group_emblem: '队徽图标',
+        label_group_color: '小队颜色',
+        group_created: '已成功编制 {n} 支小队！',
+        group_cleared: '已清空所有分组。',
+        group_dissolved: '小队已解散。',
+        group_saved: '小队信息已更新！',
+        group_preview: '约每队 {n} 名弟子',
+        unassigned_label: '未编制弟子',
+        // States
+        states_title: '◈ 五境界图鉴',
+        states_desc: '随等级晋升，弟子将解锁五大境界，外貌与光环随之蜕变',
+        state_breakthrough: '境界突破',
+        // Timer
+        timer_stopwatch: '⏱ 正计时',
+        timer_countdown: '⏳ 倒计时',
+        timer_label_h: '时',
+        timer_label_m: '分',
+        timer_label_s: '秒',
+        timer_standby: t('timer_standby'),
+        timer_running: t('timer_running'),
+        timer_paused: t('timer_paused'),
+        timer_counting: t('timer_counting'),
+        timer_ending: t('timer_ending'),
+        timer_warning: t('timer_warning'),
+        timer_done: t('timer_done'),
+        timer_btn_start: t('timer_btn_start'),
+        timer_btn_pause: t('timer_btn_pause'),
+        timer_btn_resume: t('timer_btn_resume'),
+        timer_btn_lap: t('timer_btn_lap'),
+        timer_btn_reset: t('timer_btn_reset'),
+        timer_btn_stop_alarm: t('timer_btn_stop_alarm'),
+        timer_lap_prefix: '计次',
+        // Music panel
+        music_title: '律音控制台',
+        music_master: '◈ 总开关',
+        music_off: '✕ 关闭',
+        music_on: '♫ 开启',
+        music_bgm: '🎵 背景音乐',
+        music_sfx: '⚡ 特效音效',
+        music_mute: '静音',
+        music_unmute: '取消静音',
+        music_preset_off: '全静音',
+        music_preset_low: '轻柔',
+        music_preset_mid: '标准',
+        music_preset_full: '全开',
+        // RP panel
+        rp_title: '⚖ 圣律赏罚台',
+        rp_subtitle: '导师专属 · 赏善罚恶，圣律不欺',
+        rp_tab_presets: '◈ 快速赏罚',
+        rp_tab_bulk: '⬡ 全体赏罚',
+        rp_tab_manage: '✦ 管理预设',
+        rp_select_student: t('rp_select_student'),
+        rp_click_hint: t('rp_click_hint'),
+        rp_no_presets: t('rp_no_presets'),
+        rp_select_target: t('rp_select_target'),
+        rp_all_students: t('rp_all_students'),
+        rp_bulk_hint: t('rp_bulk_hint'),
+        rp_bulk_all: '全体 {n} 位弟子',
+        rp_bulk_group: '{name}组 {n} 位弟子',
+        rp_confirm_title: '确认赏罚',
+        rp_no_selection: '未选择任何弟子！',
+        rp_no_student: '请先选择弟子！',
+        // Preset edit
+        preset_add_title: t('preset_add_title'),
+        preset_edit_title: t('preset_edit_title'),
+        label_preset_name: '预设名称',
+        label_preset_icon: '图示 Emoji',
+        label_preset_exp: '律典变动（正数奖励 / 负数惩罚）',
+        label_preset_exp_sub: '律典 EXP',
+        label_preset_coins_sub: '灵石 Coins',
+        label_quick_presets: '快速预设金额',
+        ph_preset_name: '如：课堂表现优秀',
+        preset_no_name: '请填写预设名称！',
+        preset_no_value: '请至少设定一项非零数值！',
+        preset_saved: '新预设已创建！',
+        preset_updated: '预设已更新！',
+        // Attendance
+        attendance_title: '◎ 圣律点名册',
+        attendance_hint: '缺席弟子将从历练点选池中暂时移除',
+        attendance_present: '到席',
+        attendance_absent: '缺席',
+        attendance_summary: '到席 {present} / {total}',
+        // Subject
+        subject_title: '⬡ 科目管理',
+        subject_hint: '每科目的等级与道具独立计算，弟子名称共通',
+        subject_default_badge: '预设',
+        ph_subject_name: '新科目名称',
+        subject_add_success: '◈ 科目「{name}」已新增！',
+        subject_no_name: '请填写科目名称！',
+        subject_duplicate: '已有同名科目！',
+        subject_switched: '◈ 已切换至科目：{name}',
+        // Add/save notifications
+        notify_save: '真理编年史已封印保存',
+        notify_no_students: '先收录弟子再来星辰秘宝阁！',
+        notify_shop_no_students: '先收录弟子，无法开启行囊！',
+        notify_add_student: '请输入弟子名号！',
+        notify_student_exists: '已有同名弟子！',
+        notify_enrolled: '✦ {name} 已录入编年史！',
+        notify_batch_enrolled: '已收录 {n} 位弟子至编年史！',
+        notify_reset_done: '圣律归虚，真理湮灭...',
+        // Level up
+        notify_level_up: '{name} 晋阶至 Lv.{level}！',
+        // Item
+        item_got_weapon: '获得神兵：{name}',
+        item_got_weapon_desc: '战力 +{cp}，圣律之器加身！',
+        item_fortune: '✦ 机缘降临 ✦',
+        // Reset confirm
+        reset_title: '湮灭编年史',
+        reset_msg: '确定要燃毁所有卷册？一切将归于虚无。',
+        expel_title: '逐出弟子',
+        // Card labels
+        card_stat_exp: '律典',
+        card_stat_coins: '灵石',
+        card_inventory: '⬡ 行囊',
+        card_absent_badge: '✕ 缺席',
+        card_rp_more: '⚖ 更多',
+        // Inventory title
+        inv_open_shop: '前往秘宝阁',
+        // Password modal
+        teacher_login_title: '导师验证',
+        teacher_login_msg: '请输入导师密码',
+        teacher_wrong_pw: '密码错误，拒绝进入。',
+        teacher_logout_confirm: '确定退出导师模式？',
+    },
+    en: {
+        app_subtitle: 'Sanctum Covenant · Annals of Truth',
+        app_title: 'Sanctum Covenant: Annals of Truth',
+        btn_music: '♪ Music',
+        btn_timer: '⏱ Timer',
+        btn_states: '◈ Realm Guide',
+        btn_shop: '⬡ Star Vault',
+        btn_leaderboard: '⬖ Rankings',
+        btn_battle: '⚔ Trial',
+        btn_login: '◈ Teacher Login',
+        btn_logout: '◈ Teacher Logout',
+        ph_student_name: 'Student name',
+        label_male: 'M',
+        label_female: 'F',
+        btn_enroll: 'Enroll',
+        btn_batch: 'Batch',
+        btn_attendance: '◎ Roll Call',
+        btn_attendance_absent: '◎ Roll Call ({n} absent)',
+        btn_rp: '⚖ Reward Panel',
+        btn_save: 'Save',
+        btn_reset: 'Reset',
+        label_view: 'View',
+        btn_individual_view: '◈ Individual',
+        btn_group_view: '⬡ Teams',
+        btn_create_group: '✦ Create Teams',
+        btn_clear_groups: 'Clear Groups',
+        label_subject: 'Subject',
+        group_empty_text: 'No teams created yet',
+        btn_create_group_now: '✦ Create Teams Now',
+        battle_solo_name: 'Solo Trial',
+        battle_solo_desc: 'Randomly pick one student',
+        battle_team_name: 'Team Trial',
+        battle_team_desc: 'Pick a team, rewards shared',
+        battle_team_waiting: '◈ A team will be summoned at random',
+        battle_msg_default: 'The trial descends. Choose a mode.',
+        battle_msg_solo_default: 'The trial descends.',
+        battle_msg_spinning: 'The wheel of fate turns...',
+        battle_msg_team_spinning: 'The wheel turns — summoning a team...',
+        battle_msg_challenge: '{name} steps forward to face the trial!',
+        battle_msg_treasure_challenge: '{name} attempts to break the seal!',
+        battle_msg_win: 'Truth mastered! +{exp} EXP / +{coins} Coins!',
+        battle_msg_treasure_win: 'Seal broken! +{exp} EXP / +{coins} Coins!',
+        battle_msg_lose: 'Lost in doubt — this trial is failed...',
+        battle_msg_treasure_lose: 'The seal struck back! Contract lost...',
+        battle_msg_team_win: '{result}! Team shares {exp} EXP · {coins} Coins — {each_exp} EXP / {each_coins} Coins each!',
+        battle_msg_team_lose: 'Lost in doubt — the team failed this trial...',
+        battle_msg_team_treasure_lose: 'The seal struck back! Team exhausted, contract lost...',
+        battle_msg_monster: 'Trial: {name} appears — engage!',
+        battle_msg_treasure: 'A sealed contract found! Light of Truth may open it!',
+        battle_msg_team_select: 'Team Trial: a team will be summoned!',
+        battle_msg_no_students: 'No students enrolled!',
+        battle_msg_no_present: 'No present students to pick! Take attendance first.',
+        battle_msg_reset: '☆ All present students have been picked! New round begins.',
+        battle_msg_team_reset: '☆ All teams have been picked! New round begins.',
+        battle_msg_no_groups: 'No valid teams available!',
+        battle_msg_no_group_setup: 'No teams set up yet — go to Teams view first!',
+        battle_teams_count: '{n} teams standing by',
+        btn_battle_pick: '◈ Destiny Pick',
+        btn_battle_pick_team: '⬡ Destiny Pick (Team)',
+        btn_battle_win: '✦ Truth Mastered (Win)',
+        btn_battle_lose: '✦ Lost in Doubt (Fail)',
+        btn_retreat: 'Retreat',
+        pc_solo_label: '◈ Pending',
+        pc_solo_unit: 'students',
+        pc_team_label: '⬡ Pending',
+        pc_team_unit: 'teams',
+        absent_note: '({n} absent)',
+        lb_title: '⬖ Power Rankings',
+        lb_rank_header: 'RANK / DISCIPLE',
+        lb_power_header: 'POWER (CP)',
+        btn_close_scroll: 'Close',
+        shop_title: '⬡ Star Vault',
+        shop_buyer: 'Buyer',
+        shop_balance: '{n} Coins',
+        shop_note: '※ Pets only available here, not in trials',
+        shop_tab_gear: 'Weapons · Beasts',
+        shop_tab_reward: 'Pardons',
+        btn_leave_shop: 'Leave',
+        shop_buy: 'Buy',
+        shop_cp: 'Power +{n}',
+        shop_insufficient: 'Not enough coins — go do trials!',
+        shop_owned: 'Already owned.',
+        shop_buy_success: 'Purchased! Added to inventory.',
+        shop_buy_success_gear: 'Purchased! Power increased!',
+        shop_no_item: 'Item not found',
+        inv_title: '{name} · Inventory',
+        inv_empty: 'Inventory empty',
+        batch_title: 'Batch Enroll Students',
+        batch_success: '{n} students enrolled!',
+        batch_invalid: 'Please enter a number between 1 and 100.',
+        edit_title: 'Edit Student Record',
+        label_name: 'Name',
+        label_gender: 'Gender',
+        label_male_student: 'Male',
+        label_female_student: 'Female',
+        btn_expel: 'Expel',
+        edit_save_success: 'Student record updated!',
+        expel_confirm: 'Expel this student? They will be removed permanently.',
+        expel_success: 'Student expelled.',
+        btn_cancel: 'Cancel',
+        btn_confirm: 'Confirm',
+        btn_done: 'Done',
+        btn_add: '✦ Add',
+        btn_leave: 'Close',
+        btn_close_tome: 'Close',
+        btn_enlighten: 'Understood',
+        btn_receive: 'Receive',
+        btn_dissolve_group: 'Dissolve Team',
+        btn_create_now: '⚔ Create Now',
+        btn_save_preset: 'Save Preset',
+        btn_all_present: '✦ All Present',
+        btn_all_absent: '✕ All Absent',
+        group_setup_title: '✦ Create Teams',
+        group_mode_label: 'Setup Mode',
+        group_strategy_label: 'Auto Strategy',
+        group_count_label: 'Number of Teams',
+        group_naming_label: 'Team Naming',
+        group_color_label: 'Team Color',
+        group_mode_auto_title: '⚙ Auto Setup',
+        group_mode_auto_desc: 'System auto-assigns students randomly or by balanced power',
+        group_mode_manual_title: '✦ Manual Setup',
+        group_mode_manual_desc: 'Create empty teams, teacher drags students in manually',
+        group_strategy_random_title: '🎲 Random',
+        group_strategy_random_desc: 'Shuffle randomly regardless of power level',
+        group_strategy_balance_title: '⚖ Balanced Power',
+        group_strategy_balance_desc: 'Snake-draft to make team power totals even',
+        group_strategy_state_title: '◈ Mixed Realms',
+        group_strategy_state_desc: 'Each team gets students of varied realm levels',
+        group_strategy_gender_title: '⚥ Gender Balance',
+        group_strategy_gender_desc: 'Distribute male/female students evenly',
+        group_count_prefix: 'Split into',
+        group_count_suffix: 'teams',
+        btn_naming_auto: 'Auto Name',
+        btn_naming_custom: 'Custom Names',
+        group_edit_title: 'Edit Team',
+        label_group_name: 'Team Name',
+        label_group_emblem: 'Emblem',
+        label_group_color: 'Team Color',
+        group_created: '{n} teams created successfully!',
+        group_cleared: 'All groups cleared.',
+        group_dissolved: 'Team dissolved.',
+        group_saved: 'Team updated!',
+        group_preview: '~{n} students per team',
+        unassigned_label: 'Unassigned Students',
+        states_title: '◈ Five Realms Guide',
+        states_desc: 'As students level up, they unlock five realms — appearance and aura transform',
+        state_breakthrough: 'Realm Breakthrough',
+        timer_stopwatch: '⏱ Stopwatch',
+        timer_countdown: '⏳ Countdown',
+        timer_label_h: 'H',
+        timer_label_m: 'M',
+        timer_label_s: 'S',
+        timer_standby: 'Standby',
+        timer_running: 'Running',
+        timer_paused: 'Paused',
+        timer_counting: 'Counting',
+        timer_ending: 'Almost done!',
+        timer_warning: 'Watch the time',
+        timer_done: '⚠ Time\'s up!',
+        timer_btn_start: '▶ Start',
+        timer_btn_pause: '⏸ Pause',
+        timer_btn_resume: '▶ Resume',
+        timer_btn_lap: '◈ Lap',
+        timer_btn_reset: '↺ Reset',
+        timer_btn_stop_alarm: '✕ Stop Alarm',
+        timer_lap_prefix: 'Lap',
+        music_title: 'Audio Controls',
+        music_master: '◈ Master',
+        music_off: '✕ Off',
+        music_on: '♫ On',
+        music_bgm: '🎵 Background Music',
+        music_sfx: '⚡ Sound Effects',
+        music_mute: 'Mute',
+        music_unmute: 'Unmute',
+        music_preset_off: 'All Off',
+        music_preset_low: 'Low',
+        music_preset_mid: 'Normal',
+        music_preset_full: 'Full',
+        rp_title: '⚖ Reward & Penalty',
+        rp_subtitle: 'Teacher Only · Reward good, penalise bad',
+        rp_tab_presets: '◈ Quick Apply',
+        rp_tab_bulk: '⬡ Bulk Apply',
+        rp_tab_manage: '✦ Manage Presets',
+        rp_select_student: '◈ Select Student',
+        rp_click_hint: '✦ Click a preset to apply',
+        rp_no_presets: 'No presets — go to Manage Presets to add',
+        rp_select_target: '◈ Target',
+        rp_all_students: '◈ All Students',
+        rp_bulk_hint: '✦ Select preset for bulk apply',
+        rp_bulk_all: 'All {n} students',
+        rp_bulk_group: '{name} group — {n} students',
+        rp_confirm_title: 'Confirm Reward/Penalty',
+        rp_no_selection: 'No students selected!',
+        rp_no_student: 'Please select a student first!',
+        preset_add_title: 'Add Preset',
+        preset_edit_title: 'Edit Preset',
+        label_preset_name: 'Preset Name',
+        label_preset_icon: 'Icon Emoji',
+        label_preset_exp: 'EXP change (+ reward / − penalty)',
+        label_preset_exp_sub: 'EXP',
+        label_preset_coins_sub: 'Coins',
+        label_quick_presets: 'Quick Values',
+        ph_preset_name: 'e.g. Great participation',
+        preset_no_name: 'Please enter a preset name!',
+        preset_no_value: 'Please set at least one non-zero value!',
+        preset_saved: 'New preset created!',
+        preset_updated: 'Preset updated!',
+        attendance_title: '◎ Attendance Register',
+        attendance_hint: 'Absent students will be excluded from the trial pool',
+        attendance_present: 'Present',
+        attendance_absent: 'Absent',
+        attendance_summary: '{present} / {total} present',
+        subject_title: '⬡ Subject Manager',
+        subject_hint: 'Each subject tracks EXP and items independently',
+        subject_default_badge: 'Default',
+        ph_subject_name: 'New subject name',
+        subject_add_success: '◈ Subject "{name}" added!',
+        subject_no_name: 'Please enter a subject name!',
+        subject_duplicate: 'A subject with this name already exists!',
+        subject_switched: '◈ Switched to subject: {name}',
+        notify_save: 'Data saved successfully',
+        notify_no_students: 'Enroll students first!',
+        notify_shop_no_students: 'No students to open inventory for!',
+        notify_add_student: 'Please enter a student name!',
+        notify_student_exists: 'A student with this name already exists!',
+        notify_enrolled: '✦ {name} has been enrolled!',
+        notify_batch_enrolled: '{n} students enrolled!',
+        notify_reset_done: 'All data has been reset.',
+        notify_level_up: '{name} levelled up to Lv.{level}!',
+        item_got_weapon: 'Weapon Obtained: {name}',
+        item_got_weapon_desc: 'Power +{cp} — Sacred weapon equipped!',
+        item_fortune: '✦ Fortune Arrives ✦',
+        reset_title: 'Reset All Data',
+        reset_msg: 'Are you sure? All records will be permanently deleted.',
+        expel_title: 'Expel Student',
+        card_stat_exp: 'EXP',
+        card_stat_coins: 'Coins',
+        card_inventory: '⬡ Inventory',
+        card_absent_badge: '✕ Absent',
+        card_rp_more: '⚖ More',
+        inv_open_shop: 'Visit Shop',
+        teacher_login_title: 'Teacher Verification',
+        teacher_login_msg: 'Enter teacher password',
+        teacher_wrong_pw: 'Wrong password — access denied.',
+        teacher_logout_confirm: 'Exit teacher mode?',
+    },
+    ms: {
+        app_subtitle: 'Perjanjian Suci · Sejarah Kebenaran',
+        app_title: 'Perjanjian Suci: Sejarah Kebenaran',
+        btn_music: '♪ Muzik',
+        btn_timer: '⏱ Pemasa',
+        btn_states: '◈ Panduan Alam',
+        btn_shop: '⬡ Perbendaharaan',
+        btn_leaderboard: '⬖ Ranking',
+        btn_battle: '⚔ Ujian',
+        btn_login: '◈ Log Masuk Guru',
+        btn_logout: '◈ Log Keluar Guru',
+        ph_student_name: 'Nama pelajar',
+        label_male: 'L',
+        label_female: 'P',
+        btn_enroll: 'Daftar',
+        btn_batch: 'Kelompok',
+        btn_attendance: '◎ Kehadiran',
+        btn_attendance_absent: '◎ Kehadiran ({n} tiada)',
+        btn_rp: '⚖ Ganjaran',
+        btn_save: 'Simpan',
+        btn_reset: 'Padam Semua',
+        label_view: 'Paparan',
+        btn_individual_view: '◈ Individu',
+        btn_group_view: '⬡ Kumpulan',
+        btn_create_group: '✦ Buat Kumpulan',
+        btn_clear_groups: 'Kosongkan Kumpulan',
+        label_subject: 'Subjek',
+        group_empty_text: 'Tiada kumpulan dibuat',
+        btn_create_group_now: '✦ Buat Kumpulan Sekarang',
+        battle_solo_name: 'Ujian Solo',
+        battle_solo_desc: 'Pilih seorang pelajar secara rawak',
+        battle_team_name: 'Ujian Kumpulan',
+        battle_team_desc: 'Pilih kumpulan, ganjaran dikongsi',
+        battle_team_waiting: '◈ Satu kumpulan akan dipanggil secara rawak',
+        battle_msg_default: 'Ujian menjelang. Pilih mod.',
+        battle_msg_solo_default: 'Ujian menjelang.',
+        battle_msg_spinning: 'Roda takdir berpusing...',
+        battle_msg_team_spinning: 'Roda berpusing — memanggil kumpulan...',
+        battle_msg_challenge: '{name} tampil menghadapi ujian!',
+        battle_msg_treasure_challenge: '{name} cuba membuka meterai!',
+        battle_msg_win: 'Kebenaran dikuasai! +{exp} EXP / +{coins} Syiling!',
+        battle_msg_treasure_win: 'Meterai dibuka! +{exp} EXP / +{coins} Syiling!',
+        battle_msg_lose: 'Tersasar — ujian ini gagal...',
+        battle_msg_treasure_lose: 'Meterai membalas! Kontrak hilang...',
+        battle_msg_team_win: '{result}! Kumpulan berkongsi {exp} EXP · {coins} Syiling — {each_exp} EXP / {each_coins} Syiling setiap orang!',
+        battle_msg_team_lose: 'Tersasar — kumpulan gagal ujian ini...',
+        battle_msg_team_treasure_lose: 'Meterai membalas! Kumpulan kelelahan, kontrak hilang...',
+        battle_msg_monster: 'Ujian: {name} muncul — berhadapan!',
+        battle_msg_treasure: 'Kontrak bermeterai dijumpai! Cahaya Kebenaran boleh membukanya!',
+        battle_msg_team_select: 'Ujian Kumpulan: satu kumpulan akan dipanggil!',
+        battle_msg_no_students: 'Tiada pelajar didaftarkan!',
+        battle_msg_no_present: 'Tiada pelajar hadir! Ambil kehadiran dahulu.',
+        battle_msg_reset: '☆ Semua pelajar hadir telah dipilih! Pusingan baru bermula.',
+        battle_msg_team_reset: '☆ Semua kumpulan telah dipilih! Pusingan baru bermula.',
+        battle_msg_no_groups: 'Tiada kumpulan tersedia!',
+        battle_msg_no_group_setup: 'Belum ada kumpulan — pergi ke paparan Kumpulan dahulu!',
+        battle_teams_count: '{n} kumpulan bersedia',
+        btn_battle_pick: '◈ Pilihan Takdir',
+        btn_battle_pick_team: '⬡ Pilihan Takdir (Kumpulan)',
+        btn_battle_win: '✦ Kebenaran Dikuasai (Menang)',
+        btn_battle_lose: '✦ Tersasar (Gagal)',
+        btn_retreat: 'Keluar',
+        pc_solo_label: '◈ Menunggu',
+        pc_solo_unit: 'pelajar',
+        pc_team_label: '⬡ Menunggu',
+        pc_team_unit: 'kumpulan',
+        absent_note: '({n} tiada hadir)',
+        lb_title: '⬖ Ranking Kuasa',
+        lb_rank_header: 'RANKING / PELAJAR',
+        lb_power_header: 'KUASA (CP)',
+        btn_close_scroll: 'Tutup',
+        shop_title: '⬡ Perbendaharaan Bintang',
+        shop_buyer: 'Pembeli',
+        shop_balance: '{n} Syiling',
+        shop_note: '※ Haiwan peliharaan hanya di sini, bukan dalam ujian',
+        shop_tab_gear: 'Senjata · Binatang',
+        shop_tab_reward: 'Pengampunan',
+        btn_leave_shop: 'Keluar',
+        shop_buy: 'Beli',
+        shop_cp: 'Kuasa +{n}',
+        shop_insufficient: 'Syiling tidak cukup — pergi buat ujian!',
+        shop_owned: 'Sudah dimiliki.',
+        shop_buy_success: 'Berjaya dibeli! Disimpan dalam beg.',
+        shop_buy_success_gear: 'Berjaya dibeli! Kuasa meningkat!',
+        shop_no_item: 'Barang tidak dijumpai',
+        inv_title: '{name} · Inventori',
+        inv_empty: 'Inventori kosong',
+        batch_title: 'Daftar Pelajar Secara Kelompok',
+        batch_success: '{n} pelajar didaftarkan!',
+        batch_invalid: 'Sila masukkan nombor antara 1 dan 100.',
+        edit_title: 'Edit Rekod Pelajar',
+        label_name: 'Nama',
+        label_gender: 'Jantina',
+        label_male_student: 'Lelaki',
+        label_female_student: 'Perempuan',
+        btn_expel: 'Buang Pelajar',
+        edit_save_success: 'Rekod pelajar dikemaskini!',
+        expel_confirm: 'Buang pelajar ini? Mereka akan dipadamkan selamanya.',
+        expel_success: 'Pelajar dibuang.',
+        btn_cancel: 'Batal',
+        btn_confirm: 'Sahkan',
+        btn_done: 'Selesai',
+        btn_add: '✦ Tambah',
+        btn_leave: 'Tutup',
+        btn_close_tome: 'Tutup',
+        btn_enlighten: 'Faham',
+        btn_receive: 'Terima',
+        btn_dissolve_group: 'Bubarkan Kumpulan',
+        btn_create_now: '⚔ Buat Sekarang',
+        btn_save_preset: 'Simpan Pratetap',
+        btn_all_present: '✦ Semua Hadir',
+        btn_all_absent: '✕ Semua Tiada',
+        group_setup_title: '✦ Buat Kumpulan',
+        group_mode_label: 'Mod Penyediaan',
+        group_strategy_label: 'Strategi Auto',
+        group_count_label: 'Bilangan Kumpulan',
+        group_naming_label: 'Penamaan Kumpulan',
+        group_color_label: 'Warna Kumpulan',
+        group_mode_auto_title: '⚙ Penyediaan Auto',
+        group_mode_auto_desc: 'Sistem mengagihkan pelajar secara rawak atau mengikut keseimbangan kuasa',
+        group_mode_manual_title: '✦ Penyediaan Manual',
+        group_mode_manual_desc: 'Buat kumpulan kosong, guru seret pelajar secara manual',
+        group_strategy_random_title: '🎲 Rawak',
+        group_strategy_random_desc: 'Kocok secara rawak tanpa mengira tahap kuasa',
+        group_strategy_balance_title: '⚖ Kuasa Seimbang',
+        group_strategy_balance_desc: 'Susun ular untuk jumlah kuasa kumpulan yang serata',
+        group_strategy_state_title: '◈ Alam Bercampur',
+        group_strategy_state_desc: 'Setiap kumpulan mendapat pelajar dengan alam yang pelbagai',
+        group_strategy_gender_title: '⚥ Keseimbangan Jantina',
+        group_strategy_gender_desc: 'Agihkan pelajar lelaki/perempuan secara sama rata',
+        group_count_prefix: 'Bahagi kepada',
+        group_count_suffix: 'kumpulan',
+        btn_naming_auto: 'Nama Auto',
+        btn_naming_custom: 'Nama Sendiri',
+        group_edit_title: 'Edit Kumpulan',
+        label_group_name: 'Nama Kumpulan',
+        label_group_emblem: 'Lambang',
+        label_group_color: 'Warna Kumpulan',
+        group_created: '{n} kumpulan berjaya dibuat!',
+        group_cleared: 'Semua kumpulan dikosongkan.',
+        group_dissolved: 'Kumpulan dibubarkan.',
+        group_saved: 'Kumpulan dikemaskini!',
+        group_preview: '~{n} pelajar setiap kumpulan',
+        unassigned_label: 'Pelajar Tidak Dikelompokkan',
+        states_title: '◈ Panduan Lima Alam',
+        states_desc: 'Apabila pelajar naik level, mereka membuka lima alam — rupa dan cahaya berubah',
+        state_breakthrough: 'Peningkatan Alam',
+        timer_stopwatch: '⏱ Jam Randik',
+        timer_countdown: '⏳ Kira Undur',
+        timer_label_h: 'J',
+        timer_label_m: 'M',
+        timer_label_s: 'S',
+        timer_standby: 'Sedia',
+        timer_running: 'Berjalan',
+        timer_paused: 'Dijeda',
+        timer_counting: 'Mengira',
+        timer_ending: 'Hampir habis!',
+        timer_warning: 'Perhatikan masa',
+        timer_done: '⚠ Masa Habis!',
+        timer_btn_start: '▶ Mula',
+        timer_btn_pause: '⏸ Jeda',
+        timer_btn_resume: '▶ Teruskan',
+        timer_btn_lap: '◈ Pusingan',
+        timer_btn_reset: '↺ Tetapkan Semula',
+        timer_btn_stop_alarm: '✕ Henti Penggera',
+        timer_lap_prefix: 'Pusingan',
+        music_title: 'Kawalan Audio',
+        music_master: '◈ Suis Utama',
+        music_off: '✕ Matikan',
+        music_on: '♫ Hidupkan',
+        music_bgm: '🎵 Muzik Latar',
+        music_sfx: '⚡ Kesan Bunyi',
+        music_mute: 'Bisukan',
+        music_unmute: 'Nyahbisu',
+        music_preset_off: 'Semua Bisukan',
+        music_preset_low: 'Perlahan',
+        music_preset_mid: 'Biasa',
+        music_preset_full: 'Penuh',
+        rp_title: '⚖ Ganjaran & Hukuman',
+        rp_subtitle: 'Guru Sahaja · Ganjaran yang baik, hukum yang salah',
+        rp_tab_presets: '◈ Guna Cepat',
+        rp_tab_bulk: '⬡ Guna Semua',
+        rp_tab_manage: '✦ Urus Pratetap',
+        rp_select_student: '◈ Pilih Pelajar',
+        rp_click_hint: '✦ Klik pratetap untuk diguna',
+        rp_no_presets: 'Tiada pratetap — pergi ke Urus Pratetap untuk tambah',
+        rp_select_target: '◈ Sasaran',
+        rp_all_students: '◈ Semua Pelajar',
+        rp_bulk_hint: '✦ Pilih pratetap untuk guna semua',
+        rp_bulk_all: 'Semua {n} pelajar',
+        rp_bulk_group: 'Kumpulan {name} — {n} pelajar',
+        rp_confirm_title: 'Sahkan Ganjaran/Hukuman',
+        rp_no_selection: 'Tiada pelajar dipilih!',
+        rp_no_student: 'Sila pilih pelajar dahulu!',
+        preset_add_title: 'Tambah Pratetap',
+        preset_edit_title: 'Edit Pratetap',
+        label_preset_name: 'Nama Pratetap',
+        label_preset_icon: 'Ikon Emoji',
+        label_preset_exp: 'Perubahan EXP (+ ganjaran / − hukuman)',
+        label_preset_exp_sub: 'EXP',
+        label_preset_coins_sub: 'Syiling',
+        label_quick_presets: 'Nilai Cepat',
+        ph_preset_name: 'cth. Penglibatan cemerlang',
+        preset_no_name: 'Sila masukkan nama pratetap!',
+        preset_no_value: 'Sila tetapkan sekurang-kurangnya satu nilai bukan sifar!',
+        preset_saved: 'Pratetap baru dibuat!',
+        preset_updated: 'Pratetap dikemaskini!',
+        attendance_title: '◎ Daftar Kehadiran',
+        attendance_hint: 'Pelajar yang tiada hadir akan dikecualikan daripada kolam ujian',
+        attendance_present: 'Hadir',
+        attendance_absent: 'Tiada',
+        attendance_summary: '{present} / {total} hadir',
+        subject_title: '⬡ Pengurus Subjek',
+        subject_hint: 'Setiap subjek menjejaki EXP dan item secara berasingan',
+        subject_default_badge: 'Lalai',
+        ph_subject_name: 'Nama subjek baru',
+        subject_add_success: '◈ Subjek "{name}" ditambah!',
+        subject_no_name: 'Sila masukkan nama subjek!',
+        subject_duplicate: 'Subjek dengan nama ini sudah wujud!',
+        subject_switched: '◈ Ditukar kepada subjek: {name}',
+        notify_save: 'Data berjaya disimpan',
+        notify_no_students: 'Daftar pelajar dahulu!',
+        notify_shop_no_students: 'Tiada pelajar untuk buka inventori!',
+        notify_add_student: 'Sila masukkan nama pelajar!',
+        notify_student_exists: 'Pelajar dengan nama ini sudah ada!',
+        notify_enrolled: '✦ {name} telah didaftarkan!',
+        notify_batch_enrolled: '{n} pelajar didaftarkan!',
+        notify_reset_done: 'Semua data telah dipadamkan.',
+        notify_level_up: '{name} naik ke Lv.{level}!',
+        item_got_weapon: 'Senjata Diperoleh: {name}',
+        item_got_weapon_desc: 'Kuasa +{cp} — Senjata suci dilengkapkan!',
+        item_fortune: '✦ Keberuntungan Tiba ✦',
+        reset_title: 'Padam Semua Data',
+        reset_msg: 'Adakah anda pasti? Semua rekod akan dipadamkan selamanya.',
+        expel_title: 'Buang Pelajar',
+        card_stat_exp: 'EXP',
+        card_stat_coins: 'Syiling',
+        card_inventory: '⬡ Inventori',
+        card_absent_badge: '✕ Tiada',
+        card_rp_more: '⚖ Lagi',
+        inv_open_shop: 'Lawati Kedai',
+        teacher_login_title: 'Pengesahan Guru',
+        teacher_login_msg: 'Masukkan kata laluan guru',
+        teacher_wrong_pw: 'Kata laluan salah — akses ditolak.',
+        teacher_logout_confirm: 'Keluar mod guru?',
+    }
+};
+
+let currentLang = localStorage.getItem('wuxia_lang') || 'zh';
+
+function t(key, vars) {
+    const dict = LANG[currentLang] || LANG.zh;
+    let str = dict[key] || LANG.zh[key] || key;
+    if (vars) Object.keys(vars).forEach(k => { str = str.replace(new RegExp('{'+k+'}','g'), vars[k]); });
+    return str;
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('wuxia_lang', lang);
+    // Update switcher active state
+    ['zh','en','ms'].forEach(l => {
+        const btn = document.getElementById('lang'+l.toUpperCase());
+        if (btn) btn.classList.toggle('active', l === lang);
+    });
+    applyLang();
+    // Re-render dynamic content
+    renderGrid();
+    if (currentView === 'group') renderGroupView();
+    renderSubjectTabs();
+    updateTeacherUI();
+    updateAttendanceBtn();
+    // Refresh music panel UI text
+    syncMusicPanelUI();
+    // Re-render timer
+    renderTimerControls();
+    renderTimerDisplay();
+    showNotify(lang === 'zh' ? '语言已切换为中文' : lang === 'en' ? 'Language set to English' : 'Bahasa ditukar ke Bahasa Melayu');
+}
+
+function applyLang() {
+    // Apply data-i18n text content
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+    // Apply data-i18n-placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    // Dynamic: loading overlay title stays decorative (Chinese brand name kept always)
+    // Header subtitle & title
+    const sub = document.querySelector('.header-subtitle');
+    if (sub) sub.textContent = t('app_subtitle');
+    const h1 = document.querySelector('h1');
+    if (h1) h1.textContent = t('app_title');
+    // Music panel dynamic labels
+    const mpTitle = document.querySelector('#music-panel .music-panel-title span:last-child');
+    if (mpTitle) mpTitle.textContent = t('music_title');
+    const mpMasterLabel = document.querySelector('.music-master-label');
+    if (mpMasterLabel) mpMasterLabel.textContent = t('music_master');
+    const bgmLabel = document.querySelector('.music-channel:first-of-type .music-channel-label');
+    if (bgmLabel) bgmLabel.innerHTML = `<span class="music-channel-icon">🎵</span> ${t('music_bgm').replace('🎵 ','')}`;
+    const sfxLabel = document.querySelectorAll('.music-channel .music-channel-label');
+    if (sfxLabel[1]) sfxLabel[1].innerHTML = `<span class="music-channel-icon">⚡</span> ${t('music_sfx').replace('⚡ ','')}`;
+    // Mute button text update (live)
+    const bgmMuteBtn = document.getElementById('bgm-mute-btn');
+    if (bgmMuteBtn) bgmMuteBtn.textContent = audioState.bgmMuted ? t('music_unmute') : t('music_mute');
+    const sfxMuteBtn = document.getElementById('sfx-mute-btn');
+    if (sfxMuteBtn) sfxMuteBtn.textContent = audioState.sfxMuted ? t('music_unmute') : t('music_mute');
+    // RP panel title & subtitle
+    const rpTitleEl = document.querySelector('#rp-panel .rp-title span:first-child');
+    if (rpTitleEl) rpTitleEl.textContent = t('rp_title');
+    const rpSubEl = document.querySelector('#rp-panel .rp-header > div:last-child');
+    if (rpSubEl && rpSubEl.tagName !== 'DIV') { /* skip */ } else if (rpSubEl) rpSubEl.textContent = t('rp_subtitle');
+    // Group auto-mode cards
+    const modeAuto = document.getElementById('modeAuto');
+    if (modeAuto) modeAuto.innerHTML = `<h4>${t('group_mode_auto_title')}</h4><p>${t('group_mode_auto_desc')}</p>`;
+    const modeManual = document.getElementById('modeManual');
+    if (modeManual) modeManual.innerHTML = `<h4>${t('group_mode_manual_title')}</h4><p>${t('group_mode_manual_desc')}</p>`;
+    const stRandom = document.getElementById('strategyRandom');
+    if (stRandom) stRandom.innerHTML = `<h4>${t('group_strategy_random_title')}</h4><p>${t('group_strategy_random_desc')}</p>`;
+    const stBalance = document.getElementById('strategyBalance');
+    if (stBalance) stBalance.innerHTML = `<h4>${t('group_strategy_balance_title')}</h4><p>${t('group_strategy_balance_desc')}</p>`;
+    const stState = document.getElementById('strategyState');
+    if (stState) stState.innerHTML = `<h4>${t('group_strategy_state_title')}</h4><p>${t('group_strategy_state_desc')}</p>`;
+    const stGender = document.getElementById('strategyGender');
+    if (stGender) stGender.innerHTML = `<h4>${t('group_strategy_gender_title')}</h4><p>${t('group_strategy_gender_desc')}</p>`;
+    // Group count row text spans
+    const gcSpans = document.querySelectorAll('#group-modal .num-row > span:not(#group-preview-text)');
+    if (gcSpans[0]) gcSpans[0].textContent = t('group_count_prefix');
+    if (gcSpans[1]) gcSpans[1].textContent = t('group_count_suffix');
+    // Group naming buttons
+    const namingAuto = document.getElementById('namingAuto');
+    if (namingAuto) namingAuto.textContent = t('btn_naming_auto');
+    const namingCustom = document.getElementById('namingCustom');
+    if (namingCustom) namingCustom.textContent = t('btn_naming_custom');
+    // Group edit labels
+    document.querySelectorAll('#group-edit-modal label').forEach((lbl, i) => {
+        const keys = ['label_group_name','label_group_emblem','label_group_color'];
+        if (keys[i]) lbl.textContent = keys[i] ? t(keys[i]) : lbl.textContent;
+    });
+    // Preset edit modal labels
+    const peLabelName = document.querySelector('.pe-label');
+    if (peLabelName) {
+        const peLabels = document.querySelectorAll('.pe-label');
+        const peSubs = document.querySelectorAll('.pe-sublabel');
+        const peKeys = ['label_preset_name','label_preset_icon','label_preset_exp','label_quick_presets'];
+        peLabels.forEach((el,i) => { if (peKeys[i]) el.textContent = t(peKeys[i]); });
+        peSubs.forEach((el,i) => { el.textContent = i===0 ? t('label_preset_exp_sub') : t('label_preset_coins_sub'); });
+    }
+    // Preset placeholder
+    const peNameInput = document.getElementById('pe-name');
+    if (peNameInput) peNameInput.placeholder = t('ph_preset_name');
+    // Attendance modal title & hint
+    const attTitle = document.querySelector('#attendance-modal .modal-title');
+    if (attTitle) attTitle.textContent = t('attendance_title');
+    const attHint = document.querySelector('#attendance-modal > div > p');
+    if (attHint) attHint.textContent = t('attendance_hint');
+    // Subject modal title & hint
+    const subjTitle = document.querySelector('#subject-modal .modal-title');
+    if (subjTitle) subjTitle.textContent = t('subject_title');
+    const subjHint = document.querySelector('#subject-modal > div > p');
+    if (subjHint) subjHint.textContent = t('subject_hint');
+    // Subject new input placeholder
+    const newSubjInput = document.getElementById('new-subject-name');
+    if (newSubjInput) newSubjInput.placeholder = t('ph_subject_name');
+    // States modal desc
+    const statesDesc = document.querySelector('#states-modal > div > p');
+    if (statesDesc) statesDesc.textContent = t('states_desc');
+    // Unassigned label
+    const unassignedLabel = document.querySelector('.unassigned-title span:nth-child(2)');
+    if (unassignedLabel) unassignedLabel.textContent = t('unassigned_label');
+    // Group empty state
+    const groupEmptyText = document.querySelector('#group-empty-state > div:nth-child(2)');
+    if (groupEmptyText) groupEmptyText.textContent = t('group_empty_text');
+    const groupEmptyBtn = document.querySelector('#group-empty-state button');
+    if (groupEmptyBtn) groupEmptyBtn.textContent = t('btn_create_group_now');
+    // Timer labels
+    document.querySelectorAll('.timer-cd-field label').forEach((lbl, i) => {
+        lbl.textContent = [t('timer_label_h'), t('timer_label_m'), t('timer_label_s')][i] || lbl.textContent;
+    });
+    // Battle team-selector-row text
+    const teamSelectorText = document.querySelector('#team-selector-row > span:first-child');
+    if (teamSelectorText) teamSelectorText.textContent = t('battle_team_waiting');
+    // Default fighter names
+    const battleStudentName = document.getElementById('battle-student-name');
+    if (battleStudentName && (battleStudentName.textContent === '弟子' || battleStudentName.textContent === 'Student' || battleStudentName.textContent === 'Pelajar')) {
+        battleStudentName.textContent = t('ph_student_name');
+    }
+    // RP confirm modal title
+    const acTitle = document.getElementById('ac-title');
+    if (acTitle) acTitle.textContent = t('rp_confirm_title');
+    // Shop balance re-render
+    updateShopBalance();
+}
+
 </script>
 
 <!-- ══════════════════════════════════════════════════════
@@ -1731,9 +2780,9 @@ function showNotify(msg){const b=document.getElementById('notification-bar');b.i
         <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.72rem;color:var(--text-dim);margin-top:5px;">导师专属 · 赏善罚恶，圣律不欺</div>
     </div>
     <div class="rp-tabs">
-        <button class="rp-tab active" id="rpTabPresets" onclick="switchRPTab('presets')">◈ 快速赏罚</button>
-        <button class="rp-tab" id="rpTabBulk" onclick="switchRPTab('bulk')">⬡ 全体赏罚</button>
-        <button class="rp-tab" id="rpTabManage" onclick="switchRPTab('manage')">✦ 管理预设</button>
+        <button class="rp-tab active" id="rpTabPresets" onclick="switchRPTab('presets')"data-i18n="rp_tab_presets"></button>
+        <button class="rp-tab" id="rpTabBulk" onclick="switchRPTab('bulk')"data-i18n="rp_tab_bulk"></button>
+        <button class="rp-tab" id="rpTabManage" onclick="switchRPTab('manage')"data-i18n="rp_tab_manage"></button>
     </div>
     <div class="rp-body" id="rp-body"></div>
 </div>
@@ -1779,8 +2828,8 @@ function showNotify(msg){const b=document.getElementById('notification-bar');b.i
             </div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:4px;">
-            <button class="sacred-btn" onclick="document.getElementById('preset-edit-modal').style.display='none'">取消</button>
-            <button class="sacred-btn success-tier" onclick="savePreset()">确立预设</button>
+            <button class="sacred-btn" 
+            <button class="sacred-btn success-tier" onclick="savePreset()"data-i18n="btn_save_preset"></button>
         </div>
     </div>
 </div>
@@ -1793,7 +2842,7 @@ function showNotify(msg){const b=document.getElementById('notification-bar');b.i
         <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);">◈ 受影响弟子</div>
         <div class="apply-students-list" id="ac-students-list"></div>
         <div style="display:flex;justify-content:space-between;margin-top:4px;gap:10px;">
-            <button class="sacred-btn" onclick="document.getElementById('apply-confirm-modal').style.display='none'">取消</button>
+            <button class="sacred-btn" 
             <button class="sacred-btn success-tier" style="flex:1;max-width:200px;" id="ac-confirm-btn">⚖ 执行赏罚</button>
         </div>
     </div>
@@ -1884,13 +2933,13 @@ function renderPresetsTab(body) {
 
     const label = document.createElement('div');
     label.style.cssText = 'font-family:\'Cinzel\',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);margin-bottom:6px;';
-    label.textContent = '✦ 点击预设立即执行';
+    label.textContent = t('rp_click_hint');
     body.appendChild(label);
 
     if (!rpPresets.length) {
         const empty = document.createElement('div');
         empty.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'IM Fell English\',serif;font-style:italic;padding:20px;border:1px dashed var(--border);';
-        empty.textContent = '暂无预设，请前往「管理预设」新增';
+        empty.textContent = t('rp_no_presets');
         body.appendChild(empty);
         return;
     }
@@ -1898,7 +2947,7 @@ function renderPresetsTab(body) {
     rpPresets.forEach(preset => {
         const card = buildPresetCard(preset, (p) => {
             const si = parseInt(document.getElementById('rp-student-sel').value);
-            if (isNaN(si) || !students[si]) { showNotify('请先选择弟子！'); return; }
+            if (isNaN(si) || !students[si]) { showNotify(t('rp_no_student')); return; }
             applyPresetToStudents(p, [students[si].id], false);
         });
         body.appendChild(card);
@@ -1913,7 +2962,7 @@ function renderBulkTab(body) {
     targetSec.innerHTML = `
         <div class="bulk-section-title">◈ 赏罚对象</div>
         <div class="target-selector" id="bulk-target-row">
-            <span class="target-chip selected" data-target="all" onclick="toggleBulkTarget(this)">◈ 全体弟子</span>
+            <span class="target-chip selected" data-target="all" onclick="toggleBulkTarget(this)"data-i18n="rp_all_students"></span>
             ${groups.map(g => {
                 const cnt = g.memberIds.filter(id => students.find(s => s.id === id)).length;
                 if (!cnt) return '';
@@ -1929,13 +2978,13 @@ function renderBulkTab(body) {
 
     const label = document.createElement('div');
     label.style.cssText = 'font-family:\'Cinzel\',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);margin-bottom:6px;';
-    label.textContent = '✦ 选择预设执行全体赏罚';
+    label.textContent = t('rp_bulk_hint');
     body.appendChild(label);
 
     if (!rpPresets.length) {
         const empty = document.createElement('div');
         empty.style.cssText = 'text-align:center;color:var(--text-dim);font-family:\'IM Fell English\',serif;font-style:italic;padding:20px;border:1px dashed var(--border);';
-        empty.textContent = '暂无预设，请前往「管理预设」新增';
+        empty.textContent = t('rp_no_presets');
         body.appendChild(empty);
         return;
     }
@@ -1943,7 +2992,7 @@ function renderBulkTab(body) {
     rpPresets.forEach(preset => {
         const card = buildPresetCard(preset, (p) => {
             const targets = getBulkTargetIds();
-            if (!targets.length) { showNotify('未选择任何弟子！'); return; }
+            if (!targets.length) { showNotify(t('rp_no_selection')); return; }
             applyPresetToStudents(p, targets, true);
         });
         body.appendChild(card);
@@ -2015,7 +3064,7 @@ function executeBulkQuick() {
     if (exp === 0 && coins === 0) { showNotify('请输入非零数值！'); return; }
     const quickPreset = { id: '_quick', name: '快速执行', icon: exp >= 0 && coins >= 0 ? '✦' : '❖', exp, coins };
     const targets = getBulkTargetIds();
-    if (!targets.length) { showNotify('未选择任何弟子！'); return; }
+    if (!targets.length) { showNotify(t('rp_no_selection')); return; }
     applyPresetToStudents(quickPreset, targets, true);
 }
 
@@ -2247,13 +3296,13 @@ function openPresetEditor(presetId) {
     if (presetId) {
         const p = rpPresets.find(x => x.id === presetId);
         if (!p) return;
-        document.getElementById('pe-modal-title').textContent = '编辑赏罚预设';
+        document.getElementById('pe-modal-title').textContent = t('preset_edit_title');
         document.getElementById('pe-name').value = p.name;
         document.getElementById('pe-icon').value = p.icon || '◈';
         document.getElementById('pe-exp').value = p.exp || 0;
         document.getElementById('pe-coins').value = p.coins || 0;
     } else {
-        document.getElementById('pe-modal-title').textContent = '新增赏罚预设';
+        document.getElementById('pe-modal-title').textContent = t('preset_add_title');
         document.getElementById('pe-name').value = '';
         document.getElementById('pe-icon').value = '✦';
         document.getElementById('pe-exp').value = 0;
@@ -2273,8 +3322,8 @@ function savePreset() {
     const icon = document.getElementById('pe-icon').value.trim() || '◈';
     const exp = parseInt(document.getElementById('pe-exp').value) || 0;
     const coins = parseInt(document.getElementById('pe-coins').value) || 0;
-    if (!name) { showNotify('请填写预设名称！'); return; }
-    if (exp === 0 && coins === 0) { showNotify('请至少设定一项非零数值！'); return; }
+    if (!name) { showNotify(t('preset_no_name')); return; }
+    if (exp === 0 && coins === 0) { showNotify(t('preset_no_value')); return; }
 
     if (id) {
         const idx = rpPresets.findIndex(p => p.id === id);
@@ -2285,7 +3334,7 @@ function savePreset() {
     saveRPPresets();
     document.getElementById('preset-edit-modal').style.display = 'none';
     renderRPBody();
-    showNotify(id ? '预设已更新！' : '新预设已创建！');
+    showNotify(t(id?'preset_updated':'preset_saved'));
 }
 
 // ── Also add quick preset buttons back onto each card (updated renderGrid) ──
@@ -2311,7 +3360,7 @@ function renderCardActions(s, index) {
     // RP panel button
     const rpBtn = document.createElement('button');
     rpBtn.className = 'sacred-btn purple-tier sm';
-    rpBtn.textContent = '⚖ 更多';
+    rpBtn.textContent = t('card_rp_more');
     rpBtn.onclick = () => {
         openRPPanel();
         // Pre-select this student
@@ -2325,6 +3374,24 @@ function renderCardActions(s, index) {
     return div;
 }
 </script>
+<!-- ── ATTENDANCE MODAL ── -->
+<div id="attendance-modal" class="modal-overlay">
+    <div class="modal-panel" style="width:520px;max-height:85vh;display:flex;flex-direction:column;gap:14px;">
+        <div class="modal-title">◎ 圣律点名册</div>
+        <div class="ornament">· · · · · · ·</div>
+        <p style="text-align:center;color:var(--text-dim);font-size:0.75rem;font-family:'Cinzel',serif;letter-spacing:0.08em;">缺席弟子将从历练点选池中暂时移除</p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <button class="sacred-btn success-tier sm" onclick="attendanceMarkAll(true)"data-i18n="btn_all_present"></button>
+            <button class="sacred-btn crimson-tier sm" onclick="attendanceMarkAll(false)"data-i18n="btn_all_absent"></button>
+            <span id="attendance-summary" style="font-family:'Cinzel Decorative',serif;font-size:0.8rem;color:var(--gold);padding:5px 12px;border:1px solid var(--gold-dim);background:rgba(20,16,8,0.7);display:flex;align-items:center;"></span>
+        </div>
+        <div id="attendance-list" style="overflow-y:auto;flex-grow:1;display:flex;flex-direction:column;gap:6px;max-height:420px;padding-right:4px;"></div>
+        <div style="display:flex;justify-content:center;gap:10px;padding-top:4px;border-top:1px solid var(--border);">
+            <button class="sacred-btn" onclick="document.getElementById('attendance-modal').style.display='none'"data-i18n="btn_done"></button>
+        </div>
+    </div>
+</div>
+
 <!-- ── SUBJECT MANAGE MODAL ── -->
 <div id="subject-modal" class="modal-overlay">
     <div class="modal-panel" style="width:420px;display:flex;flex-direction:column;gap:14px;">
@@ -2334,10 +3401,10 @@ function renderCardActions(s, index) {
         <div id="subject-list-container" style="max-height:300px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
             <input type="text" id="new-subject-name" placeholder="新科目名称" style="flex-grow:1;">
-            <button class="sacred-btn success-tier sm" onclick="addSubject()">✦ 新增</button>
+            <button class="sacred-btn success-tier sm" onclick="addSubject()"data-i18n="btn_add"></button>
         </div>
         <div style="display:flex;justify-content:center;">
-            <button class="sacred-btn" onclick="document.getElementById('subject-modal').style.display='none'">完成</button>
+            <button class="sacred-btn" onclick="document.getElementById('subject-modal').style.display='none'"data-i18n="btn_done"></button>
         </div>
     </div>
 </div>
