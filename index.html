@@ -1025,13 +1025,13 @@ const STATES_CHARACTER_ARTS = [
 ];
 
 // ── Audio ──
-const sfxClick   = new Audio(BASE_URL+'audio/sfx_button_click.mp3');
-const sfxLevelUp = new Audio(BASE_URL+'audio/sfx_level_up.mp3');
+const sfxClick   = new Audio('assets/audio/sfx_button_click.mp3');
+const sfxLevelUp = new Audio('assets/audio/sfx_level_up.mp3');
 const sfxWin     = new Audio(BASE_URL+'audio/sfx_battle_win.mp3');
-const sfxAttack  = new Audio(BASE_URL+'audio/sfx_player_attack.mp3');
-const sfxGetItem = new Audio(BASE_URL+'audio/sfx_buy_item.mp3');
+const sfxAttack  = new Audio('assets/audio/sfx_player_attack.mp3');
+const sfxGetItem = new Audio('audio/sfx_buy_item.mp3');
 const bgmMain    = new Audio('assets/audio/bgm_main_game.mp3'); bgmMain.loop=true;
-const bgmBattle  = new Audio(BASE_URL+'audio/bgm_battle.mp3');   bgmBattle.loop=true;
+const bgmBattle  = new Audio('assets/audio/bgm_battle.mp3');   bgmBattle.loop=true;
 const ALL_SFX    = [sfxClick, sfxLevelUp, sfxWin, sfxAttack, sfxGetItem];
 
 let audioState = { masterOn:false, bgmVol:30, sfxVol:80, bgmMuted:false, sfxMuted:false, currentBGM:'main' };
