@@ -3,7 +3,7 @@
 
 const CACHE_VERSION = 'v1';
 const CACHE_NAME = `image-cache-${CACHE_VERSION}`;
-const IMAGE_CACHE_SIZE = 50; // Max images to cache
+const IMAGE_CACHE_SIZE = 300; // Max images to cache
 
 // Install event - set up cache
 self.addEventListener('install', (event) => {
