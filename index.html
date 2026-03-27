@@ -144,13 +144,16 @@
         @keyframes breatheDawn   { 0%,100%{filter:drop-shadow(0 0 8px rgba(200,160,30,0.5))  brightness(0.98);} 50%{filter:drop-shadow(0 0 18px rgba(220,180,40,0.65)) brightness(1.12);} }
         @keyframes breatheDomain { 0%,100%{filter:drop-shadow(0 0 10px rgba(180,70,20,0.55)) brightness(0.97);} 50%{filter:drop-shadow(0 0 22px rgba(200,80,30,0.7))  brightness(1.14);} }
         @keyframes breatheOmega  { 0%,100%{filter:drop-shadow(0 0 12px rgba(200,40,180,0.6)) brightness(0.98);} 50%{filter:drop-shadow(0 0 28px rgba(220,60,200,0.8))  brightness(1.18) saturate(1.3);} }
-        .companion-img { position:absolute; object-fit:contain; image-rendering:pixelated; z-index:3; filter:drop-shadow(0 0 8px rgba(0,0,0,0.8)); }
-        .companion-pet-0 { height:78px;  bottom:0;   left:-6px;  animation:float  3.5s ease-in-out infinite; }
-        .companion-pet-1 { height:68px;  bottom:0;   left:28px;  animation:float2 4.1s ease-in-out infinite; }
-        .companion-pet-2 { height:72px;  bottom:0;   left:62px;  animation:float  4.8s ease-in-out infinite; }
-        .companion-sword-0 { height:110px; top:4px;   right:-12px; transform:rotate(-18deg); animation:floatSword  4.5s ease-in-out infinite; }
-        .companion-sword-1 { height:96px;  top:28px;  right:18px;  transform:rotate(-30deg); animation:floatSword2 3.8s ease-in-out infinite; }
-        .companion-sword-2 { height:100px; top:14px;  right:44px;  transform:rotate(-10deg); animation:floatSword  5.2s ease-in-out infinite; }
+        /* companions render BEHIND avatar (z-index:1 < avatar z-index:2) */
+        .companion-img { position:absolute; object-fit:contain; image-rendering:pixelated; z-index:1; filter:drop-shadow(0 0 8px rgba(0,0,0,0.8)); }
+        /* Pets — spread left side, no overlap: spaced 52px apart */
+        .companion-pet-0 { height:78px;  bottom:0;  left:2px;   animation:float  3.5s ease-in-out infinite; }
+        .companion-pet-1 { height:68px;  bottom:0;  left:56px;  animation:float2 4.1s ease-in-out infinite; }
+        .companion-pet-2 { height:72px;  bottom:0;  left:108px; animation:float  4.8s ease-in-out infinite; }
+        /* Swords — stack right side, staggered vertically so blades don't cross */
+        .companion-sword-0 { height:110px; top:6px;  right:2px;  transform:rotate(-18deg); animation:floatSword  4.5s ease-in-out infinite; }
+        .companion-sword-1 { height:96px;  top:10px; right:50px; transform:rotate(-30deg); animation:floatSword2 3.8s ease-in-out infinite; }
+        .companion-sword-2 { height:100px; top:8px;  right:96px; transform:rotate(-10deg); animation:floatSword  5.2s ease-in-out infinite; }
         @keyframes float      { 0%,100%{transform:translateY(0);}              50%{transform:translateY(-8px);} }
         @keyframes float2     { 0%,100%{transform:translateY(0);}              50%{transform:translateY(-6px);} }
         @keyframes floatSword { 0%,100%{transform:rotate(-18deg) translateY(0);} 50%{transform:rotate(-22deg) translateY(-9px);} }
