@@ -147,10 +147,10 @@
         /* companions render BEHIND avatar (z-index:1 < avatar z-index:2) */
         .companion-img { position:absolute; object-fit:contain; image-rendering:pixelated; z-index:1; filter:drop-shadow(0 0 8px rgba(0,0,0,0.8)); }
         /* Pets — LEFT side, 2x2 grid layout (behind avatar) */
-        .companion-pet-0 { height:78px; top:8px;     left:4px;  animation:float  3.5s ease-in-out infinite; }
-        .companion-pet-1 { height:68px; top:8px;     left:52px; animation:float2 4.1s ease-in-out infinite; }
-        .companion-pet-2 { height:72px; bottom:12px; left:4px;  animation:float  4.8s ease-in-out infinite; }
-        .companion-pet-3 { height:70px; bottom:12px; left:52px; animation:float2 3.9s ease-in-out infinite; }
+        .companion-pet-0 { height:78px; z-index:3; top:8px;     left:4px;  animation:float  3.5s ease-in-out infinite; }
+        .companion-pet-1 { height:68px; z-index:3; top:8px;     left:52px; animation:float2 4.1s ease-in-out infinite; }
+        .companion-pet-2 { height:72px; z-index:3; bottom:12px; left:4px;  animation:float  4.8s ease-in-out infinite; }
+        .companion-pet-3 { height:70px; z-index:3; bottom:12px; left:52px; animation:float2 3.9s ease-in-out infinite; }
         /* Swords — RIGHT side, 2x2 grid layout (IN FRONT of avatar, z-index:3) */
         .companion-sword-0 { height:77px; z-index:3; top:8px;     right:4px;  transform:rotate(45deg); animation:floatSword  4.5s ease-in-out infinite; }
         .companion-sword-1 { height:67px; z-index:3; top:8px;     right:52px; transform:rotate(45deg); animation:floatSword2 3.8s ease-in-out infinite; }
