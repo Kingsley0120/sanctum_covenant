@@ -756,9 +756,11 @@
 
 <!-- ── BATCH ── -->
 <div id="batch-modal" class="modal-overlay">
-    <div class="modal-panel" style="width:300px;text-align:center;display:flex;flex-direction:column;gap:16px;">
+    <div class="modal-panel" style="width:360px;text-align:center;display:flex;flex-direction:column;gap:16px;">
         <div class="modal-title">批量收录弟子</div>
-        <input type="number" id="batch-count" min="1" max="100" value="30" style="text-align:center;width:100%;">
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.12em;color:var(--text-dim);text-align:left;">每行输入一个弟子名字</div>
+        <textarea id="batch-names" rows="10" placeholder="张三&#10;李四&#10;王五&#10;..." style="width:100%;background:rgba(8,10,22,0.85);border:1px solid var(--border);border-bottom:1px solid var(--border-glow);color:var(--text-primary);padding:10px 12px;font-family:'Noto Serif SC',serif;font-size:0.9rem;outline:none;resize:vertical;line-height:1.8;"></textarea>
+        <div id="batch-preview-label" style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-dim);min-height:1.2em;"></div>
         <div style="display:flex;justify-content:center;gap:10px;">
             <button class="sacred-btn" onclick="document.getElementById('batch-modal').style.display='none'">取消</button>
             <button class="sacred-btn success-tier" onclick="confirmBatchAdd()">收录</button>
@@ -1706,8 +1708,41 @@ function addStudent(){const input=document.getElementById('newStudentName'),name
     // New student resets solo pool since roster changed
     soloUsedIds.clear();
 }
-function openBatchModal(){document.getElementById('batch-modal').style.display='flex';}
-function confirmBatchAdd(){const count=parseInt(document.getElementById('batch-count').value);if(count>0&&count<=100){playSfx(sfxClick);for(let i=1;i<=count;i++){const name=i+"号";if(!students.some(s=>s.name===name)){const ns={id:Date.now()+i,name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};subjects.forEach(subj=>{ns.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});students.push(ns);}}saveData();renderGrid();showNotify(`已收录 ${count} 位弟子至编年史！`);document.getElementById('batch-modal').style.display='none';soloUsedIds.clear();}else showNotify("请输入 1~100 之间的人数。");}
+function openBatchModal(){
+    document.getElementById('batch-modal').style.display='flex';
+    document.getElementById('batch-names').value='';
+    document.getElementById('batch-preview-label').textContent='';
+    document.getElementById('batch-names').oninput=function(){
+        const names=this.value.split('\n').map(n=>n.trim()).filter(n=>n.length>0);
+        const label=document.getElementById('batch-preview-label');
+        if(names.length===0){label.textContent='';return;}
+        const newCount=names.filter(n=>!students.some(s=>s.name===n)).length;
+        const dupCount=names.length-newCount;
+        let msg=`共 ${names.length} 位，将新增 ${newCount} 位`;
+        if(dupCount>0) msg+=`（${dupCount} 位已存在将跳过）`;
+        label.style.color=newCount>0?'var(--gold)':'var(--text-dim)';
+        label.textContent=msg;
+    };
+}
+function confirmBatchAdd(){
+    const raw=document.getElementById('batch-names').value;
+    const names=raw.split('\n').map(n=>n.trim()).filter(n=>n.length>0);
+    if(names.length===0){showNotify('请输入至少一个弟子名字。');return;}
+    playSfx(sfxClick);
+    let added=0;
+    names.forEach(function(name,i){
+        if(!students.some(s=>s.name===name)){
+            const ns={id:Date.now()+i*13+Math.floor(Math.random()*9999),name,gender:'male',exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]},subjectData:{}};
+            subjects.forEach(subj=>{ns.subjectData[subj.id]={exp:0,coins:0,inventory:[],equipped:{pets:[],swords:[]}};});
+            students.push(ns);
+            added++;
+        }
+    });
+    saveData();renderGrid();
+    showNotify('已收录 '+added+' 位弟子至编年史！');
+    document.getElementById('batch-modal').style.display='none';
+    soloUsedIds.clear();
+}
 function openEditModal(id){const s=students.find(st=>st.id===id);if(!s)return;document.getElementById('edit-id').value=id;document.getElementById('edit-name').value=s.name;const gr=document.getElementsByName('editGender');for(let r of gr)r.checked=(r.value===(s.gender||'male'));document.getElementById('edit-student-modal').style.display='flex';}
 function saveStudentEdit(){const id=parseInt(document.getElementById('edit-id').value),name=document.getElementById('edit-name').value.trim();const gr=document.getElementsByName('editGender');let gender='male';for(let r of gr)if(r.checked)gender=r.value;const s=students.find(st=>st.id===id);if(s&&name){s.name=name;s.gender=gender;saveData();renderGrid();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子卷册已修订！");}}
 function confirmDeleteStudent(){if(confirm("确定逐出此弟子？其将从编年史中消除。")){const id=parseInt(document.getElementById('edit-id').value);students=students.filter(s=>s.id!==id);groups.forEach(g=>g.memberIds=g.memberIds.filter(mid=>mid!==id));soloUsedIds.delete(id);absentIds.delete(id);saveAttendance();saveData();saveGroups();renderGrid();updateAttendBadge();document.getElementById('edit-student-modal').style.display='none';showNotify("弟子已逐出圣律宗门。");}}
