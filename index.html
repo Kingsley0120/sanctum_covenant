@@ -587,6 +587,9 @@
                 <button class="sacred-btn teal-tier" onclick="openBatchModal()">批量</button>
                 <button class="sacred-btn gold-tier" onclick="openRPPanel()">⚖ 赏罚台</button>
                 <button class="sacred-btn" onclick="saveData()">封印</button>
+                <button class="sacred-btn teal-tier" onclick="exportAllData()">📤 导出</button>
+                <button class="sacred-btn purple-tier" onclick="document.getElementById('import-file-input').click()">📥 导入</button>
+                <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importAllData(event)">
                 <button class="sacred-btn crimson-tier" onclick="resetAll()">湮灭</button>
             </div>
         </div>
@@ -1798,6 +1801,86 @@ function saveData(){
 }
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');localStorage.removeItem('wuxia_absent');students=[];groups=[];absentIds=new Set();soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();updateAttendBadge();showNotify("圣律归虚，真理湮灭...");}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
+
+// ══════════════════════════════════════════════════════════════
+// ── EXPORT / IMPORT ──
+// Bundles all localStorage keys into a single JSON file for
+// cross-browser transfer, then restores them on import.
+// ══════════════════════════════════════════════════════════════
+function exportAllData() {
+    // Flush current subject data before exporting
+    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    const payload = {
+        _version: 1,
+        _exportedAt: new Date().toISOString(),
+        wuxia_class_data:      localStorage.getItem('wuxia_class_data')      || '[]',
+        wuxia_groups_data:     localStorage.getItem('wuxia_groups_data')     || '[]',
+        wuxia_subjects:        localStorage.getItem('wuxia_subjects')        || 'null',
+        wuxia_current_subject: localStorage.getItem('wuxia_current_subject') || '',
+        wuxia_rp_presets:      localStorage.getItem('wuxia_rp_presets')      || 'null',
+        wuxia_absent:          localStorage.getItem('wuxia_absent')          || '[]',
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const ts   = new Date().toISOString().slice(0,10);
+    a.href     = url;
+    a.download = `wuxia_chronicle_${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotify('◈ 编年史已导出！请妥善保管此文件。');
+}
+
+function importAllData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    // Reset so the same file can be re-imported if needed
+    event.target.value = '';
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const payload = JSON.parse(e.target.result);
+            if (!payload.wuxia_class_data) { showNotify('❖ 文件格式错误，无法导入。'); return; }
+            showCustomModal({
+                title: '导入编年史',
+                msg: `确定从文件导入数据？\n导出时间：${payload._exportedAt || '未知'}\n\n⚠ 这将覆盖当前所有数据！`,
+                showCancel: true,
+                onConfirm: () => {
+                    // Restore all keys
+                    const keys = ['wuxia_class_data','wuxia_groups_data','wuxia_subjects','wuxia_current_subject','wuxia_rp_presets','wuxia_absent'];
+                    keys.forEach(k => { if (payload[k] != null) localStorage.setItem(k, payload[k]); });
+
+                    // Reload in-memory state
+                    students        = JSON.parse(localStorage.getItem('wuxia_class_data'))  || [];
+                    groups          = JSON.parse(localStorage.getItem('wuxia_groups_data')) || [];
+                    subjects        = JSON.parse(localStorage.getItem('wuxia_subjects'))    || DEFAULT_SUBJECTS.map(s=>({...s}));
+                    currentSubjectId = localStorage.getItem('wuxia_current_subject')        || subjects[0].id;
+                    if (!subjects.find(s=>s.id===currentSubjectId)) currentSubjectId = subjects[0].id;
+                    rpPresets       = JSON.parse(localStorage.getItem('wuxia_rp_presets') || 'null') || [...DEFAULT_PRESETS];
+                    absentIds       = new Set(JSON.parse(localStorage.getItem('wuxia_absent') || '[]'));
+                    soloUsedIds     = new Set();
+                    teamUsedIds     = new Set();
+
+                    // Sync students to current subject
+                    students.forEach(s => syncStudentToSubject(s, currentSubjectId));
+
+                    // Re-render everything
+                    renderSubjectTabs();
+                    renderGrid();
+                    renderGroupView();
+                    updateAttendBadge();
+                    showNotify('✦ 编年史导入成功！');
+                }
+            });
+        } catch (err) {
+            showNotify('❖ 解析失败，请确认文件格式正确。');
+            console.error('Import error:', err);
+        }
+    };
+    reader.readAsText(file);
+}
 </script>
 
 <!-- ══════════════════════════════════════════════════════
