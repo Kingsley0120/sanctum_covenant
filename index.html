@@ -2960,6 +2960,29 @@ function updateAttendBadge() {
 #wb-canvas{display:block;position:absolute;top:0;left:0;touch-action:none;cursor:crosshair;}
 #wb-canvas.wb-eraser{cursor:cell;}
 #wb-canvas.wb-text{cursor:text;}
+#wb-canvas.wb-select{cursor:default;}
+
+/* Image object overlays — removed (images now rendered on canvas in scene graph) */
+/* Handle styles — handles are injected directly into #wb-obj-layer, not inside .wb-obj */
+.wb-handle {
+    position:absolute;width:12px;height:12px;
+    background:var(--gold);border:2px solid #fff;
+    border-radius:2px;z-index:42;
+    box-shadow:0 0 6px rgba(0,0,0,0.8);
+    cursor:pointer;
+}
+.wb-handle-nw{cursor:nw-resize;} .wb-handle-ne{cursor:ne-resize;}
+.wb-handle-sw{cursor:sw-resize;} .wb-handle-se{cursor:se-resize;}
+.wb-handle-n{cursor:n-resize;}   .wb-handle-s{cursor:s-resize;}
+.wb-handle-w{cursor:w-resize;}   .wb-handle-e{cursor:e-resize;}
+.wb-delete-btn {
+    position:absolute;
+    background:var(--crimson-glow);color:#fff;
+    border:none;border-radius:3px;cursor:pointer;
+    font-size:11px;padding:2px 7px;
+    font-family:'Cinzel',serif;letter-spacing:0.05em;
+    z-index:43;white-space:nowrap;
+}
 
 /* Floating text textarea */
 #wb-text-area{
@@ -3001,9 +3024,10 @@ function updateAttendBadge() {
     </div>
     <div class="wb-sep"></div>
 
-    <!-- Text & Eraser -->
+    <!-- Text & Eraser & Select -->
     <button class="wb-btn" id="wbt-text"   onclick="WB.setTool('text')">T 文字</button>
     <button class="wb-btn" id="wbt-eraser" onclick="WB.setTool('eraser')">⌫ 擦除</button>
+    <button class="wb-btn" id="wbt-select" onclick="WB.setTool('select')" title="选择/移动/缩放图片">✥ 选择</button>
     <div class="wb-sep"></div>
 
     <!-- Size -->
@@ -3053,6 +3077,7 @@ function updateAttendBadge() {
   <div id="wb-canvas-wrap">
     <canvas id="wb-canvas"></canvas>
     <div id="wb-ring"></div>
+    <div id="wb-obj-layer" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
     <textarea id="wb-text-area" rows="1" placeholder="输入文字…"
               onkeydown="WB.textKey(event)" oninput="WB.textResize(this)"></textarea>
   </div>
@@ -3081,26 +3106,57 @@ function updateAttendBadge() {
 
 <script>
 /* ══════════════════════════════════════════════════════════════════
-   圣律板 WHITEBOARD ENGINE v2
+   圣律板 WHITEBOARD ENGINE v5
+   Full scene graph — strokes / text / images all selectable,
+   movable, resizable and deletable at any time with the Select tool.
    ══════════════════════════════════════════════════════════════════ */
 const WB = (() => {
   'use strict';
 
-  /* ── internal state ── */
-  let canvas, ctx, wrap, textArea, ring;
-  let tool = 'pen';
-  let color = '#e8cc7a';
+  /* ── DOM refs ── */
+  let canvas, ctx, wrap, textArea, ring, objLayer;
+
+  /* ── tool state ── */
+  let tool    = 'pen';
+  let color   = '#e8cc7a';
   let opacity = 1;
-  let size = 4;
-  let drawing = false;
-  let lx = 0, ly = 0;
-  let undoStack = [], redoStack = [];
+  let size    = 4;
+
+  /* ── live drawing ── */
+  let drawing    = false;
+  let liveStroke = null;
+
+  /* ── text input ── */
   let textX = 0, textY = 0;
+
+  /* ── scene ── */
+  // Every element: { type, id, bbox:{x,y,w,h}, ...type-specific }
+  // stroke: points:[{x,y}], penTool, globalAlpha, lineWidth, strokeStyle, composite, shadowBlur, lineCap, size, chalkSeed
+  // text:   text, x, y, color, opacity, fontSize
+  // image:  src, imgEl, x, y, w, h
+  let scene      = [];
+  let undoStack  = [];
+  let redoStack  = [];
+
+  /* ── selection & drag ── */
+  let selectedObj  = null;
+  let dragState    = null;
+  // dragState: { type:'move'|'resize', obj, corner?,
+  //   startClientX, startClientY,
+  //   origPoints? (stroke), origX?, origY?, origW?, origH?,
+  //   origBbox, origFontSize? }
+
+  let _id = 0;
+  const uid = () => ++_id;
+
+  /* ── shared image cache: src→HTMLImageElement ── */
+  const imgCache = {};
 
   const LABELS = {
     pen:'钢笔 · Pen', brush:'毛笔 · Brush',
     marker:'荧光笔 · Marker', chalk:'粉笔 · Chalk',
-    text:'文字 · Text', eraser:'橡皮擦 · Eraser'
+    text:'文字 · Text', eraser:'橡皮擦 · Eraser',
+    select:'选择 · Select'
   };
   const COLORS = [
     '#e8cc7a','#ffffff','#b0c8f0','#7060c8','#c8a030',
@@ -3108,92 +3164,92 @@ const WB = (() => {
     '#f0f040','#ff9040','#a0ff80','#000000'
   ];
 
-  /* ── init (called once on DOMContentLoaded) ── */
+  /* ══════════════════ INIT ══════════════════ */
   function init() {
     canvas   = document.getElementById('wb-canvas');
     ctx      = canvas.getContext('2d');
     wrap     = document.getElementById('wb-canvas-wrap');
     textArea = document.getElementById('wb-text-area');
     ring     = document.getElementById('wb-ring');
+    objLayer = document.getElementById('wb-obj-layer');
+
+    // objLayer is purely for visual overlays (handles), never intercepts pointer events
+    objLayer.style.pointerEvents = 'none';
 
     buildSwatches();
 
+    // ALL pointer events go through canvas
     canvas.addEventListener('mousedown',  onDown);
     canvas.addEventListener('mousemove',  onMove);
     window.addEventListener('mouseup',    onUp);
-    canvas.addEventListener('touchstart', e=>{e.preventDefault();onDown(e);}, {passive:false});
-    canvas.addEventListener('touchmove',  e=>{e.preventDefault();onMove(e);}, {passive:false});
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); onDown(e); }, { passive: false });
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e); }, { passive: false });
     window.addEventListener('touchend',   onUp);
-    document.addEventListener('keydown',  onKey);
+
+    document.addEventListener('keydown', onKey);
   }
 
   function buildSwatches() {
     const row = document.getElementById('wb-swatches');
     row.innerHTML = '';
-    COLORS.forEach((c,i) => {
+    COLORS.forEach((c, i) => {
       const d = document.createElement('div');
-      d.className = 'wb-swatch' + (i===0?' wb-active':'');
+      d.className = 'wb-swatch' + (i === 0 ? ' wb-active' : '');
       d.style.background = c;
-      d.title = c;
       d.onclick = () => setColor(c, d);
       row.appendChild(d);
     });
   }
 
-  /* SIZE the canvas to the wrap element's actual pixel dimensions */
   function sizeCanvas() {
-    const w = wrap.clientWidth || window.innerWidth;
+    const w = wrap.clientWidth  || window.innerWidth;
     const h = wrap.clientHeight || (window.innerHeight - 80);
     if (canvas.width === w && canvas.height === h) return;
-    // preserve content
-    const tmp = document.createElement('canvas');
-    tmp.width = canvas.width; tmp.height = canvas.height;
-    tmp.getContext('2d').drawImage(canvas, 0, 0);
     canvas.width  = w;
     canvas.height = h;
-    ctx.drawImage(tmp, 0, 0);
+    redraw();
   }
 
-  /* ── public open / close ── */
+  /* ══════════════════ OPEN / CLOSE ══════════════════ */
   function open() {
     document.getElementById('wb-modal').classList.add('open');
-    // RAF gives the browser one frame to lay out the flex container
-    // before we try to measure it
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => { sizeCanvas(); });
-    });
+    requestAnimationFrame(() => requestAnimationFrame(sizeCanvas));
   }
   function close() {
-    commitText();
+    cancelText();
+    deselectAll();
     document.getElementById('wb-modal').classList.remove('open');
   }
 
-  /* ── tool switching ── */
+  /* ══════════════════ TOOL SWITCHING ══════════════════ */
   function setTool(t) {
-    commitText();
+    cancelText();
+    if (t !== 'select') deselectAll();
     tool = t;
-    ['pen','brush','marker','chalk','text','eraser'].forEach(id => {
-      const el = document.getElementById('wbt-'+id);
-      if (el) el.classList.toggle('wb-active', id===t);
+    ['pen','brush','marker','chalk','text','eraser','select'].forEach(id => {
+      const el = document.getElementById('wbt-' + id);
+      if (el) el.classList.toggle('wb-active', id === t);
     });
-    canvas.className = t==='eraser'?'wb-eraser': t==='text'?'wb-text':'';
-    document.getElementById('wb-tool-lbl').textContent = LABELS[t]||t;
-    ring.style.display = t==='eraser'?'block':'none';
+    canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : t === 'select' ? 'default' : 'crosshair';
+    canvas.className = '';
+    if (t === 'eraser') canvas.className = 'wb-eraser';
+    else if (t === 'text') canvas.className = 'wb-text';
+    else if (t === 'select') canvas.className = 'wb-select';
+    document.getElementById('wb-tool-lbl').textContent = LABELS[t] || t;
+    ring.style.display = t === 'eraser' ? 'block' : 'none';
   }
 
   function setSize(v) {
     size = v;
     document.getElementById('wb-sz-val').textContent = v;
-    document.getElementById('wb-sz-fill').style.width = ((v-1)/59*100)+'%';
+    document.getElementById('wb-sz-fill').style.width = ((v - 1) / 59 * 100) + '%';
     updateRing(null, null);
   }
-
   function setOpacity(v) {
     opacity = v / 100;
-    document.getElementById('wb-op-val').textContent = v+'%';
-    document.getElementById('wb-op-fill').style.width = v+'%';
+    document.getElementById('wb-op-val').textContent = v + '%';
+    document.getElementById('wb-op-fill').style.width = v + '%';
   }
-
   function setColor(c, swatchEl) {
     color = c;
     document.getElementById('wb-picker').value = c;
@@ -3202,272 +3258,530 @@ const WB = (() => {
     if (swatchEl) swatchEl.classList.add('wb-active');
   }
 
-  /* ── undo / redo ── */
+  /* ══════════════════ UNDO / REDO ══════════════════ */
+  function cloneScene() {
+    return scene.map(o => {
+      const c = { ...o, bbox: { ...o.bbox } };
+      if (o.points) c.points = o.points.map(p => ({ ...p }));
+      // imgEl is shared reference — images stay valid
+      return c;
+    });
+  }
+
   function pushUndo() {
-    undoStack.push(canvas.toDataURL());
+    undoStack.push(cloneScene());
     if (undoStack.length > 40) undoStack.shift();
     redoStack = [];
   }
+
   function undo() {
     if (!undoStack.length) return;
-    redoStack.push(canvas.toDataURL());
-    restoreURL(undoStack.pop());
-  }
-  function redo() {
-    if (!redoStack.length) return;
-    undoStack.push(canvas.toDataURL());
-    restoreURL(redoStack.pop());
-  }
-  function restoreURL(url) {
-    const img = new Image();
-    img.onload = () => {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0);
-    };
-    img.src = url;
+    redoStack.push(cloneScene());
+    scene = undoStack.pop();
+    deselectAll();
+    redraw();
   }
 
-  /* ── clear / save ── */
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(cloneScene());
+    scene = redoStack.pop();
+    deselectAll();
+    redraw();
+  }
+
+  /* ══════════════════ CLEAR / SAVE ══════════════════ */
   function clearAll() {
+    const doClear = () => {
+      pushUndo();
+      scene = [];
+      deselectAll();
+      redraw();
+    };
     if (typeof showCustomModal === 'function') {
-      showCustomModal({ title:'清空画板', msg:'确定要清空？此操作无法撤销。', showCancel:true, onConfirm:() => {
-        pushUndo(); ctx.clearRect(0,0,canvas.width,canvas.height);
-      }});
+      showCustomModal({ title:'清空画板', msg:'确定要清空？此操作无法撤销。', showCancel:true, onConfirm: doClear });
     } else {
       if (!confirm('确定清空？')) return;
-      pushUndo(); ctx.clearRect(0,0,canvas.width,canvas.height);
+      doClear();
     }
   }
+
   function save() {
+    const tmp = document.createElement('canvas');
+    tmp.width = canvas.width; tmp.height = canvas.height;
+    const tc = tmp.getContext('2d');
+    drawScene(tc);
     const a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
-    a.download = 'wuxia_board_'+new Date().toISOString().slice(0,10)+'.png';
+    a.href = tmp.toDataURL('image/png');
+    a.download = 'wuxia_board_' + new Date().toISOString().slice(0, 10) + '.png';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
 
-  /* ── import image ── */
-  function importImg(e) {
-    const file = e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        pushUndo();
-        const cw = canvas.width, ch = canvas.height;
-        let iw = img.naturalWidth, ih = img.naturalHeight;
-        if (iw === 0 || ih === 0) return;
-        const scale = Math.min(cw * 0.8 / iw, ch * 0.8 / ih, 1);
-        const dw = iw * scale, dh = ih * scale;
-        const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
-        ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(img, dx, dy, dw, dh);
-        ctx.restore();
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+  /* ══════════════════ RENDER ══════════════════ */
+  function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawScene(ctx);
+    if (liveStroke) renderStroke(ctx, liveStroke);
+    // re-draw selection handles overlay
+    updateHandles();
   }
 
-  /* ── drawing ── */
-  function xy(e) {
+  function drawScene(c) {
+    scene.forEach(obj => {
+      if (obj.type === 'stroke') renderStroke(c, obj);
+      else if (obj.type === 'text') renderText(c, obj);
+      else if (obj.type === 'image') renderImage(c, obj);
+    });
+  }
+
+  function renderStroke(c, obj) {
+    if (!obj.points || obj.points.length === 0) return;
+    c.save();
+    c.globalCompositeOperation = obj.composite || 'source-over';
+    c.lineCap   = obj.lineCap  || 'round';
+    c.lineJoin  = 'round';
+    c.shadowBlur = 0;
+    c.globalAlpha = obj.globalAlpha;
+    c.lineWidth   = obj.lineWidth;
+    c.strokeStyle = obj.strokeStyle;
+    if (obj.shadowBlur) { c.shadowBlur = obj.shadowBlur; c.shadowColor = obj.strokeStyle; }
+
+    if (obj.penTool === 'chalk') {
+      renderChalk(c, obj);
+    } else {
+      const pts = obj.points;
+      c.beginPath();
+      c.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y);
+      if (pts.length === 1) {
+        c.arc(pts[0].x, pts[0].y, Math.max(obj.lineWidth / 2, 0.5), 0, Math.PI * 2);
+        c.fillStyle = obj.strokeStyle;
+        c.fill();
+      } else {
+        c.stroke();
+      }
+    }
+    c.restore();
+  }
+
+  function renderChalk(c, obj) {
+    let seed = obj.chalkSeed || 42;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; };
+    const pts = obj.points;
+    const sz  = obj.size || 4;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const x1 = pts[i].x, y1 = pts[i].y, x2 = pts[i+1].x, y2 = pts[i+1].y;
+      const steps = Math.max(1, Math.floor(Math.hypot(x2-x1, y2-y1) / 1.5));
+      for (let j = 0; j <= steps; j++) {
+        const t = j / steps;
+        c.globalAlpha = obj.globalAlpha * (0.25 + rand() * 0.55);
+        c.fillStyle   = obj.strokeStyle;
+        c.beginPath();
+        c.arc(x1+(x2-x1)*t+(rand()-0.5)*sz*0.9, y1+(y2-y1)*t+(rand()-0.5)*sz*0.9,
+              sz*0.3+rand()*sz*0.45, 0, Math.PI*2);
+        c.fill();
+      }
+    }
+  }
+
+  function renderText(c, obj) {
+    c.save();
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = obj.opacity;
+    c.fillStyle   = obj.color;
+    c.font        = `${obj.fontSize}px 'Noto Serif SC', serif`;
+    c.shadowBlur  = 0;
+    obj.text.split('\n').forEach((line, i) => {
+      c.fillText(line, obj.x, obj.y + obj.fontSize + i * obj.fontSize * 1.3);
+    });
+    c.restore();
+  }
+
+  function renderImage(c, obj) {
+    const el = obj.imgEl || imgCache[obj.src];
+    if (!el || !el.complete) return;
+    c.save();
+    c.globalAlpha = 1;
+    c.drawImage(el, obj.x, obj.y, obj.w, obj.h);
+    c.restore();
+  }
+
+  /* ══════════════════ BBOX ══════════════════ */
+  function strokeBBox(pts, lw) {
+    if (!pts.length) return { x:0, y:0, w:0, h:0 };
+    let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+    pts.forEach(p => { x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x); y1=Math.max(y1,p.y); });
+    const pad = Math.max((lw || 2) * 2, 8);
+    return { x: x0-pad, y: y0-pad, w: (x1-x0)+pad*2, h: (y1-y0)+pad*2 };
+  }
+
+  function textBBox(obj) {
+    const lines = obj.text.split('\n');
+    const maxLen = Math.max(...lines.map(l => l.length));
+    const w = maxLen * obj.fontSize * 0.62 + 24;
+    const h = lines.length * obj.fontSize * 1.3 + obj.fontSize + 8;
+    return { x: obj.x - 6, y: obj.y - 6, w, h };
+  }
+
+  /* ══════════════════ POINTER EVENTS (all on canvas) ══════════════════ */
+  function canvasXY(e) {
     const r = canvas.getBoundingClientRect();
     const src = e.touches ? e.touches[0] : e;
     return { x: src.clientX - r.left, y: src.clientY - r.top };
   }
 
-  function applyStyle() {
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.lineCap  = 'round';
-    ctx.lineJoin = 'round';
-    ctx.shadowBlur = 0;
-
-    switch (tool) {
-      case 'pen':
-        ctx.globalAlpha = opacity;
-        ctx.lineWidth   = size;
-        ctx.strokeStyle = color;
-        break;
-      case 'brush':
-        ctx.globalAlpha = opacity * 0.75;
-        ctx.lineWidth   = size * 2.5;
-        ctx.strokeStyle = color;
-        ctx.shadowBlur  = size * 1.5;
-        ctx.shadowColor = color;
-        break;
-      case 'marker':
-        ctx.globalAlpha = opacity * 0.4;
-        ctx.lineWidth   = size * 4;
-        ctx.strokeStyle = color;
-        ctx.lineCap     = 'square';
-        break;
-      case 'chalk':
-        ctx.globalAlpha = opacity * 0.7;
-        ctx.lineWidth   = size;
-        ctx.strokeStyle = color;
-        ctx.shadowBlur  = 2;
-        ctx.shadowColor = color;
-        break;
-      case 'eraser':
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.globalAlpha = 1;
-        ctx.lineWidth   = size * 3;
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-        break;
-    }
-  }
-
-  function chalkDots(x1,y1,x2,y2) {
-    const dist  = Math.hypot(x2-x1, y2-y1);
-    const steps = Math.max(1, Math.floor(dist / 1.5));
-    for (let i = 0; i <= steps; i++) {
-      const t  = i / steps;
-      const px = x1 + (x2-x1)*t + (Math.random()-0.5)*size*0.9;
-      const py = y1 + (y2-y1)*t + (Math.random()-0.5)*size*0.9;
-      ctx.globalAlpha = opacity * (0.25 + Math.random()*0.55);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(px, py, size*0.3 + Math.random()*size*0.45, 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
-
-  function stroke(x1,y1,x2,y2) {
-    ctx.save();
-    if (tool === 'chalk') {
-      chalkDots(x1,y1,x2,y2);
-    } else {
-      applyStyle();
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function dot(x,y) {
-    ctx.save();
-    if (tool === 'chalk') {
-      chalkDots(x,y,x+0.1,y+0.1);
-    } else {
-      applyStyle();
-      ctx.beginPath();
-      ctx.arc(x, y, Math.max(ctx.lineWidth/2, 0.5), 0, Math.PI*2);
-      if (tool === 'eraser') {
-        ctx.fill();
-      } else {
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
-
   function onDown(e) {
-    const {x,y} = xy(e);
-    if (tool === 'text') { startText(x,y); return; }
-    commitText();
+    if (tool === 'text') { startText(canvasXY(e)); return; }
+    if (tool === 'select') { selectDown(e); return; }
+    cancelText();
+    const { x, y } = canvasXY(e);
     pushUndo();
     drawing = true;
-    lx = x; ly = y;
-    dot(x,y);
+    liveStroke = { ...makeStrokeProps(), type:'stroke', id:uid(), points:[{ x, y }] };
+    redraw();
   }
 
   function onMove(e) {
-    const {x,y} = xy(e);
+    if (tool === 'select') { selectMove(e); return; }
+    const { x, y } = canvasXY(e);
     document.getElementById('wb-xy').textContent = `X:${Math.round(x)}  Y:${Math.round(y)}`;
-    if (tool === 'eraser') updateRing(x,y);
-    if (!drawing) return;
-    stroke(lx, ly, x, y);
-    lx = x; ly = y;
+    if (tool === 'eraser') updateRing(x, y);
+    if (!drawing || !liveStroke) return;
+    liveStroke.points.push({ x, y });
+    redraw();
   }
 
-  function onUp() { drawing = false; }
+  function onUp(e) {
+    if (tool === 'select') { selectUp(); return; }
+    if (!drawing || !liveStroke) { drawing = false; return; }
+    drawing = false;
+    liveStroke.bbox = strokeBBox(liveStroke.points, liveStroke.lineWidth);
+    scene.push(liveStroke);
+    liveStroke = null;
+    redraw();
+  }
 
-  function updateRing(x,y) {
+  function updateRing(x, y) {
     const d = size * 3;
-    ring.style.width  = d+'px';
-    ring.style.height = d+'px';
-    if (x !== null) { ring.style.left = x+'px'; ring.style.top = y+'px'; }
+    ring.style.width = d + 'px'; ring.style.height = d + 'px';
+    if (x !== null) { ring.style.left = x + 'px'; ring.style.top = y + 'px'; }
   }
 
-  /* ── text tool ── */
-  function startText(x,y) {
-    commitText();
+  function makeStrokeProps() {
+    switch (tool) {
+      case 'pen':    return { globalAlpha: opacity,      lineWidth: size,     strokeStyle: color, penTool:'pen',    composite:'source-over', size };
+      case 'brush':  return { globalAlpha: opacity*0.75, lineWidth: size*2.5, strokeStyle: color, penTool:'brush',  composite:'source-over', shadowBlur: size*1.5, size };
+      case 'marker': return { globalAlpha: opacity*0.4,  lineWidth: size*4,   strokeStyle: color, penTool:'marker', composite:'source-over', lineCap:'square', size };
+      case 'chalk':  return { globalAlpha: opacity*0.7,  lineWidth: size,     strokeStyle: color, penTool:'chalk',  composite:'source-over', chalkSeed: Math.floor(Math.random()*999999), size };
+      case 'eraser': return { globalAlpha: 1,            lineWidth: size*3,   strokeStyle:'rgba(0,0,0,1)', penTool:'eraser', composite:'destination-out', size };
+    }
+    return { globalAlpha: opacity, lineWidth: size, strokeStyle: color, penTool:'pen', composite:'source-over', size };
+  }
+
+  /* ══════════════════ TEXT TOOL ══════════════════ */
+  function startText({ x, y }) {
+    cancelText();
     textX = x; textY = y;
     textArea.value = '';
     textArea.style.cssText = [
-      'display:block',
-      `left:${x}px`, `top:${y}px`,
-      `color:${color}`,
-      `font-size:${Math.max(12, size*3)}px`,
-      `opacity:${opacity}`,
-      'width:200px', 'height:auto'
+      'display:block', `left:${x}px`, `top:${y}px`,
+      `color:${color}`, `font-size:${Math.max(12, size * 3)}px`,
+      `opacity:${opacity}`, 'width:200px', 'height:auto'
     ].join(';');
     textArea.focus();
   }
 
   function commitText() {
-    if (textArea.style.display === 'none' || !textArea.value.trim()) {
-      textArea.style.display = 'none'; return;
-    }
-    pushUndo();
+    if (!textArea.value.trim()) { textArea.style.display = 'none'; return; }
     const fs = parseInt(textArea.style.fontSize) || 18;
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = opacity;
-    ctx.fillStyle   = color;
-    ctx.font        = `${fs}px 'Noto Serif SC', serif`;
-    ctx.shadowBlur  = 0;
-    textArea.value.split('\n').forEach((line,i) => {
-      ctx.fillText(line, textX, textY + fs + i * fs * 1.25);
-    });
-    ctx.restore();
+    const obj = { type:'text', id:uid(), text: textArea.value.trim(), x: textX, y: textY, color, opacity, fontSize: fs };
+    obj.bbox = textBBox(obj);
+    pushUndo();
+    scene.push(obj);
     textArea.style.display = 'none';
+    redraw();
   }
+
+  function cancelText() { textArea.style.display = 'none'; }
 
   function textKey(e) {
-    if (e.key === 'Escape') { textArea.style.display='none'; }
+    if (e.key === 'Escape') cancelText();
     else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
   }
-
   function textResize(el) {
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
     el.style.width  = Math.max(200, el.scrollWidth + 20) + 'px';
   }
 
-  /* ── keyboard shortcuts ── */
+  /* ══════════════════ SELECT TOOL ══════════════════ */
+  function selectDown(e) {
+    const { x, y } = canvasXY(e);
+    const cx = e.clientX || (e.touches && e.touches[0].clientX);
+    const cy = e.clientY || (e.touches && e.touches[0].clientY);
+
+    // Check if clicking a handle button (they're in objLayer, pointer-events none
+    // but delete btn has pointer-events auto — it fires its own listener, not here)
+
+    // Hit-test scene back-to-front
+    for (let i = scene.length - 1; i >= 0; i--) {
+      const obj = scene[i];
+      const b = obj.bbox;
+      if (b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+        if (selectedObj !== obj) selectObj(obj);
+        // Start move drag
+        dragState = {
+          type: 'move', obj,
+          startCX: cx, startCY: cy,
+          origPoints: obj.points ? obj.points.map(p => ({ ...p })) : null,
+          origX: obj.x, origY: obj.y,
+          origBbox: { ...b }
+        };
+        return;
+      }
+    }
+    // Clicked empty area
+    deselectAll();
+  }
+
+  function selectMove(e) {
+    if (!dragState) return;
+    const cx = e.clientX || (e.touches && e.touches[0].clientX);
+    const cy = e.clientY || (e.touches && e.touches[0].clientY);
+    const dx = cx - dragState.startCX;
+    const dy = cy - dragState.startCY;
+    const obj = dragState.obj;
+    const ob  = dragState.origBbox;
+
+    if (dragState.type === 'move') {
+      if (obj.type === 'stroke') {
+        obj.points = dragState.origPoints.map(p => ({ x: p.x + dx, y: p.y + dy }));
+        obj.bbox = { x: ob.x + dx, y: ob.y + dy, w: ob.w, h: ob.h };
+      } else if (obj.type === 'text') {
+        obj.x = dragState.origX + dx;
+        obj.y = dragState.origY + dy;
+        obj.bbox = textBBox(obj);
+      } else if (obj.type === 'image') {
+        obj.x = dragState.origX + dx;
+        obj.y = dragState.origY + dy;
+        obj.bbox = { x: obj.x, y: obj.y, w: obj.w, h: obj.h };
+      }
+      redraw();
+
+    } else if (dragState.type === 'resize') {
+      const c = dragState.corner;
+      const minSz = 20;
+      let nx = ob.x, ny = ob.y, nw = ob.w, nh = ob.h;
+
+      if (c.includes('e')) nw = Math.max(minSz, ob.w + dx);
+      if (c.includes('s')) nh = Math.max(minSz, ob.h + dy);
+      if (c.includes('w')) { const w2 = Math.max(minSz, ob.w - dx); nx = ob.x + (ob.w - w2); nw = w2; }
+      if (c.includes('n')) { const h2 = Math.max(minSz, ob.h - dy); ny = ob.y + (ob.h - h2); nh = h2; }
+
+      if (obj.type === 'stroke') {
+        const scaleX = ob.w > 0 ? nw / ob.w : 1;
+        const scaleY = ob.h > 0 ? nh / ob.h : 1;
+        obj.points = dragState.origPoints.map(p => ({
+          x: nx + (p.x - ob.x) * scaleX,
+          y: ny + (p.y - ob.y) * scaleY
+        }));
+        obj.bbox = { x: nx, y: ny, w: nw, h: nh };
+      } else if (obj.type === 'text') {
+        const scale = Math.min(nw / ob.w, nh / ob.h);
+        obj.fontSize = Math.max(8, Math.round(dragState.origFontSize * scale));
+        obj.x = nx + 6; obj.y = ny + 6;
+        obj.bbox = textBBox(obj);
+      } else if (obj.type === 'image') {
+        obj.x = nx; obj.y = ny; obj.w = nw; obj.h = nh;
+        obj.bbox = { x: nx, y: ny, w: nw, h: nh };
+      }
+      redraw();
+    }
+  }
+
+  function selectUp() {
+    if (dragState) {
+      pushUndo(); // save state after drag
+      dragState = null;
+    }
+  }
+
+  /* ── Selection: pick obj and show handles ── */
+  function selectObj(obj) {
+    selectedObj = obj;
+    redraw(); // also calls updateHandles
+  }
+
+  function deselectAll() {
+    selectedObj = null;
+    clearHandles();
+    redraw();
+  }
+
+  /* ── Delete selected ── */
+  function deleteSelected() {
+    if (!selectedObj) return;
+    pushUndo();
+    scene = scene.filter(o => o !== selectedObj);
+    deselectAll();
+  }
+
+  /* ══════════════════ HANDLE OVERLAY (DOM, pointer-events on handles only) ══════════════════ */
+  let handleEls = [];
+
+  function clearHandles() {
+    handleEls.forEach(el => el.remove());
+    handleEls = [];
+  }
+
+  function updateHandles() {
+    clearHandles();
+    if (!selectedObj) return;
+    const b = selectedObj.bbox;
+    if (!b) return;
+
+    // Outline
+    const outline = document.createElement('div');
+    outline.style.cssText = `position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;
+      outline:2px solid var(--gold);pointer-events:none;box-sizing:border-box;z-index:40;`;
+    objLayer.appendChild(outline);
+    handleEls.push(outline);
+
+    // Delete button — needs pointer-events
+    const del = document.createElement('button');
+    del.className = 'wb-delete-btn';
+    del.textContent = '✕ 删除';
+    del.style.cssText = `position:absolute;left:${b.x + b.w - 2}px;top:${b.y - 26}px;pointer-events:auto;z-index:45;`;
+    del.addEventListener('mousedown', e => { e.stopPropagation(); deleteSelected(); });
+    del.addEventListener('touchstart', e => { e.stopPropagation(); deleteSelected(); }, { passive: true });
+    objLayer.appendChild(del);
+    handleEls.push(del);
+
+    // Resize handles — need pointer-events
+    const CORNERS = { nw:[0,0], n:[.5,0], ne:[1,0], w:[0,.5], e:[1,.5], sw:[0,1], s:[.5,1], se:[1,1] };
+    Object.entries(CORNERS).forEach(([pos, [px, py]]) => {
+      const h = document.createElement('div');
+      h.className = `wb-handle wb-handle-${pos}`;
+      h.style.cssText = `position:absolute;left:${b.x + b.w*px - 6}px;top:${b.y + b.h*py - 6}px;pointer-events:auto;z-index:45;`;
+      h.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, pos); });
+      h.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startResize(e, pos); }, { passive: false });
+      objLayer.appendChild(h);
+      handleEls.push(h);
+    });
+
+    // Make objLayer pass through except on handle children
+    objLayer.style.pointerEvents = 'none';
+  }
+
+  function startResize(e, pos) {
+    if (!selectedObj) return;
+    const obj = selectedObj;
+    const b   = obj.bbox;
+    const cx  = e.clientX || (e.touches && e.touches[0].clientX);
+    const cy  = e.clientY || (e.touches && e.touches[0].clientY);
+    dragState = {
+      type: 'resize', corner: pos, obj,
+      startCX: cx, startCY: cy,
+      origBbox: { ...b },
+      origPoints: obj.points ? obj.points.map(p => ({ ...p })) : null,
+      origX: obj.x, origY: obj.y, origW: obj.w, origH: obj.h,
+      origFontSize: obj.fontSize
+    };
+    // Temporarily capture global mousemove/mouseup for resize drag
+    window.addEventListener('mousemove', onResizeDrag);
+    window.addEventListener('mouseup',   onResizeDrop);
+    window.addEventListener('touchmove', onResizeDrag, { passive: false });
+    window.addEventListener('touchend',  onResizeDrop);
+  }
+
+  function onResizeDrag(e) {
+    if (e.cancelable) e.preventDefault();
+    selectMove(e);
+  }
+
+  function onResizeDrop() {
+    window.removeEventListener('mousemove', onResizeDrag);
+    window.removeEventListener('mouseup',   onResizeDrop);
+    window.removeEventListener('touchmove', onResizeDrag);
+    window.removeEventListener('touchend',  onResizeDrop);
+    selectUp();
+  }
+
+  /* ══════════════════ IMAGE OBJECTS ══════════════════ */
+  function loadImg(src, cb) {
+    if (imgCache[src] && imgCache[src].complete) { cb(imgCache[src]); return; }
+    const el = new Image();
+    el.onload = () => { imgCache[src] = el; cb(el); };
+    el.src = src;
+  }
+
+  function addImageObject(src, x, y, w, h) {
+    loadImg(src, el => {
+      const obj = { type:'image', id:uid(), src, imgEl:el, x, y, w, h, bbox:{x,y,w,h} };
+      pushUndo();
+      scene.push(obj);
+      selectObj(obj);
+    });
+  }
+
+  function importImg(e) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const tmp = new Image();
+      tmp.onload = () => {
+        const cw = canvas.width, ch = canvas.height;
+        const iw = tmp.naturalWidth || cw * 0.6;
+        const ih = tmp.naturalHeight || ch * 0.6;
+        const scale = Math.min(cw * 0.7 / iw, ch * 0.7 / ih, 1);
+        addImageObject(ev.target.result, (cw - iw*scale)/2, (ch - ih*scale)/2, iw*scale, ih*scale);
+        setTool('select');
+      };
+      tmp.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function addCameraImage(src) {
+    const tmp = new Image();
+    tmp.onload = () => {
+      const cw = canvas.width, ch = canvas.height;
+      const iw = tmp.naturalWidth || cw * 0.6;
+      const ih = tmp.naturalHeight || ch * 0.6;
+      const scale = Math.min(cw * 0.7 / iw, ch * 0.7 / ih, 1);
+      addImageObject(src, (cw - iw*scale)/2, (ch - ih*scale)/2, iw*scale, ih*scale);
+      setTool('select');
+    };
+    tmp.src = src;
+  }
+
+  /* ══════════════════ KEYBOARD ══════════════════ */
   function onKey(e) {
     if (!document.getElementById('wb-modal').classList.contains('open')) return;
     if (e.target === textArea) return;
-    if ((e.ctrlKey||e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-    if ((e.ctrlKey||e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
-    if (e.key === 'Escape') commitText();
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+    if (e.key === 'Escape') { cancelText(); deselectAll(); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObj) { e.preventDefault(); deleteSelected(); }
   }
 
   /* ── boot ── */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 
-  /* ── public API ── */
   return {
     open, close, setTool, setSize, setOpacity, setColor,
-    undo, redo, clearAll, save, importImg, textKey, textResize
+    undo, redo, clearAll, save, importImg, textKey, textResize,
+    addCameraImage, pushUndo
   };
 })();
 
-/* hook the open button */
 function openWhiteboardModal() { WB.open(); }
 </script>
+
+
 
 <script>
 /* ══════════════════════════════════════════════════════════════════
@@ -3581,41 +3895,8 @@ const CameraSnap = (() => {
   function usePhoto() {
     if (!capturedImage) return;
     
-    // Create image element
-    const img = new Image();
-    img.onload = () => {
-      // Draw to whiteboard canvas
-      const wbCanvas = document.getElementById('wb-canvas');
-      const wbCtx = wbCanvas.getContext('2d');
-      
-      // Calculate dimensions to fit
-      const maxWidth = wbCanvas.width * 0.8;
-      const maxHeight = wbCanvas.height * 0.8;
-      
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width *= ratio;
-        height *= ratio;
-      }
-      
-      const x = (wbCanvas.width - width) / 2;
-      const y = (wbCanvas.height - height) / 2;
-      
-      // Add undo state
-      if (WB.pushUndo) {
-        WB.pushUndo();
-      } else {
-        // Fallback if pushUndo is not available
-        wbCtx.drawImage(img, x, y, width, height);
-      }
-      
-      wbCtx.drawImage(img, x, y, width, height);
-    };
-    
-    img.src = capturedImage;
+    // Add as selectable/movable object on the whiteboard
+    WB.addCameraImage(capturedImage);
     
     // Close camera modal
     close();
