@@ -570,6 +570,7 @@
         <div class="controls">
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
             <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
+            <button class="sacred-btn" onclick="openWhiteboardModal()" style="border-color:#5a7ab4;color:#90b8e8;">✎ 圣律板</button>
             <button class="sacred-btn" onclick="openAttendModal()" style="border-color:#3ab07a;color:#70e0a0;" id="attendBtn">☑ 出勤 <span id="attend-badge"></span></button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
             <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 星辰秘宝阁</button>
@@ -1802,17 +1803,11 @@ function saveData(){
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');localStorage.removeItem('wuxia_absent');students=[];groups=[];absentIds=new Set();soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();updateAttendBadge();showNotify("圣律归虚，真理湮灭...");}});}
 function showNotify(msg){const b=document.getElementById('notification-bar');b.innerText=msg;b.style.opacity='1';setTimeout(()=>b.style.opacity='0',3000);}
 
-// ══════════════════════════════════════════════════════════════
-// ── EXPORT / IMPORT ──
-// Bundles all localStorage keys into a single JSON file for
-// cross-browser transfer, then restores them on import.
-// ══════════════════════════════════════════════════════════════
+// ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
 function exportAllData() {
-    // Flush current subject data before exporting
     students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
     const payload = {
-        _version: 1,
-        _exportedAt: new Date().toISOString(),
+        _version: 1, _exportedAt: new Date().toISOString(),
         wuxia_class_data:      localStorage.getItem('wuxia_class_data')      || '[]',
         wuxia_groups_data:     localStorage.getItem('wuxia_groups_data')     || '[]',
         wuxia_subjects:        localStorage.getItem('wuxia_subjects')        || 'null',
@@ -1820,64 +1815,37 @@ function exportAllData() {
         wuxia_rp_presets:      localStorage.getItem('wuxia_rp_presets')      || 'null',
         wuxia_absent:          localStorage.getItem('wuxia_absent')          || '[]',
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const ts   = new Date().toISOString().slice(0,10);
-    a.href     = url;
-    a.download = `wuxia_chronicle_${ts}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='wuxia_chronicle_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showNotify('◈ 编年史已导出！请妥善保管此文件。');
+    showNotify('◈ 编年史已导出！');
 }
-
 function importAllData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    // Reset so the same file can be re-imported if needed
-    event.target.value = '';
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const payload = JSON.parse(e.target.result);
-            if (!payload.wuxia_class_data) { showNotify('❖ 文件格式错误，无法导入。'); return; }
-            showCustomModal({
-                title: '导入编年史',
-                msg: `确定从文件导入数据？\n导出时间：${payload._exportedAt || '未知'}\n\n⚠ 这将覆盖当前所有数据！`,
-                showCancel: true,
-                onConfirm: () => {
-                    // Restore all keys
-                    const keys = ['wuxia_class_data','wuxia_groups_data','wuxia_subjects','wuxia_current_subject','wuxia_rp_presets','wuxia_absent'];
-                    keys.forEach(k => { if (payload[k] != null) localStorage.setItem(k, payload[k]); });
-
-                    // Reload in-memory state
-                    students        = JSON.parse(localStorage.getItem('wuxia_class_data'))  || [];
-                    groups          = JSON.parse(localStorage.getItem('wuxia_groups_data')) || [];
-                    subjects        = JSON.parse(localStorage.getItem('wuxia_subjects'))    || DEFAULT_SUBJECTS.map(s=>({...s}));
-                    currentSubjectId = localStorage.getItem('wuxia_current_subject')        || subjects[0].id;
-                    if (!subjects.find(s=>s.id===currentSubjectId)) currentSubjectId = subjects[0].id;
-                    rpPresets       = JSON.parse(localStorage.getItem('wuxia_rp_presets') || 'null') || [...DEFAULT_PRESETS];
-                    absentIds       = new Set(JSON.parse(localStorage.getItem('wuxia_absent') || '[]'));
-                    soloUsedIds     = new Set();
-                    teamUsedIds     = new Set();
-
-                    // Sync students to current subject
-                    students.forEach(s => syncStudentToSubject(s, currentSubjectId));
-
-                    // Re-render everything
-                    renderSubjectTabs();
-                    renderGrid();
-                    renderGroupView();
-                    updateAttendBadge();
-                    showNotify('✦ 编年史导入成功！');
-                }
-            });
-        } catch (err) {
-            showNotify('❖ 解析失败，请确认文件格式正确。');
-            console.error('Import error:', err);
-        }
+    const file=event.target.files[0]; event.target.value='';
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(e){
+        try{
+            const payload=JSON.parse(e.target.result);
+            if(!payload.wuxia_class_data){showNotify('❖ 文件格式错误');return;}
+            showCustomModal({title:'导入编年史',msg:`确定从文件导入？\n导出时间：${payload._exportedAt||'未知'}\n\n⚠ 这将覆盖当前所有数据！`,showCancel:true,onConfirm:()=>{
+                ['wuxia_class_data','wuxia_groups_data','wuxia_subjects','wuxia_current_subject','wuxia_rp_presets','wuxia_absent'].forEach(k=>{if(payload[k]!=null)localStorage.setItem(k,payload[k]);});
+                students=JSON.parse(localStorage.getItem('wuxia_class_data'))||[];
+                groups=JSON.parse(localStorage.getItem('wuxia_groups_data'))||[];
+                subjects=JSON.parse(localStorage.getItem('wuxia_subjects'))||DEFAULT_SUBJECTS.map(s=>({...s}));
+                currentSubjectId=localStorage.getItem('wuxia_current_subject')||subjects[0].id;
+                if(!subjects.find(s=>s.id===currentSubjectId))currentSubjectId=subjects[0].id;
+                rpPresets=JSON.parse(localStorage.getItem('wuxia_rp_presets')||'null')||[...DEFAULT_PRESETS];
+                absentIds=new Set(JSON.parse(localStorage.getItem('wuxia_absent')||'[]'));
+                soloUsedIds=new Set(); teamUsedIds=new Set();
+                students.forEach(s=>syncStudentToSubject(s,currentSubjectId));
+                renderSubjectTabs(); renderGrid(); renderGroupView(); updateAttendBadge();
+                showNotify('✦ 编年史导入成功！');
+            }});
+        }catch(err){showNotify('❖ 解析失败，请确认文件格式');}
     };
     reader.readAsText(file);
 }
@@ -2635,6 +2603,572 @@ function updateAttendBadge() {
     }
 }
 </script>
+<!-- ══════════════════════════════════════════════════════════════
+     ── 圣律板 WHITEBOARD MODAL (v2 — fixed) ──
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+/* KEY FIX: use visibility/opacity NOT display:none — this keeps
+   the canvas wrap in the layout so clientWidth/Height are real. */
+#wb-modal {
+    position:fixed; inset:0; z-index:5000;
+    display:flex; flex-direction:column;
+    background:rgba(4,6,14,0.97); overflow:hidden;
+    visibility:hidden; opacity:0; pointer-events:none;
+    transition:opacity 0.2s ease, visibility 0.2s ease;
+}
+#wb-modal.open { visibility:visible; opacity:1; pointer-events:all; }
+
+/* Toolbar */
+#wb-toolbar {
+    display:flex; align-items:center; gap:0; flex-wrap:nowrap;
+    overflow-x:auto; background:var(--panel);
+    border-bottom:2px solid var(--gold-dim);
+    padding:6px 12px; flex-shrink:0; user-select:none;
+    scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+#wb-toolbar::-webkit-scrollbar{height:4px;}
+#wb-toolbar::-webkit-scrollbar-thumb{background:var(--border);}
+.wb-sep{width:1px;height:28px;background:var(--border-glow);opacity:0.4;margin:0 8px;flex-shrink:0;}
+.wb-label{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.18em;color:var(--text-dim);text-transform:uppercase;margin-right:4px;flex-shrink:0;white-space:nowrap;}
+
+/* Tool buttons */
+.wb-btn {
+    font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.05em;
+    padding:6px 11px; border:1px solid var(--border-glow);
+    background:rgba(10,14,30,0.8); color:var(--text-secondary);
+    cursor:pointer; transition:all 0.18s; white-space:nowrap;
+    flex-shrink:0; display:flex; align-items:center; gap:5px;
+}
+.wb-btn:hover{border-color:var(--gold);color:var(--gold-bright);background:rgba(40,50,100,0.9);}
+.wb-btn.wb-active{background:rgba(30,22,8,0.9);color:var(--gold);border-color:var(--gold-dim);box-shadow:0 0 10px rgba(200,168,75,0.2);}
+.wb-btn.wb-danger:hover{border-color:#c42040;color:#ffb0c0;background:rgba(30,8,12,0.9);}
+.wb-btn.wb-close:hover{border-color:#c03050;color:#ff8090;}
+.wb-pen-row{display:flex;flex-shrink:0;border:1px solid var(--border-glow);overflow:hidden;}
+.wb-pen-row .wb-btn{border:none;border-right:1px solid var(--border);}
+.wb-pen-row .wb-btn:last-child{border-right:none;}
+
+/* Sliders */
+.wb-slider-wrap{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.wb-slider-track{width:80px;height:4px;background:rgba(40,55,100,0.5);border:1px solid var(--border);position:relative;display:flex;align-items:center;}
+.wb-slider-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--teal),var(--gold-dim));pointer-events:none;}
+.wb-range{position:absolute;width:100%;height:20px;opacity:0;cursor:pointer;margin:0;padding:0;}
+.wb-val{font-family:'Cinzel Decorative',serif;font-size:0.72rem;color:var(--gold);min-width:28px;text-align:right;}
+
+/* Swatches */
+.wb-color-row{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.wb-swatch{
+    width:22px;height:22px;border:2px solid rgba(255,255,255,0.15);
+    cursor:pointer;transition:transform 0.15s,border-color 0.15s;flex-shrink:0;
+    border-radius:2px;
+}
+.wb-swatch:hover{transform:scale(1.25);border-color:rgba(255,255,255,0.6);}
+.wb-swatch.wb-active{border-color:#fff;transform:scale(1.3);outline:1px solid var(--gold-dim);}
+.wb-custom-color{width:28px;height:28px;padding:0;border:1px solid var(--border-glow);cursor:pointer;background:none;flex-shrink:0;border-radius:2px;}
+.wb-color-dot{width:22px;height:22px;border:1px solid var(--border-glow);flex-shrink:0;border-radius:2px;}
+
+/* Canvas area */
+#wb-canvas-wrap{
+    flex:1;overflow:hidden;position:relative;min-height:0;
+    background:
+        repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(40,55,100,0.06) 39px,rgba(40,55,100,0.06) 40px),
+        repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(40,55,100,0.06) 39px,rgba(40,55,100,0.06) 40px),
+        #080c18;
+}
+#wb-canvas{display:block;position:absolute;top:0;left:0;touch-action:none;cursor:crosshair;}
+#wb-canvas.wb-eraser{cursor:cell;}
+#wb-canvas.wb-text{cursor:text;}
+
+/* Floating text textarea */
+#wb-text-area{
+    position:absolute;display:none;z-index:20;min-width:120px;min-height:30px;
+    background:rgba(6,8,20,0.88);border:1px solid var(--gold-dim);
+    color:var(--gold-bright);font-family:'Noto Serif SC',serif;
+    font-size:16px;padding:5px 8px;outline:none;resize:none;overflow:hidden;
+    box-shadow:0 0 14px rgba(200,168,75,0.2);
+}
+
+/* Eraser ring cursor */
+#wb-ring{
+    position:absolute;border-radius:50%;border:1.5px solid rgba(200,168,75,0.8);
+    pointer-events:none;display:none;transform:translate(-50%,-50%);z-index:30;
+    box-shadow:0 0 6px rgba(200,168,75,0.4);
+}
+
+/* Status bar */
+#wb-status{
+    padding:3px 14px;background:rgba(6,8,18,0.95);border-top:1px solid var(--border);
+    font-family:'Cinzel',serif;font-size:0.6rem;color:var(--text-dim);letter-spacing:0.1em;
+    display:flex;gap:16px;align-items:center;flex-shrink:0;
+}
+</style>
+
+<!-- Whiteboard modal -->
+<div id="wb-modal">
+  <div id="wb-toolbar">
+    <span style="font-family:'Cinzel Decorative',serif;font-size:0.82rem;color:var(--gold);letter-spacing:0.08em;margin-right:8px;flex-shrink:0;">✎ 圣律板</span>
+    <div class="wb-sep"></div>
+
+    <!-- Pen type -->
+    <span class="wb-label">笔型</span>
+    <div class="wb-pen-row">
+      <button class="wb-btn wb-active" id="wbt-pen"    onclick="WB.setTool('pen')">✒ 钢笔</button>
+      <button class="wb-btn"           id="wbt-brush"  onclick="WB.setTool('brush')">🖌 毛笔</button>
+      <button class="wb-btn"           id="wbt-marker" onclick="WB.setTool('marker')">▌ 荧光</button>
+      <button class="wb-btn"           id="wbt-chalk"  onclick="WB.setTool('chalk')">◌ 粉笔</button>
+    </div>
+    <div class="wb-sep"></div>
+
+    <!-- Text & Eraser -->
+    <button class="wb-btn" id="wbt-text"   onclick="WB.setTool('text')">T 文字</button>
+    <button class="wb-btn" id="wbt-eraser" onclick="WB.setTool('eraser')">⌫ 擦除</button>
+    <div class="wb-sep"></div>
+
+    <!-- Size -->
+    <span class="wb-label">粗细</span>
+    <div class="wb-slider-wrap">
+      <div class="wb-slider-track">
+        <div class="wb-slider-fill" id="wb-sz-fill" style="width:5%;"></div>
+        <input type="range" class="wb-range" id="wb-sz" min="1" max="60" value="4"
+               oninput="WB.setSize(+this.value)">
+      </div>
+      <span class="wb-val" id="wb-sz-val">4</span>
+    </div>
+    <div class="wb-sep"></div>
+
+    <!-- Opacity -->
+    <span class="wb-label">透明</span>
+    <div class="wb-slider-wrap">
+      <div class="wb-slider-track">
+        <div class="wb-slider-fill" id="wb-op-fill" style="width:100%;"></div>
+        <input type="range" class="wb-range" id="wb-op" min="5" max="100" value="100"
+               oninput="WB.setOpacity(+this.value)">
+      </div>
+      <span class="wb-val" id="wb-op-val">100%</span>
+    </div>
+    <div class="wb-sep"></div>
+
+    <!-- Colours -->
+    <span class="wb-label">颜色</span>
+    <div class="wb-color-row" id="wb-swatches"></div>
+    <input type="color" class="wb-custom-color" id="wb-picker" value="#e8cc7a"
+           oninput="WB.setColor(this.value,null)">
+    <div class="wb-color-dot" id="wb-cdot" style="background:#e8cc7a;"></div>
+    <div class="wb-sep"></div>
+
+    <!-- Actions -->
+    <button class="wb-btn" onclick="WB.undo()" title="Ctrl+Z">↩ 撤销</button>
+    <button class="wb-btn" onclick="WB.redo()" title="Ctrl+Y">↪ 重做</button>
+    <button class="wb-btn" onclick="document.getElementById('wb-img-in').click()">🖼 图片</button>
+    <input type="file" id="wb-img-in" accept="image/*" style="display:none" onchange="WB.importImg(event)">
+    <button class="wb-btn wb-danger" onclick="WB.clearAll()">✕ 清空</button>
+    <button class="wb-btn" onclick="WB.save()">💾 保存</button>
+    <div class="wb-sep"></div>
+    <button class="wb-btn wb-close" onclick="WB.close()" style="margin-left:auto;">✕ 关闭</button>
+  </div>
+
+  <div id="wb-canvas-wrap">
+    <canvas id="wb-canvas"></canvas>
+    <div id="wb-ring"></div>
+    <textarea id="wb-text-area" rows="1" placeholder="输入文字…"
+              onkeydown="WB.textKey(event)" oninput="WB.textResize(this)"></textarea>
+  </div>
+
+  <div id="wb-status">
+    <span id="wb-tool-lbl">钢笔 · Pen</span>
+    <span id="wb-xy" style="font-family:'Cinzel Decorative',serif;font-size:0.62rem;color:var(--silver-dim);">X:0  Y:0</span>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   圣律板 WHITEBOARD ENGINE v2
+   ══════════════════════════════════════════════════════════════════ */
+const WB = (() => {
+  'use strict';
+
+  /* ── internal state ── */
+  let canvas, ctx, wrap, textArea, ring;
+  let tool = 'pen';
+  let color = '#e8cc7a';
+  let opacity = 1;
+  let size = 4;
+  let drawing = false;
+  let lx = 0, ly = 0;
+  let undoStack = [], redoStack = [];
+  let textX = 0, textY = 0;
+
+  const LABELS = {
+    pen:'钢笔 · Pen', brush:'毛笔 · Brush',
+    marker:'荧光笔 · Marker', chalk:'粉笔 · Chalk',
+    text:'文字 · Text', eraser:'橡皮擦 · Eraser'
+  };
+  const COLORS = [
+    '#e8cc7a','#ffffff','#b0c8f0','#7060c8','#c8a030',
+    '#c05828','#e040c0','#40c890','#e05070','#40a8e0',
+    '#f0f040','#ff9040','#a0ff80','#000000'
+  ];
+
+  /* ── init (called once on DOMContentLoaded) ── */
+  function init() {
+    canvas   = document.getElementById('wb-canvas');
+    ctx      = canvas.getContext('2d');
+    wrap     = document.getElementById('wb-canvas-wrap');
+    textArea = document.getElementById('wb-text-area');
+    ring     = document.getElementById('wb-ring');
+
+    buildSwatches();
+
+    canvas.addEventListener('mousedown',  onDown);
+    canvas.addEventListener('mousemove',  onMove);
+    window.addEventListener('mouseup',    onUp);
+    canvas.addEventListener('touchstart', e=>{e.preventDefault();onDown(e);}, {passive:false});
+    canvas.addEventListener('touchmove',  e=>{e.preventDefault();onMove(e);}, {passive:false});
+    window.addEventListener('touchend',   onUp);
+    document.addEventListener('keydown',  onKey);
+  }
+
+  function buildSwatches() {
+    const row = document.getElementById('wb-swatches');
+    row.innerHTML = '';
+    COLORS.forEach((c,i) => {
+      const d = document.createElement('div');
+      d.className = 'wb-swatch' + (i===0?' wb-active':'');
+      d.style.background = c;
+      d.title = c;
+      d.onclick = () => setColor(c, d);
+      row.appendChild(d);
+    });
+  }
+
+  /* SIZE the canvas to the wrap element's actual pixel dimensions */
+  function sizeCanvas() {
+    const w = wrap.clientWidth || window.innerWidth;
+    const h = wrap.clientHeight || (window.innerHeight - 80);
+    if (canvas.width === w && canvas.height === h) return;
+    // preserve content
+    const tmp = document.createElement('canvas');
+    tmp.width = canvas.width; tmp.height = canvas.height;
+    tmp.getContext('2d').drawImage(canvas, 0, 0);
+    canvas.width  = w;
+    canvas.height = h;
+    ctx.drawImage(tmp, 0, 0);
+  }
+
+  /* ── public open / close ── */
+  function open() {
+    document.getElementById('wb-modal').classList.add('open');
+    // RAF gives the browser one frame to lay out the flex container
+    // before we try to measure it
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { sizeCanvas(); });
+    });
+  }
+  function close() {
+    commitText();
+    document.getElementById('wb-modal').classList.remove('open');
+  }
+
+  /* ── tool switching ── */
+  function setTool(t) {
+    commitText();
+    tool = t;
+    ['pen','brush','marker','chalk','text','eraser'].forEach(id => {
+      const el = document.getElementById('wbt-'+id);
+      if (el) el.classList.toggle('wb-active', id===t);
+    });
+    canvas.className = t==='eraser'?'wb-eraser': t==='text'?'wb-text':'';
+    document.getElementById('wb-tool-lbl').textContent = LABELS[t]||t;
+    ring.style.display = t==='eraser'?'block':'none';
+  }
+
+  function setSize(v) {
+    size = v;
+    document.getElementById('wb-sz-val').textContent = v;
+    document.getElementById('wb-sz-fill').style.width = ((v-1)/59*100)+'%';
+    updateRing(null, null);
+  }
+
+  function setOpacity(v) {
+    opacity = v / 100;
+    document.getElementById('wb-op-val').textContent = v+'%';
+    document.getElementById('wb-op-fill').style.width = v+'%';
+  }
+
+  function setColor(c, swatchEl) {
+    color = c;
+    document.getElementById('wb-picker').value = c;
+    document.getElementById('wb-cdot').style.background = c;
+    document.querySelectorAll('.wb-swatch').forEach(s => s.classList.remove('wb-active'));
+    if (swatchEl) swatchEl.classList.add('wb-active');
+  }
+
+  /* ── undo / redo ── */
+  function pushUndo() {
+    undoStack.push(canvas.toDataURL());
+    if (undoStack.length > 40) undoStack.shift();
+    redoStack = [];
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push(canvas.toDataURL());
+    restoreURL(undoStack.pop());
+  }
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(canvas.toDataURL());
+    restoreURL(redoStack.pop());
+  }
+  function restoreURL(url) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+    };
+    img.src = url;
+  }
+
+  /* ── clear / save ── */
+  function clearAll() {
+    if (typeof showCustomModal === 'function') {
+      showCustomModal({ title:'清空画板', msg:'确定要清空？此操作无法撤销。', showCancel:true, onConfirm:() => {
+        pushUndo(); ctx.clearRect(0,0,canvas.width,canvas.height);
+      }});
+    } else {
+      if (!confirm('确定清空？')) return;
+      pushUndo(); ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+  }
+  function save() {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'wuxia_board_'+new Date().toISOString().slice(0,10)+'.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  /* ── import image ── */
+  function importImg(e) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        pushUndo();
+        const cw = canvas.width, ch = canvas.height;
+        let iw = img.naturalWidth, ih = img.naturalHeight;
+        if (iw === 0 || ih === 0) return;
+        const scale = Math.min(cw * 0.8 / iw, ch * 0.8 / ih, 1);
+        const dw = iw * scale, dh = ih * scale;
+        const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ── drawing ── */
+  function xy(e) {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+
+  function applyStyle() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineCap  = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowBlur = 0;
+
+    switch (tool) {
+      case 'pen':
+        ctx.globalAlpha = opacity;
+        ctx.lineWidth   = size;
+        ctx.strokeStyle = color;
+        break;
+      case 'brush':
+        ctx.globalAlpha = opacity * 0.75;
+        ctx.lineWidth   = size * 2.5;
+        ctx.strokeStyle = color;
+        ctx.shadowBlur  = size * 1.5;
+        ctx.shadowColor = color;
+        break;
+      case 'marker':
+        ctx.globalAlpha = opacity * 0.4;
+        ctx.lineWidth   = size * 4;
+        ctx.strokeStyle = color;
+        ctx.lineCap     = 'square';
+        break;
+      case 'chalk':
+        ctx.globalAlpha = opacity * 0.7;
+        ctx.lineWidth   = size;
+        ctx.strokeStyle = color;
+        ctx.shadowBlur  = 2;
+        ctx.shadowColor = color;
+        break;
+      case 'eraser':
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.globalAlpha = 1;
+        ctx.lineWidth   = size * 3;
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        break;
+    }
+  }
+
+  function chalkDots(x1,y1,x2,y2) {
+    const dist  = Math.hypot(x2-x1, y2-y1);
+    const steps = Math.max(1, Math.floor(dist / 1.5));
+    for (let i = 0; i <= steps; i++) {
+      const t  = i / steps;
+      const px = x1 + (x2-x1)*t + (Math.random()-0.5)*size*0.9;
+      const py = y1 + (y2-y1)*t + (Math.random()-0.5)*size*0.9;
+      ctx.globalAlpha = opacity * (0.25 + Math.random()*0.55);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, size*0.3 + Math.random()*size*0.45, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function stroke(x1,y1,x2,y2) {
+    ctx.save();
+    if (tool === 'chalk') {
+      chalkDots(x1,y1,x2,y2);
+    } else {
+      applyStyle();
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function dot(x,y) {
+    ctx.save();
+    if (tool === 'chalk') {
+      chalkDots(x,y,x+0.1,y+0.1);
+    } else {
+      applyStyle();
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(ctx.lineWidth/2, 0.5), 0, Math.PI*2);
+      if (tool === 'eraser') {
+        ctx.fill();
+      } else {
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function onDown(e) {
+    const {x,y} = xy(e);
+    if (tool === 'text') { startText(x,y); return; }
+    commitText();
+    pushUndo();
+    drawing = true;
+    lx = x; ly = y;
+    dot(x,y);
+  }
+
+  function onMove(e) {
+    const {x,y} = xy(e);
+    document.getElementById('wb-xy').textContent = `X:${Math.round(x)}  Y:${Math.round(y)}`;
+    if (tool === 'eraser') updateRing(x,y);
+    if (!drawing) return;
+    stroke(lx, ly, x, y);
+    lx = x; ly = y;
+  }
+
+  function onUp() { drawing = false; }
+
+  function updateRing(x,y) {
+    const d = size * 3;
+    ring.style.width  = d+'px';
+    ring.style.height = d+'px';
+    if (x !== null) { ring.style.left = x+'px'; ring.style.top = y+'px'; }
+  }
+
+  /* ── text tool ── */
+  function startText(x,y) {
+    commitText();
+    textX = x; textY = y;
+    textArea.value = '';
+    textArea.style.cssText = [
+      'display:block',
+      `left:${x}px`, `top:${y}px`,
+      `color:${color}`,
+      `font-size:${Math.max(12, size*3)}px`,
+      `opacity:${opacity}`,
+      'width:200px', 'height:auto'
+    ].join(';');
+    textArea.focus();
+  }
+
+  function commitText() {
+    if (textArea.style.display === 'none' || !textArea.value.trim()) {
+      textArea.style.display = 'none'; return;
+    }
+    pushUndo();
+    const fs = parseInt(textArea.style.fontSize) || 18;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle   = color;
+    ctx.font        = `${fs}px 'Noto Serif SC', serif`;
+    ctx.shadowBlur  = 0;
+    textArea.value.split('\n').forEach((line,i) => {
+      ctx.fillText(line, textX, textY + fs + i * fs * 1.25);
+    });
+    ctx.restore();
+    textArea.style.display = 'none';
+  }
+
+  function textKey(e) {
+    if (e.key === 'Escape') { textArea.style.display='none'; }
+    else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
+  }
+
+  function textResize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+    el.style.width  = Math.max(200, el.scrollWidth + 20) + 'px';
+  }
+
+  /* ── keyboard shortcuts ── */
+  function onKey(e) {
+    if (!document.getElementById('wb-modal').classList.contains('open')) return;
+    if (e.target === textArea) return;
+    if ((e.ctrlKey||e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey||e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+    if (e.key === 'Escape') commitText();
+  }
+
+  /* ── boot ── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  /* ── public API ── */
+  return {
+    open, close, setTool, setSize, setOpacity, setColor,
+    undo, redo, clearAll, save, importImg, textKey, textResize
+  };
+})();
+
+/* hook the open button */
+function openWhiteboardModal() { WB.open(); }
+</script>
+
 <script>
 // Register Service Worker for image caching
 if ('serviceWorker' in navigator) {
