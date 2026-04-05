@@ -64,6 +64,35 @@
         .subject-manage-btn:hover { color:var(--gold); border-color:var(--gold-dim); }
         .subject-indicator { font-family:'Cinzel Decorative',serif; font-size:0.75rem; color:var(--gold); letter-spacing:0.08em; padding:3px 10px; border:1px solid var(--gold-dim); background:rgba(20,16,8,0.7); clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
 
+
+        /* ── CLASS SWITCHER BAR ── */
+        #class-bar { display:flex; align-items:center; gap:8px; padding:8px 16px; margin-bottom:0; background:rgba(6,8,20,0.95); border:1px solid var(--border); border-left:3px solid var(--teal-glow); flex-wrap:wrap; position:relative; }
+        #class-bar::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:linear-gradient(90deg,var(--teal),transparent); opacity:0.3; }
+        .class-bar-label { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.22em; color:var(--text-dim); text-transform:uppercase; white-space:nowrap; }
+        .class-tabs { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
+        .class-tab {
+            font-family:'Cinzel','Noto Serif SC',serif; font-size:0.75rem; letter-spacing:0.05em;
+            padding:5px 16px; border:1px solid var(--border-glow);
+            background:rgba(10,14,30,0.8); color:var(--text-secondary);
+            cursor:pointer; transition:all 0.2s; white-space:nowrap;
+            clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+            position:relative; display:flex; align-items:center; gap:7px;
+        }
+        .class-tab .ct-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .class-tab:hover:not(.active) { background:rgba(30,40,80,0.6); color:var(--silver); border-color:var(--border-glow); }
+        .class-tab.active { background:rgba(8,24,30,0.95); color:var(--teal-glow); border-color:var(--teal); box-shadow:0 0 12px rgba(40,152,180,0.18); }
+        .class-manage-btn { font-family:'Cinzel',serif; font-size:0.65rem; padding:5px 10px; border:1px solid var(--border); background:rgba(10,14,30,0.6); color:var(--text-dim); cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+        .class-manage-btn:hover { color:var(--teal-glow); border-color:var(--teal); }
+
+        /* ── CLASS MANAGER MODAL ── */
+        .class-list-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(8,12,28,0.7); border:1px solid var(--border); margin-bottom:5px; transition:border-color 0.2s; }
+        .class-list-item:hover { border-color:var(--teal); }
+        .class-list-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .class-list-name { flex-grow:1; font-family:'Cinzel','Noto Serif SC',serif; font-size:0.88rem; color:var(--text-primary); }
+        .class-list-count { font-family:'Cinzel Decorative',serif; font-size:0.72rem; color:var(--silver-dim); margin-right:4px; }
+        .class-list-active { font-family:'Cinzel',serif; font-size:0.62rem; color:var(--teal-glow); padding:2px 6px; border:1px solid var(--teal); }
+        .class-color-picker { width:24px; height:24px; padding:0; border:1px solid var(--border-glow); cursor:pointer; background:none; border-radius:3px; }
+
         /* ── SUBJECT MANAGE MODAL ── */
         .subject-list-item { display:flex; align-items:center; gap:8px; padding:7px 10px; background:rgba(8,12,28,0.7); border:1px solid var(--border); margin-bottom:5px; }
         .subject-list-name { flex-grow:1; font-family:'Cinzel','Noto Serif SC',serif; font-size:0.85rem; color:var(--text-primary); }
@@ -596,6 +625,14 @@
         </div>
     </header>
 
+
+    <!-- CLASS SWITCHER BAR -->
+    <div id="class-bar">
+        <span class="class-bar-label">班级</span>
+        <div class="class-tabs" id="class-tabs"></div>
+        <button class="class-manage-btn teacher-only" onclick="openClassModal()" title="管理班级">⚙ 班级管理</button>
+    </div>
+
     <div class="view-toggle-bar">
         <span class="view-toggle-label">视图</span>
         <div class="toggle-group">
@@ -1092,8 +1129,40 @@ const GROUP_COLORS=[
 const GROUP_EMBLEMS=['⚔','⬡','✦','❖','◈','⚝','◌','☽','⬖','⚙','⬢','✧'];
 const GROUP_AUTO_NAMES=['赤炎队','翠碧队','蓝晶队','紫气队','金辉队','霜白队','茜红队','苍绿队','苍穹小队','幽冥小队','圣光小队','破晓小队','律风小队','真理小队','星渊小队','玄武小队'];
 
-let students=JSON.parse(localStorage.getItem('wuxia_class_data'))||[];
-let groups=JSON.parse(localStorage.getItem('wuxia_groups_data'))||[];
+// ══════════════════════════════════════════════════════
+// ── MULTI-CLASS SYSTEM ──
+// ══════════════════════════════════════════════════════
+const DEFAULT_CLASSES = [{ id: 'cls_default', name: '甲班', color: '#2898b4' }];
+let classRooms = JSON.parse(localStorage.getItem('wuxia_classes')) || DEFAULT_CLASSES.map(c=>({...c}));
+let currentClassId = localStorage.getItem('wuxia_active_class') || classRooms[0].id;
+if (!classRooms.find(c=>c.id===currentClassId)) currentClassId = classRooms[0].id;
+
+function classKey(suffix, cid) { return `wuxia_${cid}_${suffix}`; }
+function saveClasses() { localStorage.setItem('wuxia_classes', JSON.stringify(classRooms)); }
+function saveActiveClass() { localStorage.setItem('wuxia_active_class', currentClassId); }
+
+// Load data for a given class id
+function loadClassData(cid) {
+    students = JSON.parse(localStorage.getItem(classKey('class_data', cid))) || [];
+    groups   = JSON.parse(localStorage.getItem(classKey('groups_data', cid))) || [];
+    subjects = JSON.parse(localStorage.getItem(classKey('subjects', cid))) || DEFAULT_SUBJECTS.map(s=>({...s}));
+    currentSubjectId = localStorage.getItem(classKey('current_subject', cid)) || subjects[0].id;
+    if (!subjects.find(s=>s.id===currentSubjectId)) currentSubjectId = subjects[0].id;
+    absentIds = new Set(JSON.parse(localStorage.getItem(classKey('absent', cid)) || '[]'));
+}
+
+// Persist data for a given class id
+function persistClassData(cid) {
+    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    localStorage.setItem(classKey('class_data', cid), JSON.stringify(students));
+    localStorage.setItem(classKey('groups_data', cid), JSON.stringify(groups));
+    localStorage.setItem(classKey('subjects', cid), JSON.stringify(subjects));
+    localStorage.setItem(classKey('current_subject', cid), currentSubjectId);
+    localStorage.setItem(classKey('absent', cid), JSON.stringify([...absentIds]));
+}
+
+let students=JSON.parse(localStorage.getItem(classKey('class_data', currentClassId)))||[];
+let groups=JSON.parse(localStorage.getItem(classKey('groups_data', currentClassId)))||[];
 let currentBattleStudentIndex=-1,currentMonster=null;
 let isTeacherMode=false,isTreasureEncounter=false;
 let currentInvStudentIndex=-1,shopTab='gear';
@@ -1113,14 +1182,14 @@ const DEFAULT_SUBJECTS = [
     { id: 'chinese', name: '华文' },
     { id: 'moral',   name: '品格' }
 ];
-let subjects = JSON.parse(localStorage.getItem('wuxia_subjects')) || DEFAULT_SUBJECTS.map(s => ({...s}));
-let currentSubjectId = localStorage.getItem('wuxia_current_subject') || subjects[0].id;
+let subjects = JSON.parse(localStorage.getItem(classKey('subjects', currentClassId))) || DEFAULT_SUBJECTS.map(s => ({...s}));
+let currentSubjectId = localStorage.getItem(classKey('current_subject', currentClassId)) || subjects[0].id;
 
 // Ensure current subject is valid
 if (!subjects.find(s => s.id === currentSubjectId)) currentSubjectId = subjects[0].id;
 
 function saveSubjects() {
-    localStorage.setItem('wuxia_subjects', JSON.stringify(subjects));
+    localStorage.setItem(classKey('subjects', currentClassId), JSON.stringify(subjects));
 }
 
 function getCurrentSubject() {
@@ -1169,10 +1238,11 @@ function switchSubject(subjectId) {
     // Save current subject data for all students
     students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
     currentSubjectId = subjectId;
-    localStorage.setItem('wuxia_current_subject', currentSubjectId);
+    localStorage.setItem(classKey('current_subject', currentClassId), currentSubjectId);
     // Load new subject data for all students
     students.forEach(s => syncStudentToSubject(s, currentSubjectId));
     saveData();
+    renderClassTabs();
     renderSubjectTabs();
     renderGrid();
     if (currentView === 'group') renderGroupView();
@@ -1608,7 +1678,7 @@ function confirmGroupSetup(){const count=parseInt(document.getElementById('group
     // Reset team pool since groups changed
     teamUsedIds.clear();
 }
-function saveGroups(){localStorage.setItem('wuxia_groups_data',JSON.stringify(groups));}
+function saveGroups(){localStorage.setItem(classKey('groups_data', currentClassId),JSON.stringify(groups));}
 function clearAllGroups(){showCustomModal({title:"解散所有小队",msg:"确定清空所有分组？弟子将回到未编制状态。",showCancel:true,onConfirm:()=>{groups=[];saveGroups();renderGroupView();teamUsedIds.clear();showNotify("所有小队已解散。");}});}
 function renderGroupView(){const container=document.getElementById('groups-container'),empty=document.getElementById('group-empty-state'),up=document.getElementById('unassigned-pool');if(!groups.length){container.innerHTML='';empty.style.display='block';up.style.display='none';return;}empty.style.display='none';const aid=new Set(groups.flatMap(g=>g.memberIds)),ua=students.filter(s=>!aid.has(s.id));if(ua.length>0){up.style.display='block';document.getElementById('unassigned-count').innerText=`(${ua.length}人)`;const grid=document.getElementById('unassigned-grid');grid.innerHTML='';ua.forEach(s=>grid.appendChild(buildMemberRow(s,null)));}else up.style.display='none';container.innerHTML='';groups.forEach(group=>container.appendChild(buildGroupPanel(group)));}
 function buildGroupPanel(group){const ms=group.memberIds.map(id=>students.find(s=>s.id===id)).filter(Boolean),tcp=ms.reduce((sum,s)=>sum+calculateCP(s),0),avg=ms.length>0?Math.round(ms.reduce((sum,s)=>sum+calculateLevel(s.exp),0)/ms.length):0;const panel=document.createElement('div');panel.className='group-panel';panel.dataset.groupId=group.id;const header=document.createElement('div');header.className='group-header';const em=document.createElement('div');em.className='group-emblem';em.innerText=group.emblem||'⬡';em.style.borderColor=group.color?.border||'#c8a84b';em.style.color=group.color?.border||'#c8a84b';header.appendChild(em);const tw=document.createElement('div');tw.className='group-title-wrap';tw.innerHTML=`<div class="group-name" style="color:${group.color?.border||'var(--gold-bright)'};">${group.name}</div><div class="group-meta"><span>◈ ${ms.length} 名弟子</span>${avg>0?`<span>均阶 Lv.${avg}</span>`:''}</div>`;header.appendChild(tw);const sb=document.createElement('div');sb.className='group-stats-bar';sb.innerHTML=`<span class="group-stat-pill cnt">人数 ${ms.length}</span><span class="group-stat-pill cp">总战力 ${tcp}</span><span class="group-stat-pill avg">均战力 ${ms.length?Math.round(tcp/ms.length):0}</span>`;if(isTeacherMode){const eb=document.createElement('button');eb.className='sacred-btn gold-tier xs';eb.innerText='编辑';eb.onclick=(e)=>{e.stopPropagation();openGroupEditModal(group.id);};sb.appendChild(eb);}header.appendChild(sb);const cb=document.createElement('span');cb.className='group-collapse-btn';cb.innerText='▾';header.appendChild(cb);header.onclick=()=>panel.classList.toggle('collapsed');panel.appendChild(header);const body=document.createElement('div');body.className='group-body';body.addEventListener('dragover',e=>{e.preventDefault();body.style.background='rgba(200,168,75,0.05)';});body.addEventListener('dragleave',()=>{body.style.background='';});body.addEventListener('drop',e=>{e.preventDefault();body.style.background='';if(dragSrcStudentId!==null)moveStudentToGroup(dragSrcStudentId,group.id);});const grid=document.createElement('div');grid.className='group-member-grid';if(ms.length===0){grid.innerHTML=`<div style="color:var(--text-dim);font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;padding:14px;text-align:center;border:1px dashed var(--border);width:100%;">将弟子拖入此处</div>`;}else ms.forEach(s=>grid.appendChild(buildMemberRow(s,group.id)));body.appendChild(grid);panel.appendChild(body);return panel;}
@@ -1797,7 +1867,7 @@ function showLevelUpEffect(){const o=document.getElementById('level-up-overlay')
 function saveData(){
     // Save current flat fields back to subjectData before persisting
     students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
-    localStorage.setItem('wuxia_class_data',JSON.stringify(students));
+    localStorage.setItem(classKey('class_data', currentClassId), JSON.stringify(students));
     showNotify("真理编年史已封印保存");
 }
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');localStorage.removeItem('wuxia_absent');students=[];groups=[];absentIds=new Set();soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();updateAttendBadge();showNotify("圣律归虚，真理湮灭...");}});}
@@ -1805,15 +1875,24 @@ function showNotify(msg){const b=document.getElementById('notification-bar');b.i
 
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
 function exportAllData() {
-    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    // Persist current class before exporting
+    persistClassData(currentClassId);
+    const classPayloads = {};
+    classRooms.forEach(cls => {
+        classPayloads[cls.id] = {
+            class_data:      localStorage.getItem(classKey('class_data', cls.id))      || '[]',
+            groups_data:     localStorage.getItem(classKey('groups_data', cls.id))     || '[]',
+            subjects:        localStorage.getItem(classKey('subjects', cls.id))        || 'null',
+            current_subject: localStorage.getItem(classKey('current_subject', cls.id)) || '',
+            absent:          localStorage.getItem(classKey('absent', cls.id))          || '[]',
+        };
+    });
     const payload = {
-        _version: 1, _exportedAt: new Date().toISOString(),
-        wuxia_class_data:      localStorage.getItem('wuxia_class_data')      || '[]',
-        wuxia_groups_data:     localStorage.getItem('wuxia_groups_data')     || '[]',
-        wuxia_subjects:        localStorage.getItem('wuxia_subjects')        || 'null',
-        wuxia_current_subject: localStorage.getItem('wuxia_current_subject') || '',
-        wuxia_rp_presets:      localStorage.getItem('wuxia_rp_presets')      || 'null',
-        wuxia_absent:          localStorage.getItem('wuxia_absent')          || '[]',
+        _version: 2, _exportedAt: new Date().toISOString(),
+        wuxia_classes:       JSON.stringify(classRooms),
+        wuxia_active_class:  currentClassId,
+        wuxia_rp_presets:    localStorage.getItem('wuxia_rp_presets') || 'null',
+        classData:           classPayloads,
     };
     const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -1821,7 +1900,7 @@ function exportAllData() {
     a.href=url; a.download='wuxia_chronicle_'+new Date().toISOString().slice(0,10)+'.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showNotify('◈ 编年史已导出！');
+    showNotify('◈ 编年史已导出（含所有班级）！');
 }
 function importAllData(event) {
     const file=event.target.files[0]; event.target.value='';
@@ -1830,22 +1909,40 @@ function importAllData(event) {
     reader.onload=function(e){
         try{
             const payload=JSON.parse(e.target.result);
-            if(!payload.wuxia_class_data){showNotify('❖ 文件格式错误');return;}
-            showCustomModal({title:'导入编年史',msg:`确定从文件导入？\n导出时间：${payload._exportedAt||'未知'}\n\n⚠ 这将覆盖当前所有数据！`,showCancel:true,onConfirm:()=>{
-                ['wuxia_class_data','wuxia_groups_data','wuxia_subjects','wuxia_current_subject','wuxia_rp_presets','wuxia_absent'].forEach(k=>{if(payload[k]!=null)localStorage.setItem(k,payload[k]);});
-                students=JSON.parse(localStorage.getItem('wuxia_class_data'))||[];
-                groups=JSON.parse(localStorage.getItem('wuxia_groups_data'))||[];
-                subjects=JSON.parse(localStorage.getItem('wuxia_subjects'))||DEFAULT_SUBJECTS.map(s=>({...s}));
-                currentSubjectId=localStorage.getItem('wuxia_current_subject')||subjects[0].id;
-                if(!subjects.find(s=>s.id===currentSubjectId))currentSubjectId=subjects[0].id;
+            const isV2 = payload._version === 2 && payload.classData;
+            const isV1 = payload.wuxia_class_data;
+            if(!isV2 && !isV1){showNotify('❖ 文件格式错误');return;}
+            const clsCount = isV2 ? Object.keys(payload.classData).length : 1;
+            showCustomModal({title:'导入编年史',msg:`确定导入？\n导出时间：${payload._exportedAt||'未知'}\n班级数：${clsCount}\n\n⚠ 这将覆盖当前所有数据！`,showCancel:true,onConfirm:()=>{
+                if(isV2) {
+                    localStorage.setItem('wuxia_classes', payload.wuxia_classes);
+                    localStorage.setItem('wuxia_active_class', payload.wuxia_active_class||'');
+                    if(payload.wuxia_rp_presets) localStorage.setItem('wuxia_rp_presets', payload.wuxia_rp_presets);
+                    Object.entries(payload.classData).forEach(([cid, d])=>{
+                        ['class_data','groups_data','subjects','current_subject','absent'].forEach(k=>{
+                            if(d[k]!=null) localStorage.setItem(classKey(k,cid), d[k]);
+                        });
+                    });
+                    classRooms = JSON.parse(payload.wuxia_classes)||DEFAULT_CLASSES.map(c=>({...c}));
+                    currentClassId = payload.wuxia_active_class||classRooms[0].id;
+                    if(!classRooms.find(c=>c.id===currentClassId)) currentClassId=classRooms[0].id;
+                } else {
+                    // v1 legacy — import into current class
+                    localStorage.setItem(classKey('class_data',currentClassId), payload.wuxia_class_data);
+                    if(payload.wuxia_groups_data) localStorage.setItem(classKey('groups_data',currentClassId), payload.wuxia_groups_data);
+                    if(payload.wuxia_subjects) localStorage.setItem(classKey('subjects',currentClassId), payload.wuxia_subjects);
+                    if(payload.wuxia_current_subject) localStorage.setItem(classKey('current_subject',currentClassId), payload.wuxia_current_subject);
+                    if(payload.wuxia_absent) localStorage.setItem(classKey('absent',currentClassId), payload.wuxia_absent);
+                    if(payload.wuxia_rp_presets) localStorage.setItem('wuxia_rp_presets', payload.wuxia_rp_presets);
+                }
+                loadClassData(currentClassId);
                 rpPresets=JSON.parse(localStorage.getItem('wuxia_rp_presets')||'null')||[...DEFAULT_PRESETS];
-                absentIds=new Set(JSON.parse(localStorage.getItem('wuxia_absent')||'[]'));
                 soloUsedIds=new Set(); teamUsedIds=new Set();
                 students.forEach(s=>syncStudentToSubject(s,currentSubjectId));
-                renderSubjectTabs(); renderGrid(); renderGroupView(); updateAttendBadge();
+                renderClassTabs(); renderSubjectTabs(); renderGrid(); renderGroupView(); updateAttendBadge();
                 showNotify('✦ 编年史导入成功！');
             }});
-        }catch(err){showNotify('❖ 解析失败，请确认文件格式');}
+        }catch(err){console.error(err);showNotify('❖ 解析失败，请确认文件格式');}
     };
     reader.readAsText(file);
 }
@@ -1932,6 +2029,142 @@ function importAllData(event) {
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════════════
+// ── CLASS MANAGEMENT SYSTEM ──
+// ══════════════════════════════════════════════════════════════
+const CLASS_COLORS = ['#2898b4','#c8a030','#7060c8','#c05828','#208060','#a02060','#e040c0','#40a060'];
+
+function renderClassTabs() {
+    const container = document.getElementById('class-tabs');
+    if (!container) return;
+    container.innerHTML = '';
+    classRooms.forEach(cls => {
+        const btn = document.createElement('button');
+        btn.className = 'class-tab' + (cls.id === currentClassId ? ' active' : '');
+        const studentCount = (() => {
+            try { return (JSON.parse(localStorage.getItem(classKey('class_data', cls.id))) || []).length; }
+            catch(e) { return cls.id === currentClassId ? students.length : 0; }
+        })();
+        btn.innerHTML = `<span class="ct-dot" style="background:${cls.color};box-shadow:0 0 5px ${cls.color};"></span>${cls.name}<span style="font-family:'Cinzel Decorative',serif;font-size:0.62rem;color:${cls.id===currentClassId?'var(--teal-glow)':'var(--text-dim)'};margin-left:2px;">(${studentCount})</span>`;
+        btn.onclick = () => switchClass(cls.id);
+        container.appendChild(btn);
+    });
+}
+
+function switchClass(cid) {
+    if (cid === currentClassId) return;
+    playSfx(sfxClick);
+    // Save current class data
+    persistClassData(currentClassId);
+    // Switch
+    currentClassId = cid;
+    saveActiveClass();
+    // Load new class data
+    loadClassData(cid);
+    soloUsedIds = new Set();
+    teamUsedIds = new Set();
+    students.forEach(s => syncStudentToSubject(s, currentSubjectId));
+    renderClassTabs();
+    renderSubjectTabs();
+    renderGrid();
+    renderGroupView();
+    updateAttendBadge();
+    const cls = classRooms.find(c=>c.id===cid);
+    showNotify(`◈ 已切换至班级：${cls ? cls.name : cid}`);
+}
+
+function openClassModal() {
+    playSfx(sfxClick);
+    renderClassList();
+    document.getElementById('class-modal').style.display = 'flex';
+}
+
+function renderClassList() {
+    const c = document.getElementById('class-list-container');
+    c.innerHTML = '';
+    classRooms.forEach((cls, i) => {
+        const studentCount = (() => {
+            try { return (JSON.parse(localStorage.getItem(classKey('class_data', cls.id))) || []).length; }
+            catch(e) { return cls.id === currentClassId ? students.length : 0; }
+        })();
+        const row = document.createElement('div');
+        row.className = 'class-list-item';
+        row.innerHTML = `
+            <div class="class-list-dot" style="background:${cls.color};box-shadow:0 0 6px ${cls.color};"></div>
+            <span class="class-list-name">${cls.name}</span>
+            <span class="class-list-count">${studentCount}人</span>
+            ${cls.id === currentClassId ? '<span class="class-list-active">当前班级</span>' : ''}
+            <input type="color" class="class-color-picker" value="${cls.color}" title="更改颜色" onchange="changeClassColor('${cls.id}', this.value)">
+            <button class="sacred-btn teal-tier xs" onclick="renameClassPrompt('${cls.id}')">改名</button>
+            ${classRooms.length > 1 && cls.id !== currentClassId
+                ? `<button class="sacred-btn crimson-tier xs" onclick="deleteClass('${cls.id}')">删除</button>`
+                : '<button class="sacred-btn xs" disabled style="opacity:0.3;">删除</button>'}
+        `;
+        c.appendChild(row);
+    });
+}
+
+function addClass() {
+    const inp = document.getElementById('new-class-name');
+    const colorEl = document.getElementById('new-class-color');
+    const name = inp.value.trim();
+    if (!name) { showNotify('请填写班级名称！'); return; }
+    if (classRooms.find(c => c.name === name)) { showNotify('已有同名班级！'); return; }
+    const id = 'cls_' + Date.now();
+    const color = colorEl ? colorEl.value : CLASS_COLORS[classRooms.length % CLASS_COLORS.length];
+    classRooms.push({ id, name, color });
+    saveClasses();
+    inp.value = '';
+    renderClassList();
+    renderClassTabs();
+    showNotify(`◈ 班级「${name}」已创建！`);
+}
+
+function renameClassPrompt(cid) {
+    const cls = classRooms.find(c => c.id === cid);
+    if (!cls) return;
+    showCustomModal({ title: '班级改名', msg: `目前名称：${cls.name}`, hasInput: true, showCancel: true, onConfirm: (val) => {
+        const newName = val.trim();
+        if (!newName) { showNotify('名称不能为空！'); return; }
+        if (classRooms.find(c=>c.name===newName && c.id!==cid)) { showNotify('已有同名班级！'); return; }
+        cls.name = newName;
+        saveClasses();
+        renderClassList();
+        renderClassTabs();
+        showNotify(`◈ 已改名为「${newName}」`);
+    }});
+}
+
+function changeClassColor(cid, color) {
+    const cls = classRooms.find(c => c.id === cid);
+    if (!cls) return;
+    cls.color = color;
+    saveClasses();
+    renderClassTabs();
+    renderClassList();
+}
+
+function deleteClass(cid) {
+    if (classRooms.length <= 1) { showNotify('至少保留一个班级！'); return; }
+    const cls = classRooms.find(c => c.id === cid);
+    if (!cls) return;
+    const studentCount = (() => {
+        try { return (JSON.parse(localStorage.getItem(classKey('class_data', cid))) || []).length; } catch(e) { return 0; }
+    })();
+    showCustomModal({ title: '删除班级', msg: `确定删除班级「${cls.name}」？
+该班级 ${studentCount} 名弟子的所有数据将一并清除。`, showCancel: true, onConfirm: () => {
+        // Remove all localStorage keys for this class
+        ['class_data','groups_data','subjects','current_subject','absent'].forEach(k => {
+            localStorage.removeItem(classKey(k, cid));
+        });
+        classRooms = classRooms.filter(c => c.id !== cid);
+        saveClasses();
+        renderClassList();
+        renderClassTabs();
+        showNotify(`◈ 班级「${cls.name}」已删除`);
+    }});
+}
+
 // ══════════════════════════════════════════════════════════════
 // ── 赏罚台系统 (Reward / Penalty System) ──
 // 功能：
@@ -2457,6 +2690,24 @@ function renderCardActions(s, index) {
     return div;
 }
 </script>
+<!-- ── CLASS MANAGER MODAL ── -->
+<div id="class-modal" class="modal-overlay">
+    <div class="modal-panel" style="width:460px;display:flex;flex-direction:column;gap:14px;">
+        <div class="modal-title">⬡ 班级管理</div>
+        <div class="ornament">· · · · · · ·</div>
+        <p style="text-align:center;color:var(--text-dim);font-size:0.75rem;font-family:'Cinzel',serif;letter-spacing:0.08em;">每个班级拥有独立弟子名单与分组记录</p>
+        <div id="class-list-container" style="max-height:320px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="new-class-name" placeholder="新班级名称（如：甲班）" style="flex-grow:1;">
+            <input type="color" id="new-class-color" value="#2898b4" style="width:36px;height:36px;padding:2px;border:1px solid var(--border-glow);cursor:pointer;background:none;border-radius:3px;">
+            <button class="sacred-btn success-tier sm" onclick="addClass()">✦ 新增</button>
+        </div>
+        <div style="display:flex;justify-content:center;">
+            <button class="sacred-btn" onclick="document.getElementById('class-modal').style.display='none'">完成</button>
+        </div>
+    </div>
+</div>
+
 <!-- ── SUBJECT MANAGE MODAL ── -->
 <div id="subject-modal" class="modal-overlay">
     <div class="modal-panel" style="width:420px;display:flex;flex-direction:column;gap:14px;">
@@ -2506,10 +2757,10 @@ function renderCardActions(s, index) {
 // absentIds: Set of student IDs marked as absent this session
 // Absent students are greyed out on cards and excluded from battle pool
 // ══════════════════════════════════════════════════════════════
-let absentIds = new Set(JSON.parse(localStorage.getItem('wuxia_absent') || '[]'));
+let absentIds = new Set(JSON.parse(localStorage.getItem(classKey('absent', currentClassId)) || '[]'));
 
 function saveAttendance() {
-    localStorage.setItem('wuxia_absent', JSON.stringify([...absentIds]));
+    localStorage.setItem(classKey('absent', currentClassId), JSON.stringify([...absentIds]));
 }
 
 function getActiveStudents() {
