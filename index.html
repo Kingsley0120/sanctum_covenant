@@ -2917,6 +2917,38 @@ function updateAttendBadge() {
 .wb-custom-color{width:28px;height:28px;padding:0;border:1px solid var(--border-glow);cursor:pointer;background:none;flex-shrink:0;border-radius:2px;}
 .wb-color-dot{width:22px;height:22px;border:1px solid var(--border-glow);flex-shrink:0;border-radius:2px;}
 
+/* Camera snap styles */
+.camera-modal { 
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.95); z-index:10000; justify-content:center; 
+    align-items:center; flex-direction:column; gap:16px; padding:20px;
+}
+.camera-modal.open { display:flex; }
+.camera-container { 
+    position:relative; width:100%; max-width:500px; aspect-ratio:4/3; 
+    background:var(--void); border:2px solid var(--gold-dim);
+}
+#camera-video { width:100%; height:100%; object-fit:cover; }
+#camera-canvas { display:none; }
+.camera-preview { 
+    width:100%; max-width:500px; aspect-ratio:4/3; border:2px solid var(--border-glow); 
+    display:none; background:var(--void);
+}
+.camera-preview.show { display:block; }
+.camera-controls { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.camera-btn { 
+    padding:8px 16px; font-size:0.75rem; border:1px solid var(--border-glow); 
+    background:rgba(15,20,40,0.9); color:var(--text-secondary); cursor:pointer; 
+    font-family:'Cinzel',serif; transition:all 0.2s;
+}
+.camera-btn:hover { color:var(--gold); border-color:var(--gold-dim); }
+.camera-btn.capture { border-color:var(--state-dawn); color:var(--state-dawn); }
+.camera-btn.capture:hover { background:rgba(30,20,8,0.9); }
+.camera-status { 
+    color:var(--text-secondary); font-family:'Cinzel',serif; font-size:0.75rem; 
+    text-align:center; max-width:500px;
+}
+
 /* Canvas area */
 #wb-canvas-wrap{
     flex:1;overflow:hidden;position:relative;min-height:0;
@@ -3011,6 +3043,7 @@ function updateAttendBadge() {
     <button class="wb-btn" onclick="WB.redo()" title="Ctrl+Y">↪ 重做</button>
     <button class="wb-btn" onclick="document.getElementById('wb-img-in').click()">🖼 图片</button>
     <input type="file" id="wb-img-in" accept="image/*" style="display:none" onchange="WB.importImg(event)">
+    <button class="wb-btn" onclick="CameraSnap.open()">📷 拍照</button>
     <button class="wb-btn wb-danger" onclick="WB.clearAll()">✕ 清空</button>
     <button class="wb-btn" onclick="WB.save()">💾 保存</button>
     <div class="wb-sep"></div>
@@ -3027,6 +3060,22 @@ function updateAttendBadge() {
   <div id="wb-status">
     <span id="wb-tool-lbl">钢笔 · Pen</span>
     <span id="wb-xy" style="font-family:'Cinzel Decorative',serif;font-size:0.62rem;color:var(--silver-dim);">X:0  Y:0</span>
+  </div>
+</div>
+
+<!-- Camera Snap Modal -->
+<div id="camera-modal" class="camera-modal">
+  <div class="camera-container">
+    <video id="camera-video"></video>
+    <canvas id="camera-canvas"></canvas>
+  </div>
+  <img id="camera-preview" class="camera-preview">
+  <div class="camera-status" id="camera-status">准备就绪 / Ready</div>
+  <div class="camera-controls">
+    <button class="camera-btn capture" id="camera-capture-btn">📸 拍照 / Snap</button>
+    <button class="camera-btn" id="camera-use-btn" style="display:none;">✓ 使用 / Use</button>
+    <button class="camera-btn" id="camera-retake-btn" style="display:none;">↻ 重拍 / Retake</button>
+    <button class="camera-btn" onclick="CameraSnap.close()">✕ 取消 / Cancel</button>
   </div>
 </div>
 
@@ -3418,6 +3467,182 @@ const WB = (() => {
 
 /* hook the open button */
 function openWhiteboardModal() { WB.open(); }
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   Camera Snap Module for Whiteboard
+   ══════════════════════════════════════════════════════════════════ */
+const CameraSnap = (() => {
+  'use strict';
+  
+  let video, canvas, preview, modal, captureBtn, useBtn, retakeBtn, statusDiv;
+  let stream = null;
+  let capturedImage = null;
+  
+  function init() {
+    video = document.getElementById('camera-video');
+    canvas = document.getElementById('camera-canvas');
+    preview = document.getElementById('camera-preview');
+    modal = document.getElementById('camera-modal');
+    captureBtn = document.getElementById('camera-capture-btn');
+    useBtn = document.getElementById('camera-use-btn');
+    retakeBtn = document.getElementById('camera-retake-btn');
+    statusDiv = document.getElementById('camera-status');
+    
+    captureBtn.addEventListener('click', snapPhoto);
+    useBtn.addEventListener('click', usePhoto);
+    retakeBtn.addEventListener('click', retake);
+  }
+  
+  function open() {
+    modal.classList.add('open');
+    startCamera();
+  }
+  
+  function close() {
+    modal.classList.remove('open');
+    stopCamera();
+    resetUI();
+  }
+  
+  function startCamera() {
+    if (stream) return;
+    
+    statusDiv.textContent = '启动摄像头… / Starting camera…';
+    
+    navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      } 
+    })
+    .then(s => {
+      stream = s;
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        statusDiv.textContent = '准备就绪 / Ready';
+      };
+    })
+    .catch(err => {
+      console.error('摄像头访问错误 / Camera error:', err);
+      statusDiv.textContent = '✕ 无法访问摄像头 / Camera access denied';
+      statusDiv.style.color = 'var(--crimson-glow)';
+    });
+  }
+  
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+  }
+  
+  function snapPhoto() {
+    if (!video || !video.videoWidth) {
+      statusDiv.textContent = '✕ 摄像头未就绪 / Camera not ready';
+      return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    ctx.drawImage(video, 0, 0);
+    capturedImage = canvas.toDataURL('image/jpeg', 0.95);
+    
+    // Show preview
+    preview.src = capturedImage;
+    preview.classList.add('show');
+    video.style.display = 'none';
+    
+    // Update buttons
+    captureBtn.style.display = 'none';
+    useBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'inline-block';
+    
+    statusDiv.textContent = '✓ 已拍照 / Photo captured';
+  }
+  
+  function retake() {
+    capturedImage = null;
+    preview.classList.remove('show');
+    video.style.display = 'block';
+    
+    captureBtn.style.display = 'inline-block';
+    useBtn.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    
+    statusDiv.textContent = '准备就绪 / Ready';
+  }
+  
+  function usePhoto() {
+    if (!capturedImage) return;
+    
+    // Create image element
+    const img = new Image();
+    img.onload = () => {
+      // Draw to whiteboard canvas
+      const wbCanvas = document.getElementById('wb-canvas');
+      const wbCtx = wbCanvas.getContext('2d');
+      
+      // Calculate dimensions to fit
+      const maxWidth = wbCanvas.width * 0.8;
+      const maxHeight = wbCanvas.height * 0.8;
+      
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width *= ratio;
+        height *= ratio;
+      }
+      
+      const x = (wbCanvas.width - width) / 2;
+      const y = (wbCanvas.height - height) / 2;
+      
+      // Add undo state
+      if (WB.pushUndo) {
+        WB.pushUndo();
+      } else {
+        // Fallback if pushUndo is not available
+        wbCtx.drawImage(img, x, y, width, height);
+      }
+      
+      wbCtx.drawImage(img, x, y, width, height);
+    };
+    
+    img.src = capturedImage;
+    
+    // Close camera modal
+    close();
+    statusDiv.textContent = '✓ 照片已添加 / Photo added';
+  }
+  
+  function resetUI() {
+    if (video) video.style.display = 'block';
+    if (preview) preview.classList.remove('show');
+    
+    capturedImage = null;
+    captureBtn.style.display = 'inline-block';
+    if (useBtn) useBtn.style.display = 'none';
+    if (retakeBtn) retakeBtn.style.display = 'none';
+    
+    statusDiv.style.color = 'var(--text-secondary)';
+  }
+  
+  // Initialize when document is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  return { open, close };
+})();
 </script>
 
 <script>
