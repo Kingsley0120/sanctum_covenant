@@ -1133,6 +1133,43 @@ const GROUP_AUTO_NAMES=['赤炎队','翠碧队','蓝晶队','紫气队','金辉�
 // ── MULTI-CLASS SYSTEM ──
 // ══════════════════════════════════════════════════════
 const DEFAULT_CLASSES = [{ id: 'cls_default', name: '甲班', color: '#2898b4' }];
+
+// ── ONE-TIME MIGRATION: move old flat keys → namespaced keys ──────────────────
+// The original code stored data under flat keys like 'wuxia_class_data'.
+// The multi-class system uses namespaced keys like 'wuxia_cls_default_class_data'.
+// If we find old flat keys and no new namespaced keys yet, migrate automatically.
+(function migrateOldData() {
+    const oldClassData = localStorage.getItem('wuxia_class_data');
+    const migrationDone = localStorage.getItem('wuxia_migration_v2_done');
+    if (oldClassData && !migrationDone) {
+        const defaultId = 'cls_default';
+        // Copy old flat keys into the new namespaced keys (only if the new key is empty)
+        const keyMap = {
+            'wuxia_class_data':       'wuxia_' + defaultId + '_class_data',
+            'wuxia_groups_data':      'wuxia_' + defaultId + '_groups_data',
+            'wuxia_subjects':         'wuxia_' + defaultId + '_subjects',
+            'wuxia_current_subject':  'wuxia_' + defaultId + '_current_subject',
+            'wuxia_absent':           'wuxia_' + defaultId + '_absent',
+        };
+        Object.entries(keyMap).forEach(([oldKey, newKey]) => {
+            const oldVal = localStorage.getItem(oldKey);
+            if (oldVal && !localStorage.getItem(newKey)) {
+                localStorage.setItem(newKey, oldVal);
+            }
+        });
+        // Ensure class list and active class are saved
+        if (!localStorage.getItem('wuxia_classes')) {
+            localStorage.setItem('wuxia_classes', JSON.stringify(DEFAULT_CLASSES.map(c=>({...c}))));
+        }
+        if (!localStorage.getItem('wuxia_active_class')) {
+            localStorage.setItem('wuxia_active_class', defaultId);
+        }
+        localStorage.setItem('wuxia_migration_v2_done', '1');
+        console.log('[Migration] Old flat localStorage keys migrated to namespaced keys.');
+    }
+})();
+// ─────────────────────────────────────────────────────────────────────────────
+
 let classRooms = JSON.parse(localStorage.getItem('wuxia_classes')) || DEFAULT_CLASSES.map(c=>({...c}));
 let currentClassId = localStorage.getItem('wuxia_active_class') || classRooms[0].id;
 if (!classRooms.find(c=>c.id===currentClassId)) currentClassId = classRooms[0].id;
