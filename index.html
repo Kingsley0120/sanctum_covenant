@@ -2890,15 +2890,19 @@ function updateAttendBadge() {
 
 /* Toolbar */
 #wb-toolbar {
-    display:flex; align-items:center; gap:0; flex-wrap:nowrap;
-    overflow-x:auto; background:var(--panel);
+    display:flex; flex-direction:column; gap:0;
+    background:var(--panel);
     border-bottom:2px solid var(--gold-dim);
-    padding:6px 12px; flex-shrink:0; user-select:none;
-    scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+    flex-shrink:0; user-select:none;
 }
-#wb-toolbar::-webkit-scrollbar{height:4px;}
-#wb-toolbar::-webkit-scrollbar-thumb{background:var(--border);}
-.wb-sep{width:1px;height:28px;background:var(--border-glow);opacity:0.4;margin:0 8px;flex-shrink:0;}
+.wb-toolbar-row {
+    display:flex; align-items:center; gap:0; flex-wrap:wrap;
+    padding:5px 10px; gap:4px;
+}
+.wb-toolbar-row:first-child {
+    border-bottom:1px solid var(--border);
+}
+.wb-sep{width:1px;height:28px;background:var(--border-glow);opacity:0.4;margin:0 6px;flex-shrink:0;}
 .wb-label{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.18em;color:var(--text-dim);text-transform:uppercase;margin-right:4px;flex-shrink:0;white-space:nowrap;}
 
 /* Tool buttons */
@@ -3030,67 +3034,66 @@ function updateAttendBadge() {
 <!-- Whiteboard modal -->
 <div id="wb-modal">
   <div id="wb-toolbar">
-    <span style="font-family:'Cinzel Decorative',serif;font-size:0.82rem;color:var(--gold);letter-spacing:0.08em;margin-right:8px;flex-shrink:0;">✎ 圣律板</span>
-    <div class="wb-sep"></div>
+    <!-- Row 1: Title · Pen types · Text / Eraser / Select · Actions -->
+    <div class="wb-toolbar-row">
+      <span style="font-family:'Cinzel Decorative',serif;font-size:0.82rem;color:var(--gold);letter-spacing:0.08em;flex-shrink:0;">✎ 圣律板</span>
+      <div class="wb-sep"></div>
 
-    <!-- Pen type -->
-    <span class="wb-label">笔型</span>
-    <div class="wb-pen-row">
-      <button class="wb-btn wb-active" id="wbt-pen"    onclick="WB.setTool('pen')">✒ 钢笔</button>
-      <button class="wb-btn"           id="wbt-brush"  onclick="WB.setTool('brush')">🖌 毛笔</button>
-      <button class="wb-btn"           id="wbt-marker" onclick="WB.setTool('marker')">▌ 荧光</button>
-      <button class="wb-btn"           id="wbt-chalk"  onclick="WB.setTool('chalk')">◌ 粉笔</button>
-    </div>
-    <div class="wb-sep"></div>
-
-    <!-- Text & Eraser & Select -->
-    <button class="wb-btn" id="wbt-text"   onclick="WB.setTool('text')">T 文字</button>
-    <button class="wb-btn" id="wbt-eraser" onclick="WB.setTool('eraser')">⌫ 擦除</button>
-    <button class="wb-btn" id="wbt-select" onclick="WB.setTool('select')" title="选择/移动/缩放图片">✥ 选择</button>
-    <div class="wb-sep"></div>
-
-    <!-- Size -->
-    <span class="wb-label">粗细</span>
-    <div class="wb-slider-wrap">
-      <div class="wb-slider-track">
-        <div class="wb-slider-fill" id="wb-sz-fill" style="width:5%;"></div>
-        <input type="range" class="wb-range" id="wb-sz" min="1" max="60" value="4"
-               oninput="WB.setSize(+this.value)">
+      <span class="wb-label">笔型</span>
+      <div class="wb-pen-row">
+        <button class="wb-btn wb-active" id="wbt-pen"    onclick="WB.setTool('pen')">✒ 钢笔</button>
+        <button class="wb-btn"           id="wbt-brush"  onclick="WB.setTool('brush')">🖌 毛笔</button>
+        <button class="wb-btn"           id="wbt-marker" onclick="WB.setTool('marker')">▌ 荧光</button>
+        <button class="wb-btn"           id="wbt-chalk"  onclick="WB.setTool('chalk')">◌ 粉笔</button>
       </div>
-      <span class="wb-val" id="wb-sz-val">4</span>
-    </div>
-    <div class="wb-sep"></div>
+      <div class="wb-sep"></div>
 
-    <!-- Opacity -->
-    <span class="wb-label">透明</span>
-    <div class="wb-slider-wrap">
-      <div class="wb-slider-track">
-        <div class="wb-slider-fill" id="wb-op-fill" style="width:100%;"></div>
-        <input type="range" class="wb-range" id="wb-op" min="5" max="100" value="100"
-               oninput="WB.setOpacity(+this.value)">
+      <button class="wb-btn" id="wbt-text"   onclick="WB.setTool('text')">T 文字</button>
+      <button class="wb-btn" id="wbt-eraser" onclick="WB.setTool('eraser')">⌫ 擦除</button>
+      <button class="wb-btn" id="wbt-select" onclick="WB.setTool('select')" title="选择/移动/缩放图片">✥ 选择</button>
+      <div class="wb-sep"></div>
+
+      <button class="wb-btn" onclick="WB.undo()" title="Ctrl+Z">↩ 撤销</button>
+      <button class="wb-btn" onclick="WB.redo()" title="Ctrl+Y">↪ 重做</button>
+      <button class="wb-btn" onclick="document.getElementById('wb-img-in').click()">🖼 图片</button>
+      <input type="file" id="wb-img-in" accept="image/*" style="display:none" onchange="WB.importImg(event)">
+      <button class="wb-btn" onclick="CameraSnap.open()">📷 拍照</button>
+      <button class="wb-btn wb-danger" onclick="WB.clearAll()">✕ 清空</button>
+      <button class="wb-btn" onclick="WB.save()">💾 保存</button>
+      <div class="wb-sep"></div>
+      <button class="wb-btn wb-close" style="margin-left:auto;" onclick="WB.close()">✕ 关闭</button>
+    </div>
+
+    <!-- Row 2: Size · Opacity · Colours -->
+    <div class="wb-toolbar-row">
+      <span class="wb-label">粗细</span>
+      <div class="wb-slider-wrap">
+        <div class="wb-slider-track">
+          <div class="wb-slider-fill" id="wb-sz-fill" style="width:5%;"></div>
+          <input type="range" class="wb-range" id="wb-sz" min="1" max="60" value="4"
+                 oninput="WB.setSize(+this.value)">
+        </div>
+        <span class="wb-val" id="wb-sz-val">4</span>
       </div>
-      <span class="wb-val" id="wb-op-val">100%</span>
+      <div class="wb-sep"></div>
+
+      <span class="wb-label">透明</span>
+      <div class="wb-slider-wrap">
+        <div class="wb-slider-track">
+          <div class="wb-slider-fill" id="wb-op-fill" style="width:100%;"></div>
+          <input type="range" class="wb-range" id="wb-op" min="5" max="100" value="100"
+                 oninput="WB.setOpacity(+this.value)">
+        </div>
+        <span class="wb-val" id="wb-op-val">100%</span>
+      </div>
+      <div class="wb-sep"></div>
+
+      <span class="wb-label">颜色</span>
+      <div class="wb-color-row" id="wb-swatches"></div>
+      <input type="color" class="wb-custom-color" id="wb-picker" value="#e8cc7a"
+             oninput="WB.setColor(this.value,null)">
+      <div class="wb-color-dot" id="wb-cdot" style="background:#e8cc7a;"></div>
     </div>
-    <div class="wb-sep"></div>
-
-    <!-- Colours -->
-    <span class="wb-label">颜色</span>
-    <div class="wb-color-row" id="wb-swatches"></div>
-    <input type="color" class="wb-custom-color" id="wb-picker" value="#e8cc7a"
-           oninput="WB.setColor(this.value,null)">
-    <div class="wb-color-dot" id="wb-cdot" style="background:#e8cc7a;"></div>
-    <div class="wb-sep"></div>
-
-    <!-- Actions -->
-    <button class="wb-btn" onclick="WB.undo()" title="Ctrl+Z">↩ 撤销</button>
-    <button class="wb-btn" onclick="WB.redo()" title="Ctrl+Y">↪ 重做</button>
-    <button class="wb-btn" onclick="document.getElementById('wb-img-in').click()">🖼 图片</button>
-    <input type="file" id="wb-img-in" accept="image/*" style="display:none" onchange="WB.importImg(event)">
-    <button class="wb-btn" onclick="CameraSnap.open()">📷 拍照</button>
-    <button class="wb-btn wb-danger" onclick="WB.clearAll()">✕ 清空</button>
-    <button class="wb-btn" onclick="WB.save()">💾 保存</button>
-    <div class="wb-sep"></div>
-    <button class="wb-btn wb-close" onclick="WB.close()" style="margin-left:auto;">✕ 关闭</button>
   </div>
 
   <div id="wb-canvas-wrap">
@@ -3311,18 +3314,10 @@ const WB = (() => {
 
   /* ══════════════════ CLEAR / SAVE ══════════════════ */
   function clearAll() {
-    const doClear = () => {
-      pushUndo();
-      scene = [];
-      deselectAll();
-      redraw();
-    };
-    if (typeof showCustomModal === 'function') {
-      showCustomModal({ title:'清空画板', msg:'确定要清空？此操作无法撤销。', showCancel:true, onConfirm: doClear });
-    } else {
-      if (!confirm('确定清空？')) return;
-      doClear();
-    }
+    pushUndo();
+    scene = [];
+    deselectAll();
+    redraw();
   }
 
   function save() {
