@@ -1136,6 +1136,10 @@ const DEFAULT_CLASSES = [{ id: 'cls_default', name: '甲班', color: '#2898b4' }
 let classRooms = JSON.parse(localStorage.getItem('wuxia_classes')) || DEFAULT_CLASSES.map(c=>({...c}));
 let currentClassId = localStorage.getItem('wuxia_active_class') || classRooms[0].id;
 if (!classRooms.find(c=>c.id===currentClassId)) currentClassId = classRooms[0].id;
+// Always persist classRooms and currentClassId on startup so they survive page reloads
+// even if the user never explicitly adds/renames a class.
+if (!localStorage.getItem('wuxia_classes')) localStorage.setItem('wuxia_classes', JSON.stringify(classRooms));
+if (!localStorage.getItem('wuxia_active_class')) localStorage.setItem('wuxia_active_class', currentClassId);
 
 function classKey(suffix, cid) { return `wuxia_${cid}_${suffix}`; }
 function saveClasses() { localStorage.setItem('wuxia_classes', JSON.stringify(classRooms)); }
@@ -1868,6 +1872,9 @@ function saveData(){
     // Save current flat fields back to subjectData before persisting
     students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
     localStorage.setItem(classKey('class_data', currentClassId), JSON.stringify(students));
+    // Always keep class metadata in sync so page reloads never lose the class ID
+    localStorage.setItem('wuxia_classes', JSON.stringify(classRooms));
+    localStorage.setItem('wuxia_active_class', currentClassId);
     showNotify("真理编年史已封印保存");
 }
 function resetAll(){showCustomModal({title:"湮灭编年史",msg:"确定要燃毁所有卷册？一切将归于虚无。",showCancel:true,onConfirm:()=>{localStorage.removeItem('wuxia_class_data');localStorage.removeItem('wuxia_groups_data');localStorage.removeItem('wuxia_absent');students=[];groups=[];absentIds=new Set();soloUsedIds.clear();teamUsedIds.clear();renderGrid();renderGroupView();updateAttendBadge();showNotify("圣律归虚，真理湮灭...");}});}
@@ -1875,8 +1882,15 @@ function showNotify(msg){const b=document.getElementById('notification-bar');b.i
 
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
 function exportAllData() {
-    // Persist current class before exporting
-    persistClassData(currentClassId);
+    // Persist current class before exporting (only if students are loaded)
+    if (students && students.length > 0) {
+        students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+        localStorage.setItem(classKey('class_data', currentClassId), JSON.stringify(students));
+        localStorage.setItem(classKey('groups_data', currentClassId), JSON.stringify(groups));
+        localStorage.setItem(classKey('subjects', currentClassId), JSON.stringify(subjects));
+        localStorage.setItem(classKey('current_subject', currentClassId), currentSubjectId);
+        localStorage.setItem(classKey('absent', currentClassId), JSON.stringify([...absentIds]));
+    }
     const classPayloads = {};
     classRooms.forEach(cls => {
         classPayloads[cls.id] = {
@@ -1926,6 +1940,9 @@ function importAllData(event) {
                     classRooms = JSON.parse(payload.wuxia_classes)||DEFAULT_CLASSES.map(c=>({...c}));
                     currentClassId = payload.wuxia_active_class||classRooms[0].id;
                     if(!classRooms.find(c=>c.id===currentClassId)) currentClassId=classRooms[0].id;
+                    // Persist the resolved class/active keys so page reload stays consistent
+                    localStorage.setItem('wuxia_classes', JSON.stringify(classRooms));
+                    localStorage.setItem('wuxia_active_class', currentClassId);
                 } else {
                     // v1 legacy — import into current class
                     localStorage.setItem(classKey('class_data',currentClassId), payload.wuxia_class_data);
@@ -1939,6 +1956,8 @@ function importAllData(event) {
                 rpPresets=JSON.parse(localStorage.getItem('wuxia_rp_presets')||'null')||[...DEFAULT_PRESETS];
                 soloUsedIds=new Set(); teamUsedIds=new Set();
                 students.forEach(s=>syncStudentToSubject(s,currentSubjectId));
+                // Persist the synced flat fields back so they are not lost
+                localStorage.setItem(classKey('class_data', currentClassId), JSON.stringify(students));
                 renderClassTabs(); renderSubjectTabs(); renderGrid(); renderGroupView(); updateAttendBadge();
                 showNotify('✦ 编年史导入成功！');
             }});
