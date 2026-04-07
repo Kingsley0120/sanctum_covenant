@@ -404,11 +404,11 @@
         .fighter img.treasure-chest { height:120px; margin-bottom:25px; animation:bounce 2s ease-in-out infinite; }
         @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
         .fighter-name { font-family:'Cinzel',serif; font-size:0.8rem; letter-spacing:0.1em; background:rgba(4,6,20,0.8); color:var(--gold); padding:3px 10px; border:1px solid var(--gold-dim); margin-bottom:6px; }
-        .team-fighters-area { display:flex; justify-content:space-between; align-items:flex-end; min-height:200px; padding:0 20px; position:relative; z-index:2; }
-        .team-fighters-left { display:flex; gap:-10px; align-items:flex-end; flex:1; }
-        .team-fighter-mini { display:flex; flex-direction:column; align-items:center; margin-right:-12px; }
-        .team-fighter-mini img { height:120px; image-rendering:pixelated; filter:drop-shadow(0 0 8px rgba(200,168,75,0.25)); transition:all 0.2s; }
-        .team-fighter-mini .fighter-name { font-size:0.65rem; padding:2px 6px; }
+        .team-fighters-area { display:flex; justify-content:space-between; align-items:flex-end; min-height:220px; padding:0 20px; position:relative; z-index:2; }
+        .team-fighters-left { position:relative; width:260px; flex-shrink:0; align-self:flex-end; height:210px; }
+        .team-fighter-mini { position:absolute; display:flex; flex-direction:column; align-items:center; }
+        .team-fighter-mini img { height:110px; image-rendering:pixelated; filter:drop-shadow(0 0 8px rgba(200,168,75,0.25)); transition:all 0.2s; }
+        .team-fighter-mini .fighter-name { font-size:0.62rem; padding:2px 6px; }
         #battle-ui { position:relative; z-index:2; background:rgba(6,8,20,0.95); border:1px solid var(--border-glow); border-top:1px solid var(--gold-dim); padding:14px; text-align:center; }
         #battle-msg { font-family:'IM Fell English',serif; font-size:1.25rem; font-style:italic; color:var(--text-primary); margin-bottom:12px; text-shadow:0 0 8px rgba(200,168,75,0.2); min-height:2em; }
         .battle-controls { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
@@ -704,7 +704,7 @@
         </div>
         <div class="team-fighters-area" id="team-fighters-area" style="display:none;">
             <div class="team-fighters-left" id="team-fighters-left"></div>
-            <div class="fighter" style="flex-shrink:0;">
+            <div class="fighter" style="flex-shrink:0; margin-left:auto;">
                 <div class="fighter-name" id="team-battle-monster-name">试炼之敌</div>
                 <img id="team-battle-monster-img" src="" alt="Monster">
             </div>
@@ -1658,17 +1658,35 @@ function pickRandomTeam() {
         const members = group.memberIds.map(id => students.find(s => s.id === id)).filter(s => s && !absentIds.has(s.id));
         const la = document.getElementById('team-fighters-left');
         la.innerHTML = '';
-        members.slice(0, 5).forEach(s => {
+        // Diagonal stacking: max 4 per row, offset each member slightly right+up
+        // so they fan out diagonally without fully covering each other
+        const maxShow = 8;
+        const perRow = members.length <= 3 ? 3 : 4;
+        const colStep = 52;   // horizontal step per column (px)
+        const rowStep = 28;   // vertical lift per row (px, negative = higher)
+        const baseBottom = 0; // bottom anchor (px from container bottom)
+
+        members.slice(0, maxShow).forEach((s, i) => {
             const info = getStudentInfo(s);
+            const col = i % perRow;
+            const row = Math.floor(i / perRow);
             const div = document.createElement('div');
             div.className = 'team-fighter-mini';
+            div.style.left = (col * colStep) + 'px';
+            div.style.bottom = (baseBottom + row * rowStep) + 'px';
+            div.style.zIndex = i + 1;
             div.innerHTML = `<div class="fighter-name" style="font-size:0.62rem;padding:2px 6px;">${s.name}</div><img src="${info.battleAvatar}" onerror="this.src='${PLAYER_BATTLE_ARTS[0]}'">`;
             la.appendChild(div);
         });
-        if (members.length > 5) {
+        if (members.length > maxShow) {
             const more = document.createElement('div');
             more.className = 'team-fighter-mini';
-            more.innerHTML = `<div style="font-family:'Cinzel Decorative',serif;font-size:1.8rem;color:var(--gold-dim);padding:20px 10px 0;opacity:0.7;">+${members.length - 5}</div>`;
+            const col = maxShow % perRow;
+            const row = Math.floor(maxShow / perRow);
+            more.style.left = (col * colStep) + 'px';
+            more.style.bottom = (baseBottom + row * rowStep + 30) + 'px';
+            more.style.zIndex = maxShow + 1;
+            more.innerHTML = `<div style="font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--gold-dim);opacity:0.8;">+${members.length - maxShow}</div>`;
             la.appendChild(more);
         }
         document.getElementById('team-battle-name-label').innerText = `${group.emblem || '⬡'} ${group.name}`;
