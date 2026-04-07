@@ -2985,14 +2985,19 @@ function updateAttendBadge() {
 }
 .camera-modal.open { display:flex; }
 .camera-container { 
-    position:relative; width:100%; max-width:500px; aspect-ratio:4/3; 
+    position:relative; width:100%; max-width:640px;
     background:var(--void); border:2px solid var(--gold-dim);
+    overflow:hidden; line-height:0;
 }
-#camera-video { width:100%; height:100%; object-fit:cover; }
+#camera-video { 
+    width:100%; height:auto; display:block;
+    object-fit:contain; max-height:60vh;
+    transform-origin:center center;
+}
 #camera-canvas { display:none; }
 .camera-preview { 
-    width:100%; max-width:500px; aspect-ratio:4/3; border:2px solid var(--border-glow); 
-    display:none; background:var(--void);
+    width:100%; max-width:640px; border:2px solid var(--border-glow); 
+    display:none; background:var(--void); height:auto; object-fit:contain; max-height:60vh;
 }
 .camera-preview.show { display:block; }
 .camera-controls { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
@@ -3006,8 +3011,43 @@ function updateAttendBadge() {
 .camera-btn.capture:hover { background:rgba(30,20,8,0.9); }
 .camera-status { 
     color:var(--text-secondary); font-family:'Cinzel',serif; font-size:0.75rem; 
-    text-align:center; max-width:500px;
+    text-align:center; max-width:640px;
 }
+.camera-zoom-wrap {
+    display:flex; align-items:center; gap:10px; max-width:640px; width:100%;
+    padding:6px 10px; background:rgba(10,14,30,0.7); border:1px solid var(--border);
+}
+.camera-zoom-label {
+    font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.12em;
+    color:var(--text-dim); text-transform:uppercase; white-space:nowrap;
+}
+.camera-zoom-value {
+    font-family:'Cinzel Decorative',serif; font-size:0.75rem; color:var(--gold);
+    min-width:36px; text-align:right; white-space:nowrap;
+}
+#camera-zoom-slider {
+    flex:1; -webkit-appearance:none; appearance:none; height:4px;
+    background:linear-gradient(90deg, var(--teal-glow) 0%, var(--gold-dim) 100%);
+    border-radius:2px; outline:none; cursor:pointer;
+}
+#camera-zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance:none; appearance:none; width:16px; height:16px;
+    border-radius:50%; background:var(--gold); border:2px solid var(--void);
+    box-shadow:0 0 6px rgba(200,168,75,0.5); cursor:pointer;
+}
+#camera-zoom-slider::-moz-range-thumb {
+    width:16px; height:16px; border-radius:50%;
+    background:var(--gold); border:2px solid var(--void); cursor:pointer;
+}
+.camera-zoom-btns { display:flex; gap:4px; }
+.camera-zoom-btn {
+    width:26px; height:26px; border:1px solid var(--border-glow);
+    background:rgba(15,20,40,0.9); color:var(--silver); cursor:pointer;
+    font-size:1rem; line-height:1; display:flex; align-items:center;
+    justify-content:center; transition:all 0.2s; font-family:monospace;
+    padding:0;
+}
+.camera-zoom-btn:hover { color:var(--gold); border-color:var(--gold-dim); background:rgba(40,30,10,0.8); }
 
 /* Canvas area */
 #wb-canvas-wrap{
@@ -3308,6 +3348,16 @@ function updateAttendBadge() {
   </div>
   <img id="camera-preview" class="camera-preview">
   <div class="camera-status" id="camera-status">准备就绪 / Ready</div>
+  <!-- Zoom Controls -->
+  <div class="camera-zoom-wrap" id="camera-zoom-wrap">
+    <span class="camera-zoom-label">🔍 Zoom</span>
+    <div class="camera-zoom-btns">
+      <button class="camera-zoom-btn" id="camera-zoom-out" title="Zoom Out">−</button>
+      <button class="camera-zoom-btn" id="camera-zoom-in" title="Zoom In">+</button>
+    </div>
+    <input type="range" id="camera-zoom-slider" min="1" max="5" step="0.1" value="1">
+    <span class="camera-zoom-value" id="camera-zoom-value">1.0×</span>
+  </div>
   <div class="camera-controls">
     <button class="camera-btn capture" id="camera-capture-btn">📸 拍照 / Snap</button>
     <button class="camera-btn" id="camera-use-btn" style="display:none;">✓ 使用 / Use</button>
@@ -4256,8 +4306,21 @@ const CameraSnap = (() => {
   'use strict';
   
   let video, canvas, preview, modal, captureBtn, useBtn, retakeBtn, statusDiv;
+  let zoomSlider, zoomValueLabel, zoomWrap, zoomInBtn, zoomOutBtn;
   let stream = null;
   let capturedImage = null;
+  let currentZoom = 1;
+  const ZOOM_MIN = 1, ZOOM_MAX = 5, ZOOM_STEP = 0.25;
+
+  /* ── Apply zoom visually to the video element ── */
+  function applyZoom(z) {
+    currentZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    // CSS zoom: scale the video larger than its container and clip via overflow:hidden
+    video.style.transform = `scale(${currentZoom})`;
+    video.style.transformOrigin = 'center center';
+    if (zoomSlider) zoomSlider.value = currentZoom;
+    if (zoomValueLabel) zoomValueLabel.textContent = currentZoom.toFixed(1) + '×';
+  }
   
   function init() {
     video = document.getElementById('camera-video');
@@ -4268,14 +4331,55 @@ const CameraSnap = (() => {
     useBtn = document.getElementById('camera-use-btn');
     retakeBtn = document.getElementById('camera-retake-btn');
     statusDiv = document.getElementById('camera-status');
-    
+    zoomSlider = document.getElementById('camera-zoom-slider');
+    zoomValueLabel = document.getElementById('camera-zoom-value');
+    zoomWrap = document.getElementById('camera-zoom-wrap');
+    zoomInBtn = document.getElementById('camera-zoom-in');
+    zoomOutBtn = document.getElementById('camera-zoom-out');
+
     captureBtn.addEventListener('click', snapPhoto);
     useBtn.addEventListener('click', usePhoto);
     retakeBtn.addEventListener('click', retake);
+
+    /* Slider input */
+    zoomSlider.addEventListener('input', () => applyZoom(parseFloat(zoomSlider.value)));
+
+    /* +/− buttons */
+    zoomInBtn.addEventListener('click', () => applyZoom(currentZoom + ZOOM_STEP));
+    zoomOutBtn.addEventListener('click', () => applyZoom(currentZoom - ZOOM_STEP));
+
+    /* Pinch-to-zoom on the camera container */
+    let lastPinchDist = null;
+    const container = modal.querySelector('.camera-container');
+    container.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) lastPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }, { passive: true });
+    container.addEventListener('touchmove', e => {
+      if (e.touches.length === 2 && lastPinchDist) {
+        const d = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const delta = (d - lastPinchDist) / 150;
+        applyZoom(currentZoom + delta);
+        lastPinchDist = d;
+      }
+    }, { passive: true });
+    container.addEventListener('touchend', () => { lastPinchDist = null; }, { passive: true });
+
+    /* Scroll-wheel zoom on desktop */
+    container.addEventListener('wheel', e => {
+      e.preventDefault();
+      applyZoom(currentZoom + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    }, { passive: false });
   }
   
   function open() {
     modal.classList.add('open');
+    applyZoom(1); // reset zoom on open
     startCamera();
   }
   
@@ -4302,7 +4406,7 @@ const CameraSnap = (() => {
       video.srcObject = stream;
       video.onloadedmetadata = () => {
         video.play();
-        statusDiv.textContent = '准备就绪 / Ready';
+        statusDiv.textContent = '准备就绪 / Ready — scroll or pinch to zoom';
       };
     })
     .catch(err => {
@@ -4324,37 +4428,54 @@ const CameraSnap = (() => {
       statusDiv.textContent = '✕ 摄像头未就绪 / Camera not ready';
       return;
     }
-    
+
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const z = currentZoom;
+
+    // Determine the cropped region based on zoom level (center crop)
+    const cropW = vw / z;
+    const cropH = vh / z;
+    const cropX = (vw - cropW) / 2;
+    const cropY = (vh - cropH) / 2;
+
+    canvas.width = vw;
+    canvas.height = vh;
+
     const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    ctx.drawImage(video, 0, 0);
+    // Draw only the zoomed-in region, stretched back to full resolution
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, vw, vh);
+
     capturedImage = canvas.toDataURL('image/jpeg', 0.95);
     
     // Show preview
     preview.src = capturedImage;
     preview.classList.add('show');
     video.style.display = 'none';
+
+    // Hide zoom controls while previewing
+    zoomWrap.style.display = 'none';
     
     // Update buttons
     captureBtn.style.display = 'none';
     useBtn.style.display = 'inline-block';
     retakeBtn.style.display = 'inline-block';
     
-    statusDiv.textContent = '✓ 已拍照 / Photo captured';
+    statusDiv.textContent = '✓ 已拍照 / Photo captured  (zoom ' + z.toFixed(1) + '×)';
   }
   
   function retake() {
     capturedImage = null;
     preview.classList.remove('show');
     video.style.display = 'block';
+
+    zoomWrap.style.display = '';
     
     captureBtn.style.display = 'inline-block';
     useBtn.style.display = 'none';
     retakeBtn.style.display = 'none';
     
-    statusDiv.textContent = '准备就绪 / Ready';
+    statusDiv.textContent = '准备就绪 / Ready — scroll or pinch to zoom';
   }
   
   function usePhoto() {
@@ -4365,14 +4486,20 @@ const CameraSnap = (() => {
     
     // Close camera modal
     close();
-    statusDiv.textContent = '✓ 照片已添加 / Photo added';
   }
   
   function resetUI() {
-    if (video) video.style.display = 'block';
+    if (video) {
+      video.style.display = 'block';
+      video.style.transform = '';
+    }
     if (preview) preview.classList.remove('show');
+    if (zoomWrap) zoomWrap.style.display = '';
     
     capturedImage = null;
+    currentZoom = 1;
+    if (zoomSlider) zoomSlider.value = 1;
+    if (zoomValueLabel) zoomValueLabel.textContent = '1.0×';
     captureBtn.style.display = 'inline-block';
     if (useBtn) useBtn.style.display = 'none';
     if (retakeBtn) retakeBtn.style.display = 'none';
