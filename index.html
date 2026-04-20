@@ -1981,23 +1981,22 @@ function importAllData(event) {
             const isV2 = payload._version === 2 && payload.classData;
             const isV1 = payload.wuxia_class_data;
             if(!isV2 && !isV1){showNotify('❖ 文件格式错误');return;}
-            const clsCount = isV2 ? Object.keys(payload.classData).length : 1;
-            showCustomModal({title:'导入编年史',msg:`确定导入？\n导出时间：${payload._exportedAt||'未知'}\n班级数：${clsCount}\n\n⚠ 这将覆盖当前所有数据！`,showCancel:true,onConfirm:()=>{
+            // For v2: find the data for the current class in the import file (matched by id),
+            // or fall back to the first class in the file.
+            const currentClassName = (classRooms.find(c=>c.id===currentClassId)||{}).name||currentClassId;
+            showCustomModal({title:'导入编年史',msg:`确定导入？\n导出时间：${payload._exportedAt||'未知'}\n\n⚠ 这将覆盖当前班级「${currentClassName}」的数据！\n其他班级数据不受影响。`,showCancel:true,onConfirm:()=>{
                 if(isV2) {
-                    localStorage.setItem('wuxia_classes', payload.wuxia_classes);
-                    localStorage.setItem('wuxia_active_class', payload.wuxia_active_class||'');
-                    if(payload.wuxia_rp_presets) localStorage.setItem('wuxia_rp_presets', payload.wuxia_rp_presets);
-                    Object.entries(payload.classData).forEach(([cid, d])=>{
+                    // Only import data for the current class — leave all other classes untouched.
+                    // Match by class id if present in the file; otherwise use the first class found.
+                    const srcEntry = payload.classData[currentClassId]
+                        || Object.values(payload.classData)[0];
+                    if(srcEntry) {
                         ['class_data','groups_data','subjects','current_subject','absent'].forEach(k=>{
-                            if(d[k]!=null) localStorage.setItem(classKey(k,cid), d[k]);
+                            if(srcEntry[k]!=null) localStorage.setItem(classKey(k,currentClassId), srcEntry[k]);
                         });
-                    });
-                    classRooms = JSON.parse(payload.wuxia_classes)||DEFAULT_CLASSES.map(c=>({...c}));
-                    currentClassId = payload.wuxia_active_class||classRooms[0].id;
-                    if(!classRooms.find(c=>c.id===currentClassId)) currentClassId=classRooms[0].id;
-                    // Persist the resolved class/active keys so page reload stays consistent
-                    localStorage.setItem('wuxia_classes', JSON.stringify(classRooms));
-                    localStorage.setItem('wuxia_active_class', currentClassId);
+                    }
+                    // Only import rp_presets if present (shared across all classes)
+                    if(payload.wuxia_rp_presets) localStorage.setItem('wuxia_rp_presets', payload.wuxia_rp_presets);
                 } else {
                     // v1 legacy — import into current class
                     localStorage.setItem(classKey('class_data',currentClassId), payload.wuxia_class_data);
