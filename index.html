@@ -1780,6 +1780,7 @@ window.onload=()=>{
     absentIds = new Set([...absentIds].filter(id => students.find(s => s.id === id)));
     saveAttendance();
     updateAttendBadge();
+    renderClassTabs();
     renderSubjectTabs();
     preloadAssets(); renderGrid(); updateTeacherUI();
     renderStatesInfo();
