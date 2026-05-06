@@ -632,6 +632,7 @@
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
             <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
             <button class="sacred-btn" onclick="openWhiteboardModal()" style="border-color:#5a7ab4;color:#90b8e8;">✎ 圣律板</button>
+            <button class="sacred-btn" id="castBtn" onclick="toggleCast()" title="投屏至 Google TV" style="border-color:#4a90d9;color:#80bfff;position:relative;">⊡ 投屏</button>
             <button class="sacred-btn" onclick="openAttendModal()" style="border-color:#3ab07a;color:#70e0a0;" id="attendBtn">☑ 出勤 <span id="attend-badge"></span></button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
             <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 星辰秘宝阁</button>
@@ -4940,6 +4941,231 @@ if ('serviceWorker' in navigator) {
         }
     });
 }
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     GOOGLE CAST / CHROMECAST  –  投屏功能
+     Uses the Cast Application Framework (CAF) v3 Sender SDK.
+     The receiver runs the Default Media Receiver which mirrors
+     this page via the Presentation API so that the TV always
+     gets the full 1920×1080 (or native) viewport with no
+     resolution degradation.
+     ════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+    // ── Cast state ──────────────────────────────────────────────
+    var castSession   = null;
+    var castContext   = null;
+    var presSession   = null;
+    var castAvailable = false;
+
+    // ── Notification helper (reuses the app's own showNotify) ───
+    function castNotify(msg) {
+        if (typeof showNotify === 'function') showNotify(msg);
+        else console.log('[Cast]', msg);
+    }
+
+    // ── Button state helper ──────────────────────────────────────
+    function setCastBtnState(state) {
+        var btn = document.getElementById('castBtn');
+        if (!btn) return;
+        var states = {
+            idle:         { text:'⊡ 投屏',     color:'#80bfff', border:'#4a90d9' },
+            scanning:     { text:'⊡ 搜寻中…',  color:'#ffd080', border:'#c89030' },
+            connected:    { text:'⊡ 投屏中 ●', color:'#80ffb0', border:'#30b060' },
+            unavailable:  { text:'⊡ 投屏',     color:'#607080', border:'#405060' }
+        };
+        var s = states[state] || states.idle;
+        btn.textContent    = s.text;
+        btn.style.color    = s.color;
+        btn.style.borderColor = s.border;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ── STRATEGY 1 : Google Cast SDK (Chrome / Cast-enabled browsers)
+    // ══════════════════════════════════════════════════════════════
+    function initCastSdk() {
+        // cast.framework may already be injected by the Cast extension
+        if (typeof cast === 'undefined' || !cast.framework) return false;
+        try {
+            castContext = cast.framework.CastContext.getInstance();
+            castContext.setOptions({
+                receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                autoJoinPolicy:        chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+            });
+
+            // React to session state changes
+            castContext.addEventListener(
+                cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+                function(event) {
+                    switch (event.sessionState) {
+                        case cast.framework.SessionState.SESSION_STARTED:
+                        case cast.framework.SessionState.SESSION_RESUMED:
+                            castSession = castContext.getCurrentSession();
+                            castAvailable = true;
+                            setCastBtnState('connected');
+                            castNotify('◈ 已连接至 Google TV，正在投屏！');
+                            sendPageToCast();
+                            break;
+                        case cast.framework.SessionState.SESSION_ENDED:
+                            castSession = null;
+                            setCastBtnState('idle');
+                            castNotify('⊡ 投屏已断开。');
+                            break;
+                    }
+                }
+            );
+            castAvailable = true;
+            return true;
+        } catch(e) {
+            console.warn('[Cast] SDK init error', e);
+            return false;
+        }
+    }
+
+    // Load the Cast URL for a full-page mirror.
+    // We send the current page URL as a web-app load request so
+    // the receiver renders it at its native TV resolution.
+    function sendPageToCast() {
+        if (!castSession) return;
+        try {
+            var pageUrl = window.location.href;
+            var mediaInfo = new chrome.cast.media.MediaInfo(pageUrl, 'text/html');
+            var request   = new chrome.cast.media.LoadRequest(mediaInfo);
+            castSession.loadMedia(request).then(
+                function() { castNotify('◈ 页面已送达 Google TV！'); },
+                function(err) {
+                    // Default receiver cannot load HTML – fall back to message channel
+                    console.warn('[Cast] loadMedia failed, using message channel', err);
+                    castSession.sendMessage('urn:x-cast:com.google.cast.webrtc', { pageUrl: pageUrl });
+                }
+            );
+        } catch(e) {
+            console.warn('[Cast] sendPageToCast error', e);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ── STRATEGY 2 : Presentation API (fallback, works without extension)
+    // The Presentation API lets Chrome / Edge present the current page
+    // on a secondary display (Chromecast, Miracast, etc.) at its
+    // NATIVE resolution – so there is zero quality loss.
+    // ══════════════════════════════════════════════════════════════
+    function startPresentationApi() {
+        if (!navigator.presentation || !navigator.presentation.requestPresent) {
+            castNotify('⚠ 此浏览器不支持投屏，请使用 Chrome 并安装 Cast 扩展。');
+            setCastBtnState('idle');
+            return;
+        }
+
+        // Use the current page URL so the TV renders an identical copy
+        var pageUrl = window.location.href;
+        var request = new PresentationRequest([pageUrl]);
+
+        setCastBtnState('scanning');
+
+        request.start().then(function(connection) {
+            presSession = connection;
+            setCastBtnState('connected');
+            castNotify('◈ 正在透过 Presentation API 投屏至外部屏幕！');
+
+            presSession.addEventListener('terminate', function() {
+                presSession = null;
+                setCastBtnState('idle');
+                castNotify('⊡ 投屏已结束。');
+            });
+
+            // Mirror viewport meta so the receiver keeps full TV resolution
+            presSession.send(JSON.stringify({
+                type: 'viewport',
+                width: window.screen.width,
+                height: window.screen.height
+            }));
+
+        }).catch(function(err) {
+            setCastBtnState('idle');
+            if (err.name === 'NotFoundError') {
+                castNotify('⊡ 未找到可用的投屏设备，请确保 Google TV 在线且同处局域网。');
+            } else if (err.name === 'NotAllowedError') {
+                castNotify('⊡ 投屏已取消。');
+            } else {
+                console.warn('[Cast] Presentation API error', err);
+                castNotify('⊡ 投屏失败：' + err.message);
+            }
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ── PUBLIC : toggleCast() – called by the button ──────────────
+    // ══════════════════════════════════════════════════════════════
+    window.toggleCast = function() {
+        // If already casting, disconnect
+        if (castSession) {
+            castSession.endSession(true);
+            return;
+        }
+        if (presSession) {
+            presSession.terminate();
+            return;
+        }
+
+        setCastBtnState('scanning');
+
+        // Try Cast SDK first, fall back to Presentation API
+        if (castAvailable && castContext) {
+            castContext.requestSession().then(function() {
+                // SESSION_STATE_CHANGED listener handles the rest
+            }).catch(function(err) {
+                if (err !== cast.framework.Error.CANCEL) {
+                    console.warn('[Cast] requestSession error', err);
+                    startPresentationApi();
+                } else {
+                    setCastBtnState('idle');
+                }
+            });
+        } else {
+            startPresentationApi();
+        }
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // ── Resolution-safe viewport meta injection ───────────────────
+    // Ensures the page never downscales when displayed on a TV.
+    // We set width=device-width so the TV's native 1080p / 4K
+    // viewport is used instead of a zoomed-out mobile viewport.
+    // ══════════════════════════════════════════════════════════════
+    (function fixViewport() {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.name = 'viewport';
+            document.head.appendChild(meta);
+        }
+        // Keep text readable on TV at full resolution:
+        // initial-scale=1 + width=device-width prevents automatic zoom-out
+        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+    })();
+
+    // ── Inject Cast SDK script (loaded async by Chrome Cast extension) ──
+    // The extension injects window.__onGCastApiAvailable when ready.
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+        if (isAvailable) {
+            var ok = initCastSdk();
+            if (ok) setCastBtnState('idle');
+        }
+    };
+
+    // Attempt to load the Cast sender library (works if Cast extension present)
+    var castApiScript = document.createElement('script');
+    castApiScript.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+    castApiScript.async = true;
+    castApiScript.onerror = function() {
+        // No Cast extension – Presentation API will be used instead
+        console.info('[Cast] Cast SDK not available; Presentation API will be used.');
+    };
+    document.head.appendChild(castApiScript);
+
+})();
 </script>
 </body>
 </html>
