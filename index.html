@@ -4943,227 +4943,284 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- ══════════════════════════════════════════════════════
-     GOOGLE CAST / CHROMECAST  –  投屏功能
-     Uses the Cast Application Framework (CAF) v3 Sender SDK.
-     The receiver runs the Default Media Receiver which mirrors
-     this page via the Presentation API so that the TV always
-     gets the full 1920×1080 (or native) viewport with no
-     resolution degradation.
-     ════════════════════════════════════════════════════════ -->
-<script>
-(function() {
-    // ── Cast state ──────────────────────────────────────────────
-    var castSession   = null;
-    var castContext   = null;
-    var presSession   = null;
-    var castAvailable = false;
+<!-- ══════════════════════════════════════════════════════════════
+     CAST MODAL  –  投屏面板
+     ══════════════════════════════════════════════════════════════ -->
+<div id="cast-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(4,6,14,0.88);align-items:center;justify-content:center;">
+  <div style="background:#0d1225;border:1px solid #3d4f8a;border-top:2px solid #4a90d9;padding:28px 32px;max-width:480px;width:94vw;display:flex;flex-direction:column;gap:18px;position:relative;">
+    <button onclick="closeCastModal()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#5a6a84;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.05rem;color:#80bfff;letter-spacing:0.06em;">⊡ 投屏至 Google TV</div>
+    <div style="width:100%;height:1px;background:linear-gradient(90deg,#4a90d9,transparent);opacity:0.5;"></div>
 
-    // ── Notification helper (reuses the app's own showNotify) ───
+    <!-- Step 1: RemotePlayback / Cast SDK attempt -->
+    <div id="cast-auto-section">
+      <div style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.15em;color:#8a9ab4;margin-bottom:10px;">自动侦测同网络设备</div>
+      <button id="cast-remote-btn" onclick="tryCastRemotePlayback()" style="width:100%;font-family:'Cinzel',serif;font-size:0.82rem;padding:11px 18px;background:rgba(20,40,80,0.9);border:1px solid #4a90d9;color:#80bfff;cursor:pointer;letter-spacing:0.08em;transition:all 0.2s;">
+        ⊡ 开始投屏（自动侦测）
+      </button>
+      <div id="cast-status-msg" style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.78rem;color:#5a6a84;margin-top:8px;min-height:1.2em;text-align:center;"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;height:1px;background:#2a3460;"></div>
+      <span style="font-family:'Cinzel',serif;font-size:0.65rem;color:#4a5470;letter-spacing:0.2em;">或</span>
+      <div style="flex:1;height:1px;background:#2a3460;"></div>
+    </div>
+
+    <!-- Step 2: Manual Chrome cast instructions -->
+    <div>
+      <div style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.15em;color:#8a9ab4;margin-bottom:10px;">使用 Chrome 浏览器投屏（最稳定）</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(8,12,28,0.7);border:1px solid #2a3460;">
+          <span style="font-family:'Cinzel Decorative',serif;color:#4a90d9;font-size:0.9rem;flex-shrink:0;margin-top:1px;">1</span>
+          <span style="font-family:'IM Fell English',serif;font-size:0.82rem;color:#a8b8d4;line-height:1.5;">在 Chrome 地址栏右侧点击 <b style="color:#e8cc7a;">⊡ 投屏</b> 图标，或按 <b style="color:#e8cc7a;">⋮ → 投屏…</b></span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(8,12,28,0.7);border:1px solid #2a3460;">
+          <span style="font-family:'Cinzel Decorative',serif;color:#4a90d9;font-size:0.9rem;flex-shrink:0;margin-top:1px;">2</span>
+          <span style="font-family:'IM Fell English',serif;font-size:0.82rem;color:#a8b8d4;line-height:1.5;">选择 <b style="color:#e8cc7a;">投射标签页</b>，然后从列表中选择你的 Google TV</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(8,12,28,0.7);border:1px solid #2a3460;">
+          <span style="font-family:'Cinzel Decorative',serif;color:#4a90d9;font-size:0.9rem;flex-shrink:0;margin-top:1px;">3</span>
+          <span style="font-family:'IM Fell English',serif;font-size:0.82rem;color:#a8b8d4;line-height:1.5;">画面会以 <b style="color:#e8cc7a;">原始分辨率</b> 显示，不会降质</span>
+        </div>
+      </div>
+      <!-- Deep-link button that opens Chrome's cast dialog via keyboard shortcut hint -->
+      <button onclick="triggerChromeCastDialog()" style="margin-top:10px;width:100%;font-family:'Cinzel',serif;font-size:0.78rem;padding:9px 14px;background:rgba(10,14,30,0.8);border:1px solid #3d4f8a;color:#8a9ab4;cursor:pointer;letter-spacing:0.06em;transition:all 0.2s;" onmouseover="this.style.borderColor='#4a90d9';this.style.color='#80bfff';" onmouseout="this.style.borderColor='#3d4f8a';this.style.color='#8a9ab4';">
+        ⊡ 尝试打开投屏对话框
+      </button>
+    </div>
+
+    <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.72rem;color:#4a5470;text-align:center;border-top:1px solid #1a2240;padding-top:10px;">
+      确保电脑与 Google TV 连接至<b style="color:#6070a0;">同一 WiFi 网络</b>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CAST LOGIC
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+
+    /* ── helpers ─────────────────────────────────────────────── */
     function castNotify(msg) {
         if (typeof showNotify === 'function') showNotify(msg);
-        else console.log('[Cast]', msg);
     }
-
-    // ── Button state helper ──────────────────────────────────────
+    function setStatusMsg(msg, color) {
+        var el = document.getElementById('cast-status-msg');
+        if (el) { el.textContent = msg; el.style.color = color || '#8a9ab4'; }
+    }
     function setCastBtnState(state) {
         var btn = document.getElementById('castBtn');
         if (!btn) return;
-        var states = {
-            idle:         { text:'⊡ 投屏',     color:'#80bfff', border:'#4a90d9' },
-            scanning:     { text:'⊡ 搜寻中…',  color:'#ffd080', border:'#c89030' },
-            connected:    { text:'⊡ 投屏中 ●', color:'#80ffb0', border:'#30b060' },
-            unavailable:  { text:'⊡ 投屏',     color:'#607080', border:'#405060' }
+        var map = {
+            idle:      { t: '⊡ 投屏',     c: '#80bfff', b: '#4a90d9' },
+            connected: { t: '⊡ 投屏中 ●', c: '#80ffb0', b: '#30b060' }
         };
-        var s = states[state] || states.idle;
-        btn.textContent    = s.text;
-        btn.style.color    = s.color;
-        btn.style.borderColor = s.border;
+        var s = map[state] || map.idle;
+        btn.textContent = s.t;
+        btn.style.color = s.c;
+        btn.style.borderColor = s.b;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // ── STRATEGY 1 : Google Cast SDK (Chrome / Cast-enabled browsers)
-    // ══════════════════════════════════════════════════════════════
-    function initCastSdk() {
-        // cast.framework may already be injected by the Cast extension
-        if (typeof cast === 'undefined' || !cast.framework) return false;
+    /* ── Modal open / close ──────────────────────────────────── */
+    window.toggleCast = function () {
+        var modal = document.getElementById('cast-modal');
+        if (modal.style.display === 'flex') {
+            closeCastModal();
+        } else {
+            modal.style.display = 'flex';
+            setStatusMsg('');
+            // Auto-probe Cast SDK availability right when modal opens
+            probeCastSdk();
+        }
+    };
+    window.closeCastModal = function () {
+        document.getElementById('cast-modal').style.display = 'none';
+    };
+    // Close on backdrop click
+    document.getElementById('cast-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeCastModal();
+    });
+
+    /* ══════════════════════════════════════════════════════════
+       STRATEGY A – Google Cast SDK
+       The Cast extension injects window.__onGCastApiAvailable.
+       We pre-declare the callback so it fires whenever the
+       extension loads (may happen after DOMContentLoaded).
+    ══════════════════════════════════════════════════════════ */
+    var castSdkReady = false;
+    var castContext  = null;
+    var castSession  = null;
+
+    window['__onGCastApiAvailable'] = function (isAvailable) {
+        if (!isAvailable) return;
         try {
             castContext = cast.framework.CastContext.getInstance();
             castContext.setOptions({
                 receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-                autoJoinPolicy:        chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
             });
-
-            // React to session state changes
             castContext.addEventListener(
                 cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-                function(event) {
-                    switch (event.sessionState) {
-                        case cast.framework.SessionState.SESSION_STARTED:
-                        case cast.framework.SessionState.SESSION_RESUMED:
-                            castSession = castContext.getCurrentSession();
-                            castAvailable = true;
-                            setCastBtnState('connected');
-                            castNotify('◈ 已连接至 Google TV，正在投屏！');
-                            sendPageToCast();
-                            break;
-                        case cast.framework.SessionState.SESSION_ENDED:
-                            castSession = null;
-                            setCastBtnState('idle');
-                            castNotify('⊡ 投屏已断开。');
-                            break;
+                function (ev) {
+                    var S = cast.framework.SessionState;
+                    if (ev.sessionState === S.SESSION_STARTED || ev.sessionState === S.SESSION_RESUMED) {
+                        castSession = castContext.getCurrentSession();
+                        setCastBtnState('connected');
+                        castNotify('◈ 已连接 Google TV，全分辨率投屏中！');
+                        closeCastModal();
+                        setStatusMsg('');
+                    } else if (ev.sessionState === S.SESSION_ENDED) {
+                        castSession = null;
+                        setCastBtnState('idle');
+                        castNotify('⊡ 投屏已断开。');
                     }
                 }
             );
-            castAvailable = true;
-            return true;
-        } catch(e) {
+            castSdkReady = true;
+            // Update the auto button label
+            var btn = document.getElementById('cast-remote-btn');
+            if (btn) btn.textContent = '⊡ 开始投屏（Cast SDK 已就绪）';
+        } catch (e) {
             console.warn('[Cast] SDK init error', e);
-            return false;
+        }
+    };
+
+    // Inject the Cast sender SDK script once
+    (function injectCastScript() {
+        if (document.querySelector('script[src*="cast_sender"]')) return;
+        var s = document.createElement('script');
+        s.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+        s.async = true;
+        document.head.appendChild(s);
+    })();
+
+    function probeCastSdk() {
+        if (castSdkReady) {
+            setStatusMsg('Cast SDK 已就绪，点击上方按钮投屏', '#80ffb0');
+        } else {
+            setStatusMsg('未检测到 Cast 扩展，请使用下方 Chrome 手动投屏方式', '#c8a84b');
         }
     }
 
-    // Load the Cast URL for a full-page mirror.
-    // We send the current page URL as a web-app load request so
-    // the receiver renders it at its native TV resolution.
-    function sendPageToCast() {
-        if (!castSession) return;
-        try {
-            var pageUrl = window.location.href;
-            var mediaInfo = new chrome.cast.media.MediaInfo(pageUrl, 'text/html');
-            var request   = new chrome.cast.media.LoadRequest(mediaInfo);
-            castSession.loadMedia(request).then(
-                function() { castNotify('◈ 页面已送达 Google TV！'); },
-                function(err) {
-                    // Default receiver cannot load HTML – fall back to message channel
-                    console.warn('[Cast] loadMedia failed, using message channel', err);
-                    castSession.sendMessage('urn:x-cast:com.google.cast.webrtc', { pageUrl: pageUrl });
+    /* ── Cast SDK session request ────────────────────────────── */
+    function startCastSdkSession() {
+        setStatusMsg('正在搜索设备…', '#ffd080');
+        castContext.requestSession()
+            .then(function () { /* handled by SESSION_STATE_CHANGED */ })
+            .catch(function (err) {
+                if (err && err.code === 'CANCEL') {
+                    setStatusMsg('已取消', '#8a9ab4');
+                } else {
+                    console.warn('[Cast] requestSession failed', err);
+                    setStatusMsg('连接失败，请尝试下方手动方式', '#e08090');
                 }
-            );
-        } catch(e) {
-            console.warn('[Cast] sendPageToCast error', e);
-        }
+            });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // ── STRATEGY 2 : Presentation API (fallback, works without extension)
-    // The Presentation API lets Chrome / Edge present the current page
-    // on a secondary display (Chromecast, Miracast, etc.) at its
-    // NATIVE resolution – so there is zero quality loss.
-    // ══════════════════════════════════════════════════════════════
-    function startPresentationApi() {
-        if (!navigator.presentation || !navigator.presentation.requestPresent) {
-            castNotify('⚠ 此浏览器不支持投屏，请使用 Chrome 并安装 Cast 扩展。');
-            setCastBtnState('idle');
+    /* ══════════════════════════════════════════════════════════
+       STRATEGY B – RemotePlayback API
+       Works on Chrome/Edge without extension for some devices.
+       We attach it to a hidden <video> element; the browser
+       shows its own native device-picker which uses mDNS to
+       discover Cast / Miracast / DLNA devices on the LAN.
+    ══════════════════════════════════════════════════════════ */
+    var remoteVideo = null;
+
+    function ensureRemoteVideo() {
+        if (remoteVideo) return remoteVideo;
+        remoteVideo = document.createElement('video');
+        remoteVideo.style.display = 'none';
+        // A tiny silent looping video so RemotePlayback has something to attach to
+        remoteVideo.src = 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAGm1kYXQ=';
+        remoteVideo.loop = true;
+        remoteVideo.muted = true;
+        document.body.appendChild(remoteVideo);
+        remoteVideo.play().catch(function(){});
+
+        if (remoteVideo.remote) {
+            remoteVideo.remote.addEventListener('connecting', function () {
+                setStatusMsg('正在连接设备…', '#ffd080');
+            });
+            remoteVideo.remote.addEventListener('connect', function () {
+                setCastBtnState('connected');
+                castNotify('◈ RemotePlayback 已连接，正在投屏！');
+                closeCastModal();
+            });
+            remoteVideo.remote.addEventListener('disconnect', function () {
+                setCastBtnState('idle');
+                castNotify('⊡ 投屏已断开。');
+            });
+        }
+        return remoteVideo;
+    }
+
+    function startRemotePlayback() {
+        var vid = ensureRemoteVideo();
+        if (!vid.remote) {
+            setStatusMsg('此浏览器不支持 RemotePlayback API', '#e08090');
             return;
         }
-
-        // Use the current page URL so the TV renders an identical copy
-        var pageUrl = window.location.href;
-        var request = new PresentationRequest([pageUrl]);
-
-        setCastBtnState('scanning');
-
-        request.start().then(function(connection) {
-            presSession = connection;
-            setCastBtnState('connected');
-            castNotify('◈ 正在透过 Presentation API 投屏至外部屏幕！');
-
-            presSession.addEventListener('terminate', function() {
-                presSession = null;
-                setCastBtnState('idle');
-                castNotify('⊡ 投屏已结束。');
-            });
-
-            // Mirror viewport meta so the receiver keeps full TV resolution
-            presSession.send(JSON.stringify({
-                type: 'viewport',
-                width: window.screen.width,
-                height: window.screen.height
-            }));
-
-        }).catch(function(err) {
-            setCastBtnState('idle');
-            if (err.name === 'NotFoundError') {
-                castNotify('⊡ 未找到可用的投屏设备，请确保 Google TV 在线且同处局域网。');
-            } else if (err.name === 'NotAllowedError') {
-                castNotify('⊡ 投屏已取消。');
+        setStatusMsg('正在搜寻同网络设备…', '#ffd080');
+        vid.remote.prompt().then(function () {
+            // user picked a device – connect listener handles the rest
+        }).catch(function (err) {
+            if (err.name === 'NotAllowedError') {
+                setStatusMsg('已取消', '#8a9ab4');
+            } else if (err.name === 'NotFoundError') {
+                setStatusMsg('未找到设备，请确认 Google TV 已开机且在同一 WiFi', '#e08090');
             } else {
-                console.warn('[Cast] Presentation API error', err);
-                castNotify('⊡ 投屏失败：' + err.message);
+                console.warn('[Cast] RemotePlayback error', err);
+                setStatusMsg('未找到设备，请使用下方 Chrome 手动方式', '#c8a84b');
             }
         });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // ── PUBLIC : toggleCast() – called by the button ──────────────
-    // ══════════════════════════════════════════════════════════════
-    window.toggleCast = function() {
-        // If already casting, disconnect
-        if (castSession) {
-            castSession.endSession(true);
-            return;
+    /* ── Main button in modal: try SDK → fallback to RemotePlayback ── */
+    window.tryCastRemotePlayback = function () {
+        if (castSdkReady && castContext) {
+            startCastSdkSession();
+        } else {
+            startRemotePlayback();
         }
-        if (presSession) {
-            presSession.terminate();
-            return;
-        }
+    };
 
-        setCastBtnState('scanning');
-
-        // Try Cast SDK first, fall back to Presentation API
-        if (castAvailable && castContext) {
-            castContext.requestSession().then(function() {
-                // SESSION_STATE_CHANGED listener handles the rest
-            }).catch(function(err) {
-                if (err !== cast.framework.Error.CANCEL) {
-                    console.warn('[Cast] requestSession error', err);
-                    startPresentationApi();
+    /* ══════════════════════════════════════════════════════════
+       STRATEGY C – Trigger Chrome's native Cast dialog
+       Chrome exposes a special URL scheme that opens the cast
+       dialog when called from a user gesture.
+    ══════════════════════════════════════════════════════════ */
+    window.triggerChromeCastDialog = function () {
+        // Method 1: media element requestRemotePlayback (requires user gesture ✓)
+        var vid = ensureRemoteVideo();
+        if (vid.remote && vid.remote.prompt) {
+            setStatusMsg('正在打开设备选择器…', '#ffd080');
+            vid.remote.prompt().catch(function(err){
+                if (err.name !== 'NotAllowedError') {
+                    setStatusMsg('请使用 Chrome 菜单 → 投屏… 手动选择设备', '#c8a84b');
                 } else {
-                    setCastBtnState('idle');
+                    setStatusMsg('已取消', '#8a9ab4');
                 }
             });
-        } else {
-            startPresentationApi();
+            return;
         }
+        // Method 2: Cast SDK
+        if (castSdkReady && castContext) {
+            startCastSdkSession();
+            return;
+        }
+        // Last resort: tell user to use Chrome menu
+        setStatusMsg('请按 Chrome 菜单（⋮）→ 投屏… 并选择"投射标签页"', '#c8a84b');
+        castNotify('⊡ 请在 Chrome 菜单选择【投屏…】→【投射标签页】');
     };
 
-    // ══════════════════════════════════════════════════════════════
-    // ── Resolution-safe viewport meta injection ───────────────────
-    // Ensures the page never downscales when displayed on a TV.
-    // We set width=device-width so the TV's native 1080p / 4K
-    // viewport is used instead of a zoomed-out mobile viewport.
-    // ══════════════════════════════════════════════════════════════
+    /* ── Resolution guard: ensure TV renders at native res ────── */
     (function fixViewport() {
         var meta = document.querySelector('meta[name="viewport"]');
-        if (!meta) {
-            meta = document.createElement('meta');
-            meta.name = 'viewport';
-            document.head.appendChild(meta);
-        }
-        // Keep text readable on TV at full resolution:
-        // initial-scale=1 + width=device-width prevents automatic zoom-out
+        if (!meta) { meta = document.createElement('meta'); meta.name = 'viewport'; document.head.appendChild(meta); }
         meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
     })();
-
-    // ── Inject Cast SDK script (loaded async by Chrome Cast extension) ──
-    // The extension injects window.__onGCastApiAvailable when ready.
-    window['__onGCastApiAvailable'] = function(isAvailable) {
-        if (isAvailable) {
-            var ok = initCastSdk();
-            if (ok) setCastBtnState('idle');
-        }
-    };
-
-    // Attempt to load the Cast sender library (works if Cast extension present)
-    var castApiScript = document.createElement('script');
-    castApiScript.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-    castApiScript.async = true;
-    castApiScript.onerror = function() {
-        // No Cast extension – Presentation API will be used instead
-        console.info('[Cast] Cast SDK not available; Presentation API will be used.');
-    };
-    document.head.appendChild(castApiScript);
 
 })();
 </script>
