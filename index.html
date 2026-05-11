@@ -632,10 +632,6 @@
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
             <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
             <button class="sacred-btn" onclick="openWhiteboardModal()" style="border-color:#5a7ab4;color:#90b8e8;">✎ 圣律板</button>
-            <button class="sacred-btn" id="castBtn" onclick="toggleCast()" title="投屏至 Google TV" style="border-color:#4a90d9;color:#80bfff;position:relative;display:inline-flex;align-items:center;gap:6px;">
-                <google-cast-launcher id="castLauncher" style="--connected-color:#80ffb0;--disconnected-color:#80bfff;width:20px;height:20px;display:none;"></google-cast-launcher>
-                <span id="castBtnLabel">⊡ 投屏</span>
-            </button>
             <button class="sacred-btn" onclick="openAttendModal()" style="border-color:#3ab07a;color:#70e0a0;" id="attendBtn">☑ 出勤 <span id="attend-badge"></span></button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
             <button class="sacred-btn gold-tier" onclick="openShopDirect()">⬡ 星辰秘宝阁</button>
@@ -4946,187 +4942,634 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- ══════════════════════════════════════════════════════════════
-     GOOGLE CAST SDK v3  –  像 YouTube 一样直接投屏
-     Works on Android Chrome over HTTPS with real mDNS discovery.
-     ══════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════
+     SYNC PANEL UI
+══════════════════════════════════════════════════════ -->
+<style>
+#sync-panel {
+    position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+    font-family: 'Cinzel', serif;
+}
+#sync-toggle-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #1a2a4a; border: 3px solid #2898b4;
+    color: #2898b4; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+    box-shadow: 0 0 20px rgba(40,152,180,0.6), 0 4px 12px rgba(0,0,0,0.5);
+    display: flex !important; align-items: center; justify-content: center;
+    transition: all 0.2s; position: relative; z-index: 99999;
+    pointer-events: all !important;
+    font-family: Arial, sans-serif;
+}
+#sync-toggle-btn:hover { border-color: var(--teal-glow); box-shadow: 0 0 24px rgba(40,152,180,0.6); }
+#sync-toggle-btn.connected { border-color: #40d070; color: #60f090; box-shadow: 0 0 16px rgba(60,200,100,0.4); }
+#sync-toggle-btn.mirror-mode { border-color: var(--gold); color: var(--gold-bright); box-shadow: 0 0 16px rgba(200,168,75,0.4); }
 
-<!-- Cast status toast (shown when connected / disconnected) -->
-<div id="cast-toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:99999;background:#0d1225;border:1px solid #4a90d9;border-left:3px solid #4a90d9;padding:12px 22px;font-family:'Cinzel',serif;font-size:0.82rem;color:#80bfff;letter-spacing:0.08em;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7);white-space:nowrap;"></div>
+#sync-card {
+    position: absolute; bottom: 58px; right: 0;
+    width: 300px; background: rgba(6,8,20,0.97);
+    border: 1px solid var(--border-glow); border-top: 2px solid var(--teal);
+    padding: 16px; display: none; flex-direction: column; gap: 12px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.7);
+}
+#sync-card.open { display: flex; }
+.sync-title { font-size: 0.72rem; letter-spacing: 0.25em; color: var(--teal-glow); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.sync-mode-row { display: flex; gap: 6px; }
+.sync-mode-btn { flex: 1; padding: 7px; font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.08em; border: 1px solid var(--border-glow); background: rgba(10,14,30,0.8); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.sync-mode-btn.active { background: rgba(8,20,28,0.95); color: var(--teal-glow); border-color: var(--teal); }
+.sync-status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #888; margin-right: 6px; }
+.sync-status-dot.green { background: #40d070; box-shadow: 0 0 6px #40d070; }
+.sync-status-dot.gold  { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.sync-status-dot.red   { background: #e04060; box-shadow: 0 0 6px #e04060; }
+#sync-status-text { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; }
+.sync-room-display { background: rgba(8,12,28,0.8); border: 1px solid var(--border-glow); padding: 10px 12px; text-align: center; }
+.sync-room-label { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text-dim); }
+.sync-room-code { font-family: 'Cinzel Decorative', serif; font-size: 1.4rem; color: var(--gold-bright); letter-spacing: 0.12em; text-shadow: 0 0 12px rgba(200,168,75,0.5); }
+#sync-qr { display: flex; justify-content: center; }
+#sync-qr canvas { border: 3px solid var(--border-glow); }
+.sync-input-row { display: flex; gap: 6px; }
+.sync-input-row input { flex: 1; padding: 7px 10px; font-family: 'Cinzel', serif; font-size: 0.85rem; background: rgba(8,10,22,0.85); border: 1px solid var(--border); color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.1em; }
+.sync-btn { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.06em; padding: 7px 14px; border: 1px solid var(--teal); background: rgba(8,20,28,0.85); color: var(--teal-glow); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.sync-btn:hover { border-color: var(--teal-glow); box-shadow: 0 0 10px rgba(40,152,180,0.3); }
+.sync-btn.gold { border-color: var(--gold-dim); color: var(--gold); background: rgba(20,16,8,0.85); }
+.sync-btn.gold:hover { border-color: var(--gold-bright); box-shadow: 0 0 10px rgba(200,168,75,0.3); }
+.sync-btn.danger { border-color: var(--crimson); color: #e08090; background: rgba(20,8,12,0.85); }
+#sync-file-section { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+#sync-file-label { font-size: 0.62rem; letter-spacing: 0.18em; color: var(--text-dim); }
+#sync-file-list { display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; }
+.sync-file-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: rgba(8,12,28,0.7); border: 1px solid var(--border); font-size: 0.72rem; color: var(--text-secondary); }
+.sync-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync-file-dl { color: var(--teal-glow); cursor: pointer; font-size: 1rem; }
+#sync-mirror-overlay {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(8,20,28,0.92); border: 1px solid var(--teal);
+    color: var(--teal-glow); font-family: 'Cinzel', serif;
+    font-size: 0.68rem; letter-spacing: 0.2em; padding: 6px 18px;
+    z-index: 9998; display: none; align-items: center; gap: 8px;
+    box-shadow: 0 0 20px rgba(40,152,180,0.25);
+}
+#sync-mirror-overlay.show { display: flex; }
+</style>
+
+<!-- Sync Panel HTML -->
+<div id="sync-panel" style="position:fixed;bottom:20px;right:20px;z-index:99999;font-family:'Cinzel',serif;">
+    <div id="sync-card">
+        <div class="sync-title">◈ 圣律传音 · Sync</div>
+
+        <!-- Mode tabs -->
+        <div class="sync-mode-row">
+            <button class="sync-mode-btn active" id="syncModeHostBtn" onclick="syncSetMode('host')">⬡ 导师主控</button>
+            <button class="sync-mode-btn" id="syncModeMirrorBtn" onclick="syncSetMode('mirror')">◌ 镜像屏幕</button>
+        </div>
+
+        <!-- Status -->
+        <div id="sync-status-text"><span class="sync-status-dot" id="sync-dot"></span><span id="sync-status-msg">未连接</span></div>
+
+        <!-- HOST section -->
+        <div id="sync-host-section">
+            <div class="sync-room-display">
+                <div class="sync-room-label">◈ 房间码 ROOM CODE</div>
+                <div class="sync-room-code" id="sync-room-code">——</div>
+            </div>
+            <div id="sync-qr"></div>
+            <div style="display:flex;gap:6px;">
+                <button class="sync-btn" id="syncStartBtn" onclick="syncStartHost()">▶ 开启传音</button>
+                <button class="sync-btn danger" id="syncStopBtn" onclick="syncStop()" style="display:none;">✕ 断开</button>
+            </div>
+            <div id="sync-peers-info" style="font-size:0.65rem;color:var(--text-dim);"></div>
+
+            <!-- File send -->
+            <div id="sync-file-section">
+                <div id="sync-file-label">⬡ 传送文件 FILE TRANSFER</div>
+                <div style="display:flex;gap:6px;">
+                    <button class="sync-btn gold" onclick="document.getElementById('sync-file-input').click()">选择文件</button>
+                    <input type="file" id="sync-file-input" style="display:none;" onchange="syncSendFile(this)">
+                </div>
+                <div id="sync-file-list"></div>
+            </div>
+        </div>
+
+        <!-- MIRROR section -->
+        <div id="sync-mirror-section" style="display:none;">
+            <div class="sync-input-row">
+                <input type="text" id="sync-join-code" placeholder="输入房间码" maxlength="6">
+                <button class="sync-btn" onclick="syncJoinMirror()">连接</button>
+            </div>
+            <div id="sync-received-files" style="display:none;">
+                <div id="sync-file-label" style="margin-top:8px;">⬡ 已接收文件</div>
+                <div id="sync-mirror-file-list" class="sync-file-list"></div>
+            </div>
+            <button class="sync-btn danger" id="syncMirrorStopBtn" onclick="syncStop()" style="display:none;margin-top:4px;">✕ 断开连接</button>
+        </div>
+    </div>
+
+    <button id="sync-toggle-btn" onclick="toggleSyncPanel()" title="传音控制台 · Sync">SYNC</button>
+</div>
+
+<!-- Mirror mode top banner -->
+<div id="sync-mirror-overlay">
+    <span>⟁</span><span>双向传音 · TWO-WAY SYNC</span><span id="sync-mirror-host-id"></span>
+</div>
+
+<!-- QRCode lib -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- PeerJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 
 <script>
-// ── Load the Cast SDK (same script YouTube uses) ─────────────────
-// window.__onGCastApiAvailable is called by the SDK once it's ready.
-window['__onGCastApiAvailable'] = function(isAvailable) {
-    if (isAvailable) initCastSdk();
-};
+// ══════════════════════════════════════════════════════
+// SYNC SYSTEM — PeerJS WebRTC (TWO-WAY)
+// HOST  : broadcasts state to mirrors; receives changes back
+// MIRROR: receives state from host; sends changes back to host
+// ══════════════════════════════════════════════════════
 
-(function injectCastSdk() {
-    var s = document.createElement('script');
-    s.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-    document.head.appendChild(s);
-})();
+let syncPeer = null;
+let syncMode = 'host';          // 'host' | 'mirror'
+let syncConnections = [];       // host: list of DataConnection to mirrors
+let syncHostConn = null;        // mirror: DataConnection to host
+let syncRoomCode = null;
+let syncQrInstance = null;
+let syncIsMirror = false;
+let syncApplying = false;       // guard: don't re-broadcast while applying
+let syncPendingFiles = [];      // files waiting to send once peer connects
+let syncLastAppliedTs = 0;      // timestamp of last applied state (conflict prevention)
+let syncBroadcastTimer = null;  // debounce timer
 
-// ── State ────────────────────────────────────────────────────────
-var _castContext = null;
-var _castSession = null;
-
-// ── Toast helper ─────────────────────────────────────────────────
-function showCastToast(msg, color) {
-    var t = document.getElementById('cast-toast');
-    t.textContent = msg;
-    t.style.borderLeftColor = color || '#4a90d9';
-    t.style.color = color || '#80bfff';
-    t.style.display = 'block';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function(){ t.style.display = 'none'; }, 3500);
+// ── UI ────────────────────────────────────────────────
+function toggleSyncPanel() {
+    const card = document.getElementById('sync-card');
+    card.classList.toggle('open');
 }
 
-// ── Update button appearance ──────────────────────────────────────
-function updateCastBtn(state) {
-    var btn      = document.getElementById('castBtn');
-    var label    = document.getElementById('castBtnLabel');
-    var launcher = document.getElementById('castLauncher');
-    if (!btn) return;
-    if (state === 'connected') {
-        btn.style.borderColor = '#30b060';
-        btn.style.color       = '#80ffb0';
-        btn.style.boxShadow   = '0 0 12px rgba(48,176,96,0.35)';
-        if (label)    label.textContent  = '⊡ 投屏中 ●';
-        if (launcher) launcher.style.display = 'inline-block';
-    } else if (state === 'unavailable') {
-        btn.style.borderColor = '#405060';
-        btn.style.color       = '#607080';
-        if (label)    label.textContent  = '⊡ 投屏';
-        if (launcher) launcher.style.display = 'none';
-    } else { // idle
-        btn.style.borderColor = '#4a90d9';
-        btn.style.color       = '#80bfff';
-        btn.style.boxShadow   = '';
-        if (label)    label.textContent  = '⊡ 投屏';
-        if (launcher) launcher.style.display = 'inline-block';
-    }
+function syncSetMode(mode) {
+    syncMode = mode;
+    document.getElementById('syncModeHostBtn').classList.toggle('active', mode === 'host');
+    document.getElementById('syncModeMirrorBtn').classList.toggle('active', mode === 'mirror');
+    document.getElementById('sync-host-section').style.display = mode === 'host' ? 'flex' : 'none';
+    document.getElementById('sync-host-section').style.flexDirection = 'column';
+    document.getElementById('sync-host-section').style.gap = '10px';
+    document.getElementById('sync-mirror-section').style.display = mode === 'mirror' ? 'flex' : 'none';
+    document.getElementById('sync-mirror-section').style.flexDirection = 'column';
+    document.getElementById('sync-mirror-section').style.gap = '10px';
+    if (syncPeer) syncStop();
 }
 
-// ── Core init (called when SDK ready) ────────────────────────────
-function initCastSdk() {
-    try {
-        cast.framework.CastContext.getInstance().setOptions({
-            // CC1AD845 = Default Media Receiver (no registration needed)
-            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-            autoJoinPolicy:        chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-            language:              'zh-CN'
+function syncSetStatus(msg, color) {
+    const dot = document.getElementById('sync-dot');
+    const txt = document.getElementById('sync-status-msg');
+    txt.textContent = msg;
+    dot.className = 'sync-status-dot ' + (color || '');
+    const btn = document.getElementById('sync-toggle-btn');
+    btn.className = color === 'green' ? 'connected' : color === 'gold' ? 'mirror-mode' : '';
+}
+
+// ── GENERATE ROOM CODE ────────────────────────────────
+function generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+// ── HOST: Start ───────────────────────────────────────
+function syncStartHost() {
+    if (syncPeer) syncStop();
+    syncRoomCode = generateRoomCode();
+    const peerId = 'wuxia-' + syncRoomCode;
+
+    document.getElementById('sync-room-code').textContent = syncRoomCode;
+    syncSetStatus('初始化传音...', '');
+
+    syncPeer = new Peer(peerId, {
+        host: '0.peerjs.com', port: 443, secure: true,
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+    });
+
+    syncPeer.on('open', (id) => {
+        syncSetStatus('等待镜像连接...', 'green');
+        document.getElementById('syncStartBtn').style.display = 'none';
+        document.getElementById('syncStopBtn').style.display = 'block';
+        document.getElementById('sync-peers-info').textContent = '已连接镜像：0 台';
+        syncShowQR();
+    });
+
+    syncPeer.on('connection', (conn) => {
+        conn.on('open', () => {
+            syncConnections.push(conn);
+            syncSetStatus(`镜像已连接 (${syncConnections.length} 台)`, 'green');
+            document.getElementById('sync-peers-info').textContent = `已连接镜像：${syncConnections.length} 台`;
+            // Immediately send full state to new mirror
+            syncBroadcastState(conn);
+        });
+        conn.on('data', (data) => {
+            // ── TWO-WAY: Mirror sent data back to host ──
+            if (data.type === 'state') {
+                // Only apply if newer than what we last applied
+                if (data.ts > syncLastAppliedTs) {
+                    syncApplyData(data);
+                    // Re-broadcast to all OTHER mirrors (exclude sender)
+                    syncConnections.forEach(c => {
+                        if (c !== conn) {
+                            try { c.send(data); } catch(e) {}
+                        }
+                    });
+                }
+            } else if (data.type === 'file') {
+                syncReceiveFile(data);
+            }
+        });
+        conn.on('close', () => {
+            syncConnections = syncConnections.filter(c => c !== conn);
+            document.getElementById('sync-peers-info').textContent = `已连接镜像：${syncConnections.length} 台`;
+            if (syncConnections.length === 0) syncSetStatus('等待镜像连接...', 'green');
+            else syncSetStatus(`镜像已连接 (${syncConnections.length} 台)`, 'green');
+        });
+    });
+
+    syncPeer.on('error', (err) => {
+        console.warn('[Sync] Peer error:', err);
+        syncSetStatus('连接错误：' + err.type, 'red');
+    });
+}
+
+// ── MIRROR: Join ─────────────────────────────────────
+function syncJoinMirror() {
+    const code = document.getElementById('sync-join-code').value.trim().toUpperCase();
+    if (code.length < 4) { alert('请输入有效房间码'); return; }
+    if (syncPeer) syncStop();
+
+    const mirrorId = 'wuxia-mirror-' + Date.now();
+    syncPeer = new Peer(mirrorId, {
+        host: '0.peerjs.com', port: 443, secure: true,
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+    });
+
+    syncSetStatus('连接中...', '');
+
+    syncPeer.on('open', () => {
+        const hostId = 'wuxia-' + code;
+        syncHostConn = syncPeer.connect(hostId, { reliable: true });
+
+        syncHostConn.on('open', () => {
+            syncIsMirror = true;
+            syncSetStatus('双向传音已连接', 'gold');
+            document.getElementById('sync-mirror-overlay').classList.add('show');
+            document.getElementById('sync-mirror-host-id').textContent = '· ' + code;
+            document.getElementById('syncMirrorStopBtn').style.display = 'block';
+            // Mirror is fully interactive — no UI lock
         });
 
-        _castContext = cast.framework.CastContext.getInstance();
+        syncHostConn.on('data', (data) => {
+            syncApplyData(data);
+        });
 
-        // Show the native cast launcher icon inside the button
-        updateCastBtn('idle');
-
-        // Listen for session state changes
-        _castContext.addEventListener(
-            cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-            function(event) {
-                var S = cast.framework.SessionState;
-                switch (event.sessionState) {
-                    case S.SESSION_STARTED:
-                    case S.SESSION_RESUMED:
-                        _castSession = _castContext.getCurrentSession();
-                        updateCastBtn('connected');
-                        showCastToast('◈ 已连接 Google TV，正在全分辨率投屏！', '#80ffb0');
-                        // Cast the current page URL to the TV
-                        castCurrentPage();
-                        break;
-                    case S.SESSION_ENDED:
-                        _castSession = null;
-                        updateCastBtn('idle');
-                        showCastToast('⊡ 投屏已断开', '#80bfff');
-                        break;
-                }
-            }
-        );
-
-        // Listen for Cast device availability
-        _castContext.addEventListener(
-            cast.framework.CastContextEventType.CAST_STATE_CHANGED,
-            function(event) {
-                var CS = cast.framework.CastState;
-                if (event.castState === CS.NO_DEVICES_AVAILABLE) {
-                    updateCastBtn('unavailable');
-                } else {
-                    updateCastBtn(_castSession ? 'connected' : 'idle');
-                }
-            }
-        );
-
-    } catch(e) {
-        console.warn('[Cast] SDK init failed:', e);
-    }
-}
-
-// ── Cast current page ─────────────────────────────────────────────
-// Sends the page URL to the TV as a web receiver load request.
-// The TV browser renders it at full 1080p/4K — zero quality loss.
-function castCurrentPage() {
-    if (!_castSession) return;
-    var url = window.location.href;
-    try {
-        var mediaInfo = new chrome.cast.media.MediaInfo(url, 'text/html');
-        mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-        mediaInfo.metadata.title = document.title || '圣律契约';
-        var request = new chrome.cast.media.LoadRequest(mediaInfo);
-        _castSession.loadMedia(request).then(
-            function() { console.log('[Cast] Page loaded on TV'); },
-            function(err) {
-                // Default receiver may reject HTML — that's OK.
-                // The Cast tab mirroring still works via the session.
-                console.info('[Cast] loadMedia note:', err);
-            }
-        );
-    } catch(e) {
-        console.warn('[Cast] castCurrentPage error:', e);
-    }
-}
-
-// ── Toggle cast (called by button click) ──────────────────────────
-window.toggleCast = function() {
-    // If SDK not ready yet, show helpful message
-    if (!_castContext) {
-        if (typeof showNotify === 'function') {
-            showNotify('⊡ Cast 正在初始化，请稍候再试。确保使用 Chrome 浏览器。');
-        }
-        return;
-    }
-
-    var CS = cast.framework.CastState;
-    var state = _castContext.getCastState();
-
-    // If already connected → end session
-    if (state === CS.CONNECTED) {
-        _castContext.endCurrentSession(true);
-        return;
-    }
-
-    // Open the native Cast device picker — same as YouTube's button
-    // This does real mDNS discovery and shows all Chromecast/Google TV devices on WiFi
-    _castContext.requestSession().then(function() {
-        // SESSION_STATE_CHANGED handles the rest
-    }).catch(function(err) {
-        if (err && err.code !== chrome.cast.ErrorCode.CANCEL) {
-            console.warn('[Cast] requestSession error:', err);
-            if (typeof showNotify === 'function') {
-                showNotify('⊡ 未找到设备，请确认 Google TV 与平板在同一 WiFi');
-            }
-        }
+        syncHostConn.on('close', () => {
+            syncSetStatus('连接已断开', 'red');
+            syncIsMirror = false;
+            document.getElementById('sync-mirror-overlay').classList.remove('show');
+        });
     });
+
+    syncPeer.on('error', (err) => {
+        syncSetStatus('连接失败：' + err.type, 'red');
+    });
+}
+
+// ── STOP ─────────────────────────────────────────────
+function syncStop() {
+    if (syncPeer) { syncPeer.destroy(); syncPeer = null; }
+    syncConnections = [];
+    syncHostConn = null;
+    syncIsMirror = false;
+    syncRoomCode = null;
+    syncSetStatus('未连接', '');
+    document.getElementById('sync-room-code').textContent = '——';
+    document.getElementById('sync-qr').innerHTML = '';
+    document.getElementById('syncStartBtn').style.display = 'block';
+    document.getElementById('syncStopBtn').style.display = 'none';
+    document.getElementById('syncMirrorStopBtn').style.display = 'none';
+    document.getElementById('sync-peers-info').textContent = '';
+    document.getElementById('sync-mirror-overlay').classList.remove('show');
+}
+
+// ── STATE CAPTURE ─────────────────────────────────────
+function syncCaptureState() {
+    // Persist subject data before sending
+    students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+    return {
+        type: 'state',
+        ts: Date.now(),
+        payload: {
+            students: JSON.parse(JSON.stringify(students)),
+            groups: JSON.parse(JSON.stringify(groups)),
+            classRooms: JSON.parse(JSON.stringify(classRooms)),
+            currentClassId,
+            subjects: JSON.parse(JSON.stringify(subjects)),
+            currentSubjectId,
+            absentIds: [...absentIds],
+            currentView,
+            isTeacherMode,
+            // Modal visibility
+            modals: syncCaptureModals(),
+            // Wheel state
+            wheelItems: JSON.parse(JSON.stringify(wheelItems)),
+            wheelAngle,
+            wheelSpinning,
+            // Battle state
+            battleMode,
+            currentMonster: currentMonster ? {...currentMonster} : null,
+            isTreasureEncounter,
+        }
+    };
+}
+
+function syncCaptureModals() {
+    const ids = [
+        'battle-modal','leaderboard-modal','shop-modal','inventory-modal',
+        'batch-modal','edit-student-modal','group-modal','group-edit-modal',
+        'timer-modal','wheel-modal','subject-modal','class-manager-modal',
+        'states-modal','attend-modal'
+    ];
+    const result = {};
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) result[id] = el.style.display || 'none';
+    });
+    return result;
+}
+
+// ── BROADCAST ────────────────────────────────────────
+// Works in both directions:
+//   HOST   → sends to all connected mirrors
+//   MIRROR → sends back to host
+// Uses debounce to prevent rapid-fire loops
+function syncBroadcastState(specificConn) {
+    if (syncApplying) return; // never re-broadcast while applying received state
+
+    if (specificConn) {
+        // Immediate send to a specific connection (e.g. on new mirror connect)
+        try { specificConn.send(syncCaptureState()); } catch(e) {}
+        return;
+    }
+
+    // Debounce: collapse rapid changes into one send
+    if (syncBroadcastTimer) clearTimeout(syncBroadcastTimer);
+    syncBroadcastTimer = setTimeout(() => {
+        syncBroadcastTimer = null;
+        const data = syncCaptureState();
+
+        if (syncIsMirror) {
+            // Mirror sends back to host
+            if (syncHostConn && syncHostConn.open) {
+                try { syncHostConn.send(data); } catch(e) {}
+            }
+        } else {
+            // Host sends to all mirrors
+            syncConnections.forEach(conn => {
+                try { conn.send(data); } catch(e) {}
+            });
+        }
+    }, 120); // 120ms debounce — smooth but not too slow
+}
+
+// ── APPLY STATE (both host and mirror use this) ───────
+function syncApplyData(data) {
+    if (data.type === 'file') {
+        syncReceiveFile(data);
+        return;
+    }
+    if (data.type !== 'state') return;
+
+    // Reject stale state (older than what we already applied)
+    if (data.ts <= syncLastAppliedTs) return;
+    syncLastAppliedTs = data.ts;
+
+    syncApplying = true;
+    const p = data.payload;
+
+    try {
+        // Apply core data
+        classRooms = p.classRooms;
+        currentClassId = p.currentClassId;
+        students = (p.students || []).map(normalizeStudent);
+        groups = p.groups || [];
+        subjects = p.subjects || subjects;
+        currentSubjectId = p.currentSubjectId || currentSubjectId;
+        absentIds = new Set(p.absentIds || []);
+
+        // Also persist to localStorage so a refresh doesn't lose it
+        localStorage.setItem('wuxia_classes', JSON.stringify(classRooms));
+        localStorage.setItem('wuxia_active_class', currentClassId);
+        students.forEach(s => saveStudentSubjectData(s, currentSubjectId));
+        localStorage.setItem(classKey('class_data', currentClassId), JSON.stringify(students));
+        localStorage.setItem(classKey('groups_data', currentClassId), JSON.stringify(groups));
+        localStorage.setItem(classKey('subjects', currentClassId), JSON.stringify(subjects));
+        localStorage.setItem(classKey('current_subject', currentClassId), currentSubjectId);
+        localStorage.setItem(classKey('absent', currentClassId), JSON.stringify([...absentIds]));
+
+        // Sync students to current subject
+        students.forEach(s => syncStudentToSubject(s, currentSubjectId));
+
+        // Wheel
+        if (p.wheelItems !== undefined) {
+            wheelItems = p.wheelItems;
+            renderWheelItems && renderWheelItems();
+            if (!p.wheelSpinning) {
+                wheelAngle = p.wheelAngle || 0;
+                renderWheelCanvas && renderWheelCanvas();
+            }
+        }
+
+        // Re-render
+        renderClassTabs();
+        renderSubjectTabs();
+        renderGrid();
+        if (p.currentView === 'group') renderGroupView();
+        switchView(p.currentView || 'individual');
+        updateTeacherUI();
+        updateAttendBadge && updateAttendBadge();
+
+        // Apply modal states
+        if (p.modals) {
+            Object.entries(p.modals).forEach(([id, display]) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = display;
+            });
+        }
+
+        // Battle state
+        if (p.currentMonster) currentMonster = p.currentMonster;
+
+        // Show a brief indicator that data was received
+        if (syncIsMirror) {
+            // Mirror received from host — normal, no notification needed
+        } else {
+            // Host received from mirror — notify teacher
+            showNotify('◈ 镜像端数据已同步至主控');
+        }
+
+    } catch(e) {
+        console.warn('[Sync] Apply error', e);
+    } finally {
+        syncApplying = false;
+    }
+}
+
+// ── HOOK INTO saveData ────────────────────────────────
+const _origSaveData = saveData;
+window.saveData = function() {
+    _origSaveData.apply(this, arguments);
+    if (!syncApplying) {
+        // Both host and mirror broadcast after saving
+        syncBroadcastState();
+    }
 };
 
-// ── Resolution guard ──────────────────────────────────────────────
-(function() {
-    var m = document.querySelector('meta[name="viewport"]');
-    if (!m) { m = document.createElement('meta'); m.name = 'viewport'; document.head.appendChild(m); }
-    m.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+// ── HOOK INTO key UI actions to sync immediately ──────
+const _origSwitchView = switchView;
+window.switchView = function(v) {
+    _origSwitchView.apply(this, arguments);
+    if (!syncApplying) setTimeout(() => syncBroadcastState(), 80);
+};
+
+// Patch all modal-open buttons via MutationObserver on display style
+const _syncModalObserver = new MutationObserver((mutations) => {
+    if (syncApplying || syncIsMirror) return;
+    const relevant = mutations.some(m =>
+        m.target.id && (m.target.id.endsWith('-modal') || m.target.id === 'battle-modal') &&
+        m.attributeName === 'style'
+    );
+    if (relevant) setTimeout(() => syncBroadcastState(), 100);
+});
+
+// Observe all modal overlays
+window.addEventListener('load', () => {
+    document.querySelectorAll('.modal-overlay, #battle-modal').forEach(el => {
+        _syncModalObserver.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+});
+
+// ── (no UI lock — mirror is fully interactive) ────────
+
+// ── QR CODE ──────────────────────────────────────────
+function syncShowQR() {
+    const container = document.getElementById('sync-qr');
+    container.innerHTML = '';
+    if (!syncRoomCode) return;
+    const url = window.location.href.split('?')[0] + '?mirror=' + syncRoomCode;
+    try {
+        new QRCode(container, {
+            text: url,
+            width: 120, height: 120,
+            colorDark: '#c8a84b', colorLight: '#06080e',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } catch(e) {
+        container.innerHTML = `<div style="font-size:0.65rem;color:var(--text-dim);text-align:center;">QR 码生成失败<br>请手动输入房间码</div>`;
+    }
+}
+
+// ── AUTO-JOIN ON QR SCAN ──────────────────────────────
+(function checkAutoMirror() {
+    const params = new URLSearchParams(window.location.search);
+    const mirrorCode = params.get('mirror');
+    if (mirrorCode) {
+        // Slight delay to let app init
+        setTimeout(() => {
+            syncSetMode('mirror');
+            document.getElementById('sync-card').classList.add('open');
+            document.getElementById('sync-join-code').value = mirrorCode;
+            syncJoinMirror();
+        }, 1500);
+    }
 })();
+
+// ══════════════════════════════════════════════════════
+// FILE TRANSFER
+// ══════════════════════════════════════════════════════
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB limit per chunk
+
+function syncSendFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+
+    if (file.size > MAX_FILE_SIZE) {
+        showNotify('文件过大（最大 4MB）');
+        return;
+    }
+
+    if (syncConnections.length === 0) {
+        showNotify('尚无镜像连接，无法传送文件');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const data = {
+            type: 'file',
+            name: file.name,
+            mime: file.type,
+            size: file.size,
+            data: e.target.result // base64 dataURL
+        };
+        syncConnections.forEach(conn => {
+            try { conn.send(data); } catch(err) { console.warn('[Sync] File send error', err); }
+        });
+        // Show in host file list
+        syncAddFileToHostList(file.name, data.data, file.type);
+        showNotify(`◈ 文件「${file.name}」已传送`);
+    };
+    reader.readAsDataURL(file);
+}
+
+function syncAddFileToHostList(name, dataUrl, mime) {
+    const list = document.getElementById('sync-file-list');
+    const item = document.createElement('div');
+    item.className = 'sync-file-item';
+    item.innerHTML = `<span class="sync-file-name">${name}</span><span class="sync-file-dl" onclick="syncDownloadFile('${dataUrl}','${name}')" title="下载">⬇</span>`;
+    list.insertBefore(item, list.firstChild);
+}
+
+function syncReceiveFile(data) {
+    const section = document.getElementById('sync-received-files');
+    const list = document.getElementById('sync-mirror-file-list');
+    section.style.display = 'block';
+
+    const item = document.createElement('div');
+    item.className = 'sync-file-item';
+    item.innerHTML = `<span class="sync-file-name">${data.name}</span><span class="sync-file-dl" onclick="syncDownloadFile('${data.data}','${data.name}')" title="下载">⬇</span>`;
+    list.insertBefore(item, list.firstChild);
+
+    // Auto-open image files on mirror screen
+    if (data.mime && data.mime.startsWith('image/')) {
+        syncShowImageOverlay(data.data, data.name);
+    }
+    showNotify(`◈ 收到文件：${data.name}`);
+}
+
+function syncDownloadFile(dataUrl, name) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = name;
+    a.click();
+}
+
+function syncShowImageOverlay(dataUrl, name) {
+    let overlay = document.getElementById('sync-img-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'sync-img-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;';
+        overlay.onclick = () => overlay.remove();
+        document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.2em;color:var(--gold-dim);">◈ 传音图档 · ${name}</div>
+        <img src="${dataUrl}" style="max-width:90vw;max-height:80vh;object-fit:contain;border:2px solid var(--gold-dim);box-shadow:0 0 40px rgba(200,168,75,0.3);">
+        <div style="font-size:0.65rem;color:var(--text-dim);font-family:'Cinzel',serif;">点击关闭</div>
+    `;
+    document.body.appendChild(overlay);
+}
 </script>
 </body>
 </html>
