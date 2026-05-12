@@ -3037,7 +3037,30 @@ function updateAttendBadge() {
     background:var(--panel);
     border-bottom:2px solid var(--gold-dim);
     flex-shrink:0; user-select:none;
+    transition: all 0.2s ease;
 }
+#wb-toolbar.minimized .wb-toolbar-row {
+    display: none;
+}
+#wb-toolbar.minimized {
+    border-bottom: 1px solid var(--border);
+}
+#wb-toolbar-min-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 10px; background: rgba(6,8,20,0.97);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+#wb-toolbar-min-bar span {
+    font-family:'Cinzel Decorative',serif; font-size:0.68rem;
+    color:var(--gold-dim); letter-spacing:0.08em;
+}
+#wb-toolbar-toggle-btn {
+    font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.08em;
+    padding:3px 10px; border:1px solid var(--border-glow);
+    background:rgba(10,14,30,0.8); color:var(--silver-dim);
+    cursor:pointer; transition:all 0.18s; flex-shrink:0;
+}
+#wb-toolbar-toggle-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
 .wb-toolbar-row {
     display:flex; align-items:center; gap:0; flex-wrap:wrap;
     padding:5px 10px; gap:4px;
@@ -3340,6 +3363,10 @@ function updateAttendBadge() {
 <!-- Whiteboard modal -->
 <div id="wb-modal">
   <div id="wb-toolbar">
+    <div id="wb-toolbar-min-bar">
+      <span>✎ 圣律板 · Sacred Board</span>
+      <button id="wb-toolbar-toggle-btn" onclick="WB.toggleToolbar()" title="Minimize/Expand toolbar">▲ 收起</button>
+    </div>
     <!-- Row 1: Title · Pen types · Text / Eraser / Select · Actions -->
     <div class="wb-toolbar-row">
       <span style="font-family:'Cinzel Decorative',serif;font-size:0.82rem;color:var(--gold);letter-spacing:0.08em;flex-shrink:0;">✎ 圣律板</span>
@@ -3550,9 +3577,20 @@ const WB = (() => {
     canvas.addEventListener('mousedown',  onDown);
     canvas.addEventListener('mousemove',  onMove);
     window.addEventListener('mouseup',    onUp);
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); onDown(e); }, { passive: false });
-    canvas.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e); }, { passive: false });
-    window.addEventListener('touchend',   onUp);
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (e.touches.length === 2 && onPinchStart(e)) return; // pinch takes over
+      onDown(e);
+    }, { passive: false });
+    canvas.addEventListener('touchmove',  e => {
+      e.preventDefault();
+      if (e.touches.length === 2 && pinchState) { onPinchMove(e); return; }
+      onMove(e);
+    }, { passive: false });
+    window.addEventListener('touchend', e => {
+      if (pinchState) { onPinchEnd(); return; }
+      onUp(e);
+    });
 
     document.addEventListener('keydown', onKey);
   }
@@ -4136,6 +4174,104 @@ const WB = (() => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObj) { e.preventDefault(); deleteSelected(); }
   }
 
+  /* ══════════════════ TOOLBAR MINIMIZE ══════════════════ */
+  let toolbarMinimized = false;
+  function toggleToolbar() {
+    toolbarMinimized = !toolbarMinimized;
+    const tb = document.getElementById('wb-toolbar');
+    const btn = document.getElementById('wb-toolbar-toggle-btn');
+    tb.classList.toggle('minimized', toolbarMinimized);
+    btn.textContent = toolbarMinimized ? '▼ 展开' : '▲ 收起';
+    requestAnimationFrame(sizeCanvas);
+  }
+
+  /* ══════════════════ PINCH-TO-RESIZE ══════════════════ */
+  let pinchState = null; // { startDist, origW, origH, origX, origY }
+
+  function getTouchDist(e) {
+    const t = e.touches;
+    if (!t || t.length < 2) return null;
+    const dx = t[0].clientX - t[1].clientX;
+    const dy = t[0].clientY - t[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  function getTouchMidCanvas(e) {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches;
+    return {
+      x: ((t[0].clientX + t[1].clientX) / 2) - r.left,
+      y: ((t[0].clientY + t[1].clientY) / 2) - r.top
+    };
+  }
+
+  // Override touchstart to intercept two-finger pinch on selected obj
+  function onPinchStart(e) {
+    if (e.touches.length !== 2) return false;
+    if (!selectedObj) return false;
+    const b = selectedObj.bbox;
+    const mid = getTouchMidCanvas(e);
+    // Check midpoint is within selected object bbox (relaxed by 30px)
+    if (mid.x < b.x - 30 || mid.x > b.x + b.w + 30 ||
+        mid.y < b.y - 30 || mid.y > b.y + b.h + 30) return false;
+    const dist = getTouchDist(e);
+    if (!dist) return false;
+    pinchState = {
+      startDist: dist,
+      origW: selectedObj.w != null ? selectedObj.w : b.w,
+      origH: selectedObj.h != null ? selectedObj.h : b.h,
+      origX: selectedObj.x != null ? selectedObj.x : b.x,
+      origY: selectedObj.y != null ? selectedObj.y : b.y,
+      origPoints: selectedObj.points ? selectedObj.points.map(p => ({...p})) : null,
+      origFontSize: selectedObj.fontSize,
+      origBbox: {...b}
+    };
+    return true;
+  }
+
+  function onPinchMove(e) {
+    if (!pinchState || e.touches.length < 2 || !selectedObj) return;
+    const dist = getTouchDist(e);
+    if (!dist) return;
+    const scale = dist / pinchState.startDist;
+    const minSz = 20;
+    const obj = selectedObj;
+    const ps = pinchState;
+
+    const nw = Math.max(minSz, ps.origW * scale);
+    const nh = Math.max(minSz, ps.origH * scale);
+    // Scale from center
+    const nx = ps.origX + (ps.origW - nw) / 2;
+    const ny = ps.origY + (ps.origH - nh) / 2;
+
+    if (obj.type === 'image') {
+      obj.x = nx; obj.y = ny; obj.w = nw; obj.h = nh;
+      obj.bbox = { x: nx, y: ny, w: nw, h: nh };
+    } else if (obj.type === 'stroke') {
+      const ob = ps.origBbox;
+      const scaleX = ob.w > 0 ? nw / ob.w : 1;
+      const scaleY = ob.h > 0 ? nh / ob.h : 1;
+      obj.points = ps.origPoints.map(p => ({
+        x: nx + (p.x - ob.x) * scaleX,
+        y: ny + (p.y - ob.y) * scaleY
+      }));
+      obj.bbox = { x: nx, y: ny, w: nw, h: nh };
+    } else if (obj.type === 'text') {
+      const scaleFactor = Math.min(nw / ps.origBbox.w, nh / ps.origBbox.h);
+      obj.fontSize = Math.max(8, Math.round(ps.origFontSize * scaleFactor));
+      obj.x = nx + 6; obj.y = ny + 6;
+      obj.bbox = textBBox(obj);
+    }
+    redraw();
+  }
+
+  function onPinchEnd() {
+    if (pinchState) {
+      pushUndo();
+      pinchState = null;
+    }
+  }
+
   /* ── boot ── */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
@@ -4143,7 +4279,7 @@ const WB = (() => {
   return {
     open, close, setTool, setSize, setOpacity, setColor,
     undo, redo, clearAll, save, importImg, textKey, textResize,
-    addCameraImage, insertImageBottom, pushUndo
+    addCameraImage, insertImageBottom, pushUndo, toggleToolbar
   };
 })();
 
