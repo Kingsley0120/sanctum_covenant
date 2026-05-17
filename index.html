@@ -610,6 +610,43 @@
         .student-card.is-absent { opacity:0.38; filter:grayscale(0.75) brightness(0.8); pointer-events:none; }
         .student-card.is-absent .card-edit-btn { pointer-events:all; }
         .absent-ribbon { position:absolute; top:0; left:0; right:0; text-align:center; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.18em; color:#e08090; background:rgba(26,6,10,0.92); border-bottom:1px solid var(--crimson); padding:3px 0; z-index:15; }
+
+        /* ── ATTENDANCE RECORDS ── */
+        #attend-records-modal .modal-panel { width:740px; max-width:97vw; max-height:90vh; display:flex; flex-direction:column; gap:12px; }
+        .atrec-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .atrec-class-select { font-family:'Cinzel',serif; font-size:0.75rem; padding:6px 10px; background:rgba(8,10,22,0.85); border:1px solid var(--border-glow); color:var(--text-primary); outline:none; cursor:pointer; }
+        .atrec-class-select:focus { border-color:var(--gold-dim); }
+        .atrec-date-list { display:flex; flex-direction:column; gap:0; max-height:58vh; overflow-y:auto; border:1px solid var(--border); }
+        .atrec-date-row { border-bottom:1px solid var(--border); overflow:hidden; }
+        .atrec-date-row:last-child { border-bottom:none; }
+        .atrec-date-header {
+            display:flex; align-items:center; gap:10px; padding:9px 14px;
+            background:rgba(8,12,28,0.85); cursor:pointer;
+            font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.08em;
+            transition:background 0.15s; user-select:none;
+        }
+        .atrec-date-header:hover { background:rgba(20,28,60,0.9); }
+        .atrec-date-header.open { background:rgba(14,20,46,0.95); border-bottom:1px solid var(--border); }
+        .atrec-date-str { color:var(--gold); flex:1; }
+        .atrec-summary { display:flex; gap:10px; align-items:center; }
+        .atrec-p { color:#60d090; font-family:'Cinzel Decorative',serif; }
+        .atrec-a { color:#e08090; font-family:'Cinzel Decorative',serif; }
+        .atrec-lbl { color:var(--text-dim); font-size:0.68rem; }
+        .atrec-chevron { color:var(--text-dim); font-size:0.75rem; transition:transform 0.2s; margin-left:4px; }
+        .atrec-date-header.open .atrec-chevron { transform:rotate(90deg); }
+        .atrec-detail { display:none; padding:10px 14px 12px; background:rgba(4,6,18,0.7); }
+        .atrec-detail.open { display:block; }
+        .atrec-chips { display:flex; flex-wrap:wrap; gap:6px; }
+        .atrec-chip {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:3px 10px; font-family:'Cinzel','Noto Serif SC',serif; font-size:0.72rem;
+            border:1px solid; border-radius:2px;
+        }
+        .atrec-chip.present { border-color:#2a6040; color:#60d090; background:rgba(8,20,14,0.7); }
+        .atrec-chip.absent  { border-color:var(--crimson); color:#e08090; background:rgba(20,6,10,0.7); }
+        .atrec-chip-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+        .atrec-empty { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text-dim); text-align:center; padding:30px; letter-spacing:0.1em; }
+
         /* ── NOISE METER ── */
         #noise-modal {
             position:fixed; inset:0; z-index:6000;
@@ -3014,7 +3051,32 @@ function renderCardActions(s, index) {
         <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:0.75rem;color:var(--text-dim);text-align:center;margin:-4px 0 2px;">点击弟子卡片切换出席/缺席状态 · 缺席者将从历练轮盘中排除</p>
         <div class="attend-grid" id="attend-grid"></div>
         <div style="display:flex;justify-content:center;gap:10px;padding-top:4px;border-top:1px solid var(--border);">
+            <button class="sacred-btn teal-tier" onclick="openAttendRecords()">📋 出勤记录</button>
             <button class="sacred-btn" onclick="closeAttendModal()">完成签到</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── ATTENDANCE RECORDS MODAL ── -->
+<div id="attend-records-modal" class="modal-overlay" style="z-index:2600;display:none;">
+    <div class="modal-panel" style="width:740px;max-width:97vw;max-height:90vh;display:flex;flex-direction:column;gap:12px;">
+        <div class="modal-title">📋 出勤记录 · Attendance Records</div>
+        <div class="ornament">· · · · · · ·</div>
+        <div class="atrec-toolbar">
+            <span style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text-dim);letter-spacing:0.14em;">班级</span>
+            <select class="atrec-class-select" id="atrec-class-sel" onchange="renderAttendRecords()"></select>
+            <div style="flex:1;"></div>
+            <button class="sacred-btn crimson-tier xs" onclick="confirmClearAttendRecords()">✕ 清空记录</button>
+        </div>
+        <div class="atrec-date-list" id="atrec-date-list">
+            <div class="atrec-empty">暂无记录 · No records yet</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;">
+            <span id="atrec-total-label" style="font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.1em;"></span>
+            <div style="display:flex;gap:8px;">
+                <button class="sacred-btn teal-tier sm" onclick="exportAttendRecordsCSV()">📤 导出 CSV</button>
+                <button class="sacred-btn sm" onclick="document.getElementById('attend-records-modal').style.display='none'">关闭</button>
+            </div>
         </div>
     </div>
 </div>
@@ -3022,13 +3084,50 @@ function renderCardActions(s, index) {
 <script>
 // ══════════════════════════════════════════════════════════════
 // ── ATTENDANCE SYSTEM ──
-// absentIds: Set of student IDs marked as absent this session
-// Absent students are greyed out on cards and excluded from battle pool
+// absentIds: Set of student IDs marked as absent today
+// Records: saved per-class per-date snapshots in localStorage
+// Daily auto-reset: clears absentIds when the date changes
 // ══════════════════════════════════════════════════════════════
 let absentIds = new Set(JSON.parse(localStorage.getItem(classKey('absent', currentClassId)) || '[]'));
 
+// ── Helpers ──
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── Record Storage ──
+function attendRecordsKey(cid) { return `wuxia_${cid}_attend_records`; }
+function loadAttendRecords(cid) { return JSON.parse(localStorage.getItem(attendRecordsKey(cid)) || '{}'); }
+
+function saveAttendRecord(cid, dateString) {
+    const classList = JSON.parse(localStorage.getItem(classKey('class_data', cid)) || '[]');
+    const absentSet = new Set(JSON.parse(localStorage.getItem(classKey('absent', cid)) || '[]'));
+    const present = classList.filter(s => !absentSet.has(s.id)).map(s => ({ id: s.id, name: s.name }));
+    const absent  = classList.filter(s =>  absentSet.has(s.id)).map(s => ({ id: s.id, name: s.name }));
+    if (classList.length === 0) return;
+    const records = loadAttendRecords(cid);
+    records[dateString] = { date: dateString, present, absent, total: classList.length };
+    localStorage.setItem(attendRecordsKey(cid), JSON.stringify(records));
+}
+
+// ── Daily Reset ──
+function checkDailyAttendReset(cid) {
+    const dateKey = `wuxia_${cid}_attend_date`;
+    const lastDate = localStorage.getItem(dateKey);
+    const today = todayStr();
+    if (lastDate && lastDate !== today) {
+        saveAttendRecord(cid, lastDate);
+        absentIds.clear();
+        saveAttendance();
+        showNotify(`📋 新的一天已开始，出勤已重置 (${today})`);
+    }
+    localStorage.setItem(dateKey, today);
+}
+
 function saveAttendance() {
     localStorage.setItem(classKey('absent', currentClassId), JSON.stringify([...absentIds]));
+    saveAttendRecord(currentClassId, todayStr());
 }
 
 function getActiveStudents() {
@@ -3037,6 +3136,7 @@ function getActiveStudents() {
 
 function openAttendModal() {
     playSfx(sfxClick);
+    checkDailyAttendReset(currentClassId);
     renderAttendGrid();
     document.getElementById('attend-modal').style.display = 'flex';
 }
@@ -3044,7 +3144,6 @@ function openAttendModal() {
 function closeAttendModal() {
     document.getElementById('attend-modal').style.display = 'none';
     renderGrid();
-    // Reset solo pool to exclude absent students
     soloUsedIds = new Set([...soloUsedIds].filter(id => !absentIds.has(id)));
     updateAttendBadge();
     if (currentView === 'group') renderGroupView();
@@ -3082,7 +3181,6 @@ function toggleAttend(sid, chip) {
         chip.className = 'attend-chip absent';
         chip.querySelector('span:last-child').textContent = '缺席';
         chip.querySelector('span:last-child').style.color = '#e08090';
-        // Remove from used pool if now absent
         soloUsedIds.delete(sid);
     }
     saveAttendance();
@@ -3121,6 +3219,132 @@ function updateAttendBadge() {
         badge.style.display = 'none';
     }
 }
+
+// ── Records Modal ──
+function openAttendRecords() {
+    const sel = document.getElementById('atrec-class-sel');
+    sel.innerHTML = '';
+    classRooms.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (c.id === currentClassId) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    renderAttendRecords();
+    document.getElementById('attend-records-modal').style.display = 'flex';
+}
+
+function renderAttendRecords() {
+    const cid = document.getElementById('atrec-class-sel').value;
+    const records = loadAttendRecords(cid);
+    const list = document.getElementById('atrec-date-list');
+    const totalLbl = document.getElementById('atrec-total-label');
+    list.innerHTML = '';
+
+    const dates = Object.keys(records).sort((a, b) => b.localeCompare(a));
+    if (dates.length === 0) {
+        list.innerHTML = '<div class="atrec-empty">暂无记录 · No records yet</div>';
+        totalLbl.textContent = '';
+        return;
+    }
+
+    totalLbl.textContent = `共 ${dates.length} 天记录`;
+
+    dates.forEach(date => {
+        const rec = records[date];
+        const row = document.createElement('div');
+        row.className = 'atrec-date-row';
+
+        const isToday = date === todayStr();
+        const header = document.createElement('div');
+        header.className = 'atrec-date-header';
+        header.innerHTML = `
+            <span class="atrec-date-str">${date}${isToday ? ' <span style="font-size:0.62rem;color:var(--teal-glow);border:1px solid var(--teal);padding:1px 6px;margin-left:6px;">今日</span>' : ''}</span>
+            <div class="atrec-summary">
+                <span class="atrec-lbl">出席</span><span class="atrec-p">${rec.present.length}</span>
+                <span class="atrec-lbl">缺席</span><span class="atrec-a">${rec.absent.length}</span>
+                <span class="atrec-lbl">共 ${rec.total}</span>
+            </div>
+            <span class="atrec-chevron">▶</span>`;
+
+        const detail = document.createElement('div');
+        detail.className = 'atrec-detail';
+        const buildChips = (arr, cls) => arr.map(s =>
+            `<span class="atrec-chip ${cls}"><span class="atrec-chip-dot"></span>${s.name}</span>`
+        ).join('');
+
+        detail.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                ${rec.present.length ? `<div><span style="font-family:'Cinzel',serif;font-size:0.62rem;color:#3a8060;letter-spacing:0.12em;display:block;margin-bottom:5px;">✦ 出席 Present (${rec.present.length})</span><div class="atrec-chips">${buildChips(rec.present,'present')}</div></div>` : ''}
+                ${rec.absent.length  ? `<div><span style="font-family:'Cinzel',serif;font-size:0.62rem;color:var(--crimson);letter-spacing:0.12em;display:block;margin-bottom:5px;">✕ 缺席 Absent (${rec.absent.length})</span><div class="atrec-chips">${buildChips(rec.absent,'absent')}</div></div>` : ''}
+                ${!rec.present.length && !rec.absent.length ? '<span style="color:var(--text-dim);font-size:0.7rem;">无数据</span>' : ''}
+            </div>`;
+
+        header.onclick = () => {
+            const isOpen = header.classList.contains('open');
+            list.querySelectorAll('.atrec-date-header.open').forEach(h => h.classList.remove('open'));
+            list.querySelectorAll('.atrec-detail.open').forEach(d => d.classList.remove('open'));
+            if (!isOpen) { header.classList.add('open'); detail.classList.add('open'); }
+        };
+
+        row.appendChild(header);
+        row.appendChild(detail);
+        list.appendChild(row);
+    });
+}
+
+function confirmClearAttendRecords() {
+    const cid = document.getElementById('atrec-class-sel').value;
+    const className = classRooms.find(c => c.id === cid)?.name || cid;
+    showCustomModal({
+        title: '清空出勤记录',
+        msg: `确定要清空「${className}」的所有出勤记录？此操作无法撤销。`,
+        showCancel: true,
+        onConfirm: () => {
+            localStorage.removeItem(attendRecordsKey(cid));
+            renderAttendRecords();
+            showNotify('出勤记录已清空。');
+        }
+    });
+}
+
+function exportAttendRecordsCSV() {
+    const cid = document.getElementById('atrec-class-sel').value;
+    const records = loadAttendRecords(cid);
+    const dates = Object.keys(records).sort();
+    if (!dates.length) { showNotify('无记录可导出'); return; }
+
+    const allNames = new Set();
+    dates.forEach(d => {
+        records[d].present.forEach(s => allNames.add(s.name));
+        records[d].absent.forEach(s => allNames.add(s.name));
+    });
+    const names = [...allNames].sort();
+
+    let csv = '姓名,' + dates.join(',') + '\n';
+    names.forEach(name => {
+        const row = [name];
+        dates.forEach(d => {
+            const rec = records[d];
+            if (rec.present.find(s => s.name === name)) row.push('出席');
+            else if (rec.absent.find(s => s.name === name)) row.push('缺席');
+            else row.push('');
+        });
+        csv += row.join(',') + '\n';
+    });
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `attendance_${cid}_${todayStr()}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    showNotify('出勤记录已导出为 CSV');
+}
+
+// ── Boot: daily reset check on page load ──
+checkDailyAttendReset(currentClassId);
 </script>
 <!-- ══════════════════════════════════════════════════════════════
      ── 圣律板 WHITEBOARD MODAL (v2 — fixed) ──
