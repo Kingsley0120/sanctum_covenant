@@ -610,6 +610,111 @@
         .student-card.is-absent { opacity:0.38; filter:grayscale(0.75) brightness(0.8); pointer-events:none; }
         .student-card.is-absent .card-edit-btn { pointer-events:all; }
         .absent-ribbon { position:absolute; top:0; left:0; right:0; text-align:center; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.18em; color:#e08090; background:rgba(26,6,10,0.92); border-bottom:1px solid var(--crimson); padding:3px 0; z-index:15; }
+        /* ── NOISE METER ── */
+        #noise-modal {
+            position:fixed; inset:0; z-index:6000;
+            display:flex; align-items:center; justify-content:center;
+            background:rgba(2,4,14,0.92); backdrop-filter:blur(6px);
+            visibility:hidden; opacity:0; pointer-events:none;
+            transition:opacity 0.25s ease, visibility 0.25s ease;
+        }
+        #noise-modal.open { visibility:visible; opacity:1; pointer-events:all; }
+        #noise-panel {
+            width:420px; max-width:96vw;
+            background:var(--panel); border:1px solid var(--border);
+            border-top:2px solid var(--teal-glow);
+            display:flex; flex-direction:column; gap:0;
+            overflow:hidden;
+        }
+        #noise-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 16px; border-bottom:1px solid var(--border);
+            background:rgba(6,10,24,0.9);
+        }
+        #noise-header-title {
+            font-family:'Cinzel Decorative',serif; font-size:0.88rem;
+            color:var(--teal-glow); letter-spacing:0.08em;
+        }
+        #noise-close-btn {
+            background:none; border:1px solid var(--border); color:var(--text-dim);
+            font-family:'Cinzel',serif; font-size:0.68rem; padding:4px 10px;
+            cursor:pointer; transition:all 0.18s;
+        }
+        #noise-close-btn:hover { border-color:#c03050; color:#ff8090; }
+        #noise-body { padding:20px 20px 16px; display:flex; flex-direction:column; gap:16px; }
+
+        /* Arc meter */
+        #noise-arc-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+        #noise-svg { width:280px; height:160px; overflow:visible; }
+        #noise-arc-bg    { fill:none; stroke:rgba(40,55,100,0.35); stroke-width:18; stroke-linecap:round; }
+        #noise-arc-fill  { fill:none; stroke-width:18; stroke-linecap:round; transition:stroke-dashoffset 0.1s, stroke 0.2s; }
+        #noise-arc-tick  { fill:none; stroke:rgba(255,255,255,0.12); stroke-width:1; }
+        #noise-db-value  {
+            font-family:'Cinzel Decorative',serif; font-size:2.4rem;
+            fill:var(--teal-glow); text-anchor:middle; dominant-baseline:middle;
+            transition:fill 0.2s;
+        }
+        #noise-db-unit   { font-family:'Cinzel',serif; font-size:0.65rem; fill:var(--text-dim); text-anchor:middle; }
+        #noise-level-label {
+            font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.18em;
+            text-transform:uppercase; text-align:center; transition:color 0.3s;
+            color:var(--teal-glow);
+        }
+
+        /* Threshold bar */
+        #noise-threshold-row {
+            display:flex; align-items:center; gap:10px;
+            padding:10px 12px; background:rgba(8,12,28,0.7); border:1px solid var(--border);
+        }
+        .noise-th-label { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.14em; color:var(--text-dim); white-space:nowrap; }
+        #noise-th-track { flex:1; height:4px; background:rgba(40,55,100,0.5); border:1px solid var(--border); position:relative; }
+        #noise-th-fill  { position:absolute; left:0; top:0; height:100%; background:linear-gradient(90deg,var(--teal),var(--gold-dim)); pointer-events:none; }
+        #noise-th-range { position:absolute; width:100%; height:20px; top:-8px; opacity:0; cursor:pointer; }
+        #noise-th-val   { font-family:'Cinzel Decorative',serif; font-size:0.78rem; color:var(--gold); min-width:38px; text-align:right; }
+
+        /* Alert history */
+        #noise-alerts {
+            max-height:80px; overflow-y:auto; display:flex; flex-direction:column;
+            gap:3px; padding:2px 0;
+        }
+        .noise-alert-row {
+            display:flex; align-items:center; gap:8px;
+            padding:4px 8px; background:rgba(26,8,12,0.7); border:1px solid rgba(196,32,64,0.35);
+            font-family:'Cinzel',serif; font-size:0.65rem; color:#e08090; animation:noiseAlertIn 0.3s ease;
+        }
+        @keyframes noiseAlertIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+        .noise-alert-time { color:var(--silver-dim); min-width:48px; }
+        #noise-alert-empty { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--text-dim); text-align:center; padding:8px; letter-spacing:0.1em; }
+
+        /* Controls row */
+        #noise-controls { display:flex; gap:8px; justify-content:center; padding-top:2px; }
+        .noise-status-dot {
+            width:9px; height:9px; border-radius:50%; background:var(--text-dim);
+            flex-shrink:0; transition:background 0.2s;
+        }
+        .noise-status-dot.active { background:#40d090; box-shadow:0 0 6px #40d090; animation:statePulse 1.5s ease-in-out infinite; }
+        .noise-status-dot.alert  { background:var(--crimson-glow); box-shadow:0 0 8px var(--crimson-glow); }
+        #noise-perm-warn {
+            font-family:'Cinzel',serif; font-size:0.65rem; color:#e08090;
+            text-align:center; padding:8px; letter-spacing:0.06em; display:none;
+        }
+
+        #noise-footer {
+            padding:8px 16px; border-top:1px solid var(--border);
+            display:flex; align-items:center; gap:8px;
+            background:rgba(4,6,18,0.8);
+        }
+        #noise-footer-label { font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.1em; color:var(--text-dim); flex:1; }
+
+        #noise-modal.alerting #noise-panel {
+            border-top-color:var(--crimson-glow);
+            box-shadow:0 0 30px rgba(196,32,64,0.25);
+        }
+        @keyframes noisePulse { 0%,100%{box-shadow:0 0 8px rgba(196,32,64,0.2)} 50%{box-shadow:0 0 28px rgba(196,32,64,0.5)} }
+        #noise-modal.alerting #noise-panel { animation:noisePulse 1s ease-in-out infinite; }
+
+        #noise-modal.open { visibility:visible; opacity:1; pointer-events:all; }
+
         #attend-badge { display:none; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.1em; background:rgba(26,6,10,0.9); color:#e08090; border:1px solid var(--crimson); padding:2px 7px; vertical-align:middle; }
     </style>
 </head>
@@ -631,6 +736,7 @@
         <div class="controls">
             <button class="sacred-btn" id="musicBtn" onclick="toggleMusicPanel()">♪ 律音</button>
             <button class="sacred-btn teal-tier" onclick="openTimerModal()">⏱ 计时</button>
+            <button class="sacred-btn" onclick="NoiseMeter.open()" style="border-color:#2a7060;color:#50d0a0;">🔊 声律仪</button>
             <button class="sacred-btn" onclick="openWhiteboardModal()" style="border-color:#5a7ab4;color:#90b8e8;">✎ 圣律板</button>
             <button class="sacred-btn" onclick="openAttendModal()" style="border-color:#3ab07a;color:#70e0a0;" id="attendBtn">☑ 出勤 <span id="attend-badge"></span></button>
             <button class="sacred-btn" onclick="openStatesInfo()" style="border-color:#7060c8;color:#a080e8;">◈ 境界图鉴</button>
@@ -5087,6 +5193,294 @@ if ('serviceWorker' in navigator) {
         }
     });
 }
+</script>
+<!-- ══════════════════ NOISE METER MODAL ══════════════════ -->
+<div id="noise-modal">
+  <div id="noise-panel">
+    <div id="noise-header">
+      <span id="noise-header-title">🔊 声律仪 · Noise Meter</span>
+      <button id="noise-close-btn" onclick="NoiseMeter.close()">✕ 关闭</button>
+    </div>
+    <div id="noise-body">
+      <!-- Arc gauge -->
+      <div id="noise-arc-wrap">
+        <svg id="noise-svg" viewBox="0 0 280 160">
+          <!-- Tick marks -->
+          <g id="noise-ticks"></g>
+          <!-- Arc background -->
+          <path id="noise-arc-bg"/>
+          <!-- Arc fill -->
+          <path id="noise-arc-fill"/>
+          <!-- dB value -->
+          <text id="noise-db-value" x="140" y="122">--</text>
+          <text id="noise-db-unit"  x="140" y="148">dB</text>
+        </svg>
+        <div id="noise-level-label">◌ 等待麦克风 · Awaiting Mic</div>
+      </div>
+
+      <!-- Threshold control -->
+      <div id="noise-threshold-row">
+        <span class="noise-th-label">警戒值</span>
+        <div id="noise-th-track">
+          <div id="noise-th-fill" style="width:55%"></div>
+          <input type="range" id="noise-th-range" min="30" max="90" value="65"
+                 oninput="NoiseMeter.setThreshold(+this.value)">
+        </div>
+        <span id="noise-th-val">65 dB</span>
+      </div>
+
+      <!-- Alert log -->
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.16em;color:var(--text-dim);text-transform:uppercase;">⚠ 超标记录</span>
+          <button onclick="NoiseMeter.clearAlerts()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Cinzel',serif;font-size:0.6rem;padding:2px 8px;cursor:pointer;" onmouseover="this.style.color='#e08090'" onmouseout="this.style.color=''">清空</button>
+        </div>
+        <div id="noise-alerts">
+          <div id="noise-alert-empty">暂无超标 · No alerts yet</div>
+        </div>
+      </div>
+
+      <div id="noise-perm-warn">⚠ 请允许麦克风权限以使用声律仪<br>Please allow microphone access</div>
+    </div>
+
+    <div id="noise-footer">
+      <div class="noise-status-dot" id="noise-dot"></div>
+      <span id="noise-footer-label">未启动 · Not started</span>
+      <button class="sacred-btn teal-tier sm" id="noise-start-btn" onclick="NoiseMeter.toggle()">▶ 启动</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   声律仪  NOISE METER
+   Arc gauge, configurable threshold, alert log
+   ══════════════════════════════════════════════════════════════ */
+const NoiseMeter = (() => {
+  'use strict';
+
+  let audioCtx = null, analyser = null, stream = null;
+  let rafId    = null;
+  let running  = false;
+  let threshold = 65;
+  let alerting  = false;
+  let alertCooldown = 0;
+  const alerts = [];
+
+  /* ── Arc geometry (half-circle, 180° sweep, bottom-anchored) ── */
+  const CX = 140, CY = 130, R = 108;
+  // Arc from 180° to 0° (left to right across top)
+  const START_DEG = 180, END_DEG = 0; // rendered as SVG arc
+  const ARC_LEN_DEG = 180;
+
+  function degToRad(d) { return d * Math.PI / 180; }
+
+  function arcPoint(deg) {
+    const r = degToRad(deg);
+    return { x: CX + R * Math.cos(r), y: CY + R * Math.sin(r) };
+  }
+
+  function buildArcPath(startDeg, endDeg) {
+    const s = arcPoint(startDeg), e = arcPoint(endDeg);
+    const large = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+    const sweep = endDeg > startDeg ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${R} ${R} 0 ${large} ${sweep} ${e.x} ${e.y}`;
+  }
+
+  function buildTickMarks() {
+    const g = document.getElementById('noise-ticks');
+    if (!g) return;
+    g.innerHTML = '';
+    const dbs = [30, 40, 50, 60, 70, 80, 90];
+    dbs.forEach(db => {
+      const pct  = (db - 30) / 60; // map 30-90 dB → 0-1
+      const deg  = 180 - pct * 180; // 180° → 0°
+      const rad  = degToRad(deg);
+      const r1 = R - 14, r2 = R + 4;
+      const x1 = CX + r1 * Math.cos(rad), y1 = CY + r1 * Math.sin(rad);
+      const x2 = CX + r2 * Math.cos(rad), y2 = CY + r2 * Math.sin(rad);
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+      line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+      line.setAttribute('stroke','rgba(255,255,255,0.18)');
+      line.setAttribute('stroke-width','1.5');
+      g.appendChild(line);
+      const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      const tr = R - 26;
+      txt.setAttribute('x', CX + tr * Math.cos(rad));
+      txt.setAttribute('y', CY + tr * Math.sin(rad));
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('dominant-baseline','middle');
+      txt.setAttribute('font-family',"'Cinzel Decorative',serif");
+      txt.setAttribute('font-size','9');
+      txt.setAttribute('fill','rgba(140,160,200,0.55)');
+      txt.textContent = db;
+      g.appendChild(txt);
+    });
+  }
+
+  function setArcPath() {
+    document.getElementById('noise-arc-bg').setAttribute('d', buildArcPath(180, 0));
+  }
+
+  function updateGauge(db) {
+    const pct  = Math.max(0, Math.min(1, (db - 30) / 60));
+    const deg  = 180 - pct * 180; // 180 (left) → 0 (right)
+    const fill = document.getElementById('noise-arc-fill');
+    const val  = document.getElementById('noise-db-value');
+    const lbl  = document.getElementById('noise-level-label');
+    const dot  = document.getElementById('noise-dot');
+
+    fill.setAttribute('d', buildArcPath(180, deg));
+
+    // Color zones: green < threshold-5, amber within 5, red ≥ threshold
+    let strokeColor, textColor, labelText;
+    if (db >= threshold) {
+      strokeColor = '#e04060'; textColor = '#ff6080';
+      labelText = '⚠ 超标 · Too Loud';
+    } else if (db >= threshold - 8) {
+      strokeColor = '#c89030'; textColor = '#e8b040';
+      labelText = '◉ 接近警戒 · Approaching Limit';
+    } else if (db >= 50) {
+      strokeColor = '#28b4c0'; textColor = '#40d8e0';
+      labelText = '◈ 正常 · Normal';
+    } else {
+      strokeColor = '#2a9060'; textColor = '#40d090';
+      labelText = '◌ 安静 · Quiet';
+    }
+
+    fill.setAttribute('stroke', strokeColor);
+    val.setAttribute('fill', textColor);
+    val.textContent = Math.round(db);
+    lbl.textContent = labelText;
+    lbl.style.color = textColor;
+
+    // Alert logic with 3-second cooldown
+    const now = Date.now();
+    if (db >= threshold && now > alertCooldown) {
+      alertCooldown = now + 3000;
+      triggerAlert(db);
+      dot.classList.add('alert');
+      document.getElementById('noise-modal').classList.add('alerting');
+      alerting = true;
+    } else if (db < threshold - 5 && alerting) {
+      alerting = false;
+      dot.classList.remove('alert');
+      document.getElementById('noise-modal').classList.remove('alerting');
+    }
+  }
+
+  function triggerAlert(db) {
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' +
+                 now.getMinutes().toString().padStart(2,'0') + ':' +
+                 now.getSeconds().toString().padStart(2,'0');
+    alerts.unshift({ time, db: Math.round(db) });
+    if (alerts.length > 20) alerts.pop();
+    renderAlerts();
+  }
+
+  function renderAlerts() {
+    const container = document.getElementById('noise-alerts');
+    const empty     = document.getElementById('noise-alert-empty');
+    if (alerts.length === 0) {
+      empty.style.display = '';
+      Array.from(container.querySelectorAll('.noise-alert-row')).forEach(el => el.remove());
+      return;
+    }
+    empty.style.display = 'none';
+    container.innerHTML = '';
+    alerts.forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'noise-alert-row';
+      row.innerHTML = `<span class="noise-alert-time">${a.time}</span><span>⚠ ${a.db} dB — 超标警报</span>`;
+      container.appendChild(row);
+    });
+  }
+
+  function loop() {
+    if (!analyser) return;
+    const buf = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(buf);
+    // RMS → dB
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) {
+      const s = (buf[i] - 128) / 128;
+      sum += s * s;
+    }
+    const rms = Math.sqrt(sum / buf.length);
+    const db  = rms > 0 ? 20 * Math.log10(rms) + 90 : 30; // offset to useful range
+    updateGauge(Math.max(30, Math.min(95, db)));
+    rafId = requestAnimationFrame(loop);
+  }
+
+  async function start() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      const src = audioCtx.createMediaStreamSource(stream);
+      src.connect(analyser);
+      running = true;
+      document.getElementById('noise-dot').classList.add('active');
+      document.getElementById('noise-footer-label').textContent = '监测中 · Monitoring';
+      document.getElementById('noise-start-btn').textContent = '■ 停止';
+      document.getElementById('noise-perm-warn').style.display = 'none';
+      loop();
+    } catch (err) {
+      document.getElementById('noise-perm-warn').style.display = 'block';
+      document.getElementById('noise-footer-label').textContent = '权限拒绝 · Permission denied';
+    }
+  }
+
+  function stop() {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    analyser = null;
+    alerting = false;
+    document.getElementById('noise-dot').classList.remove('active','alert');
+    document.getElementById('noise-modal').classList.remove('alerting');
+    document.getElementById('noise-footer-label').textContent = '已停止 · Stopped';
+    document.getElementById('noise-start-btn').textContent = '▶ 启动';
+    // Reset gauge display
+    const val = document.getElementById('noise-db-value');
+    val.textContent = '--'; val.setAttribute('fill','var(--teal-glow)');
+    document.getElementById('noise-arc-fill').setAttribute('d','');
+    document.getElementById('noise-level-label').textContent = '◌ 已停止 · Stopped';
+    document.getElementById('noise-level-label').style.color = 'var(--text-dim)';
+  }
+
+  function open() {
+    buildTickMarks();
+    setArcPath();
+    document.getElementById('noise-modal').classList.add('open');
+  }
+
+  function close() {
+    stop();
+    document.getElementById('noise-modal').classList.remove('open');
+  }
+
+  function toggle() {
+    running ? stop() : start();
+  }
+
+  function setThreshold(v) {
+    threshold = v;
+    document.getElementById('noise-th-val').textContent = v + ' dB';
+    document.getElementById('noise-th-fill').style.width = ((v - 30) / 60 * 100) + '%';
+  }
+
+  function clearAlerts() {
+    alerts.length = 0;
+    renderAlerts();
+  }
+
+  return { open, close, toggle, setThreshold, clearAlerts };
+})();
 </script>
 </body>
 </html>
