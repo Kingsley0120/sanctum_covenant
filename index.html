@@ -3432,6 +3432,7 @@ function updateAttendBadge() {
   </div>
 
   <div id="wb-canvas-wrap">
+    <canvas id="wb-img-canvas" style="display:block;position:absolute;top:0;left:0;pointer-events:none;"></canvas>
     <canvas id="wb-canvas"></canvas>
     <div id="wb-ring"></div>
     <div id="wb-obj-layer" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
@@ -3509,7 +3510,7 @@ const WB = (() => {
   'use strict';
 
   /* ── DOM refs ── */
-  let canvas, ctx, wrap, textArea, ring, objLayer;
+  let canvas, ctx, imgCanvas, imgCtx, wrap, textArea, ring, objLayer;
 
   /* ── tool state ── */
   let tool    = 'pen';
@@ -3563,6 +3564,8 @@ const WB = (() => {
   function init() {
     canvas   = document.getElementById('wb-canvas');
     ctx      = canvas.getContext('2d');
+    imgCanvas = document.getElementById('wb-img-canvas');
+    imgCtx   = imgCanvas.getContext('2d');
     wrap     = document.getElementById('wb-canvas-wrap');
     textArea = document.getElementById('wb-text-area');
     ring     = document.getElementById('wb-ring');
@@ -3613,6 +3616,8 @@ const WB = (() => {
     if (canvas.width === w && canvas.height === h) return;
     canvas.width  = w;
     canvas.height = h;
+    imgCanvas.width  = w;
+    imgCanvas.height = h;
     redraw();
   }
 
@@ -3708,7 +3713,10 @@ const WB = (() => {
     const tmp = document.createElement('canvas');
     tmp.width = canvas.width; tmp.height = canvas.height;
     const tc = tmp.getContext('2d');
+    // Draw images first (bottom layer), then strokes/text on top
     drawScene(tc);
+    // Also blit the imgCanvas (images) under the drawings
+    // Since drawScene(tc) puts images on tc already, just use it directly
     const a = document.createElement('a');
     a.href = tmp.toDataURL('image/png');
     a.download = 'wuxia_board_' + new Date().toISOString().slice(0, 10) + '.png';
@@ -3718,17 +3726,20 @@ const WB = (() => {
   /* ══════════════════ RENDER ══════════════════ */
   function redraw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawScene(ctx);
+    imgCtx.clearRect(0, 0, imgCanvas.width, imgCanvas.height);
+    drawScene();
     if (liveStroke) renderStroke(ctx, liveStroke);
     // re-draw selection handles overlay
     updateHandles();
   }
 
-  function drawScene(c) {
+  function drawScene(exportCtx) {
+    // exportCtx: if provided, render everything (images + drawings) onto it (for save)
+    // Otherwise split: images → imgCtx, strokes/text → ctx
     scene.forEach(obj => {
-      if (obj.type === 'stroke') renderStroke(c, obj);
-      else if (obj.type === 'text') renderText(c, obj);
-      else if (obj.type === 'image') renderImage(c, obj);
+      if (obj.type === 'stroke') renderStroke(exportCtx || ctx, obj);
+      else if (obj.type === 'text') renderText(exportCtx || ctx, obj);
+      else if (obj.type === 'image') renderImage(exportCtx || imgCtx, obj);
     });
   }
 
